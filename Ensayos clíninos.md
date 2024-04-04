@@ -49,9 +49,9 @@ aleatoria), experimental, de un producto, sustancia, medicamento,
 técnica diagnóstica o terapéutica que, en su aplicación a seres humanos,
 pretende valorar su eficacia y seguridad.
 
-# Fases de un ensayo clínico
+## Fases de un ensayo clínico
 
-## Fase I
+### Fase I
 
 - Objetivo: tolerancia/prueba de máxima dosis tolerable/dosis-respuesta.
   Interacciones. Farmacodinamia y farmacocinética.
@@ -62,7 +62,7 @@ pretende valorar su eficacia y seguridad.
 
 - Estudio simple.
 
-## Fase II
+### Fase II
 
 - Objetivo: evaluar si la droga tiene actividad biológica (o efecto) y
   estimar la tasa de eventos adversos.
@@ -71,7 +71,7 @@ pretende valorar su eficacia y seguridad.
 
 - Puede tener objetivos diferentes al estudio fase III
 
-## Fase III
+### Fase III
 
 - Objetivo: establecer la efectividad de una nueva intervención.
 
@@ -79,7 +79,7 @@ pretende valorar su eficacia y seguridad.
 
 - Período de evaluación o seguimiento: corto.
 
-## Fase IV
+### Fase IV
 
 - Objetivo: establecer la seguridad de una nueva intervención.
 

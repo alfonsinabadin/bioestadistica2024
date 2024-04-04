@@ -15,7 +15,7 @@ los problemas sanitarios». Lo que resalta de esta definición es que
 comprende una descripción del contenido de esta disciplina y las razones
 por las que se llevan a cabo las investigaciones epidemiológicas.
 
-# Objetivos de la epidemiología
+## Objetivos de la epidemiología
 
 - Identificar la *etología* o la causa de una enfermedad y los factores
   de riesgo relevantes.
@@ -34,14 +34,14 @@ por las que se llevan a cabo las investigaciones epidemiológicas.
   medidas terapéuticas y preventivas, tanto las existentes como las
   nuevas.
 
-# Transición epidemiológica
+## Transición epidemiológica
 
 La transición epidemiológica es un concepto que describe los cambios en
 los patrones de enfermedad y salud en una población a lo largo del
 tiempo. Identifica cambios en una enfermedad y cómo afecta a la sociedad
 a medida que se desarrolla.
 
-## Transición epidemiológica del COVID
+### Ejercicio: pensar en la transición epidemiológica del COVID
 
 El COVID es una enfermedad que tuvo varias etapas que pueden
 identificarse como una transición epidemiológica:
@@ -75,15 +75,7 @@ identificarse como una transición epidemiológica:
     haber aprendido más y adoptar algunos hábitos que se tenian en plena
     pandemia?
 
-## Defunciones en Argentina
-
-En el año 2021 se registraron en Argentina 436.799 defunciones. En
-términos proporcionales, los tumores pasaron a ocupar la cuarta causa de
-mortalidad (14,3%), precedidos por las enfermedades del sistema
-circulatorio (24,6%), COVID-19 (19,4%) y enfermedades del sistema
-respiratorio (14,4%).
-
-# Tipos de prevención
+## Tipos de prevención
 
 - Primaria: prevención del desarrollo inicial de una enfermedad (por
   ejemplo vacuna o disminución de exposición).
@@ -95,7 +87,7 @@ respiratorio (14,4%).
   ictus, es decir recuperación física, emocional y cognitiva después de
   haber sufrido un ACV).
 
-# Enfoques preventivos
+## Enfoques preventivos
 
 Dos posibles enfoques preventivos son el enfoque sobre la población y el
 enfoque sobre la población de alto riesgo. Claramente, las medidas

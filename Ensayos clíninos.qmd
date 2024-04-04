@@ -21,9 +21,9 @@ Los estudios de intervención más importantes son:
 
 Un ensayo clínico es un estudio prospectivo (que parte desde la variable explicativa, fijada por diseño, y registra la variable respuesta, que es aleatoria), experimental, de un producto, sustancia, medicamento, técnica diagnóstica o terapéutica que, en su aplicación a seres humanos, pretende valorar su eficacia y seguridad.
 
-# Fases de un ensayo clínico
+## Fases de un ensayo clínico
 
-## Fase I
+### Fase I
 
 -	Objetivo: tolerancia/prueba de máxima dosis tolerable/dosis-respuesta. Interacciones. Farmacodinamia y farmacocinética.
 
@@ -33,7 +33,7 @@ Un ensayo clínico es un estudio prospectivo (que parte desde la variable explic
 
 -	Estudio simple.
 
-## Fase II
+### Fase II
 
 -	Objetivo: evaluar si la droga tiene actividad biológica (o efecto) y estimar la tasa de eventos adversos.
 
@@ -41,7 +41,7 @@ Un ensayo clínico es un estudio prospectivo (que parte desde la variable explic
 
 -	Puede tener objetivos diferentes al estudio fase III
 
-## Fase III
+### Fase III
 
 -	Objetivo: establecer la efectividad de una nueva intervención.
 
@@ -49,7 +49,7 @@ Un ensayo clínico es un estudio prospectivo (que parte desde la variable explic
 
 -	Período de evaluación o seguimiento: corto.
 
-## Fase IV
+### Fase IV
 
 -	Objetivo: establecer la seguridad de una nueva intervención.
 
