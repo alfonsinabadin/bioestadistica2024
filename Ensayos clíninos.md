@@ -1,88 +1,136 @@
-Ensayos clínicos
+Estudios observacionales
 ================
 
-Los *ensayos clínicos* son estudios por excelencia cuando se quieren
-estudiar relaciones etiológicas, es decir relaciones de causalidad. Por
-ejemplo, poner o no poner una vacuna ¿previene cierta enfermedad? Estos
-se usan para hacer comparaciones, en general, y siempre vamos a
-encontrar grupos de comparación. Por ejemplo, comparar distintos
-tratamientos, dosis de un medicamento, terapias, etc.
+# Inicios de la Epidemiología
 
-El investigador tiene un rol activo en los ensayos clínicas, este asigna
-a cada unidad qué tratamiento va a seguir, aleatoriamente, lo cual evita
-los factores de confusión. Es una intervención activa y donde la persona
-participa de forma voluntaria.
+> Capítulo 1 del libro de Gordis
 
-Se puede pensar en un ensayo clínico como un análisis de entrenamiento
-de jugadores de fútbol. Uno puede controlar lo que sucede al entrenar,
-si el jugador patea bien, cómo corre, etc. Pero de todas formas, no se
-conoce como va a ser el desempeño en un partido (vida real) porque no se
-controla al equipo rival, la hinchada, las distracciones, etc.
+La epidemiología es el estudio de cómo se distribuyen las enfermedades
+en las poblaciones y los factores que determinan o influyen en esta
+distribución. Lo más frecuente es que en el desarrollo de la enfermedad
+nos enfrentemos con una interacción de factores genéticos y ambientales,
+así como de factores derivados de nuestro comportamiento y de factores
+sociales, más no se trata de algo *aleatorio*.
 
-Hay situaciones donde no es ético llevarlos a cabo o donde las variables
-explicativas son inherentes a los sujetos (por ejemplo, si se quiere
-estudiar el efecto en una respuesta según si la persona es diestra o
-zurda, son tratamientos que no se pueden asignar, sino que viene con la
-naturaleza de la persona).
+Se define la epidemiología como el estudio de la distribución y los
+determinantes de los estados o acontecimientos relacionados con la salud
+en poblaciones específicas y la aplicación de este estudio al control de
+los problemas sanitarios.
 
-Los estudios de intervención más importantes son:
+## Objetivos de la epidemiología
 
-- Estudios de comunidades (Community intervention): estudios donde se
-  asigna un tratamiento a una comunidad completa. Por ejemplo, se asigna
-  el flúor a los tanques municipales de agua para q los niños tengan
-  menos probabilidad de caries dentales. En este estudio, el individuo
-  no puede elegir si participar o no del estudio, porque para ello
-  debería mudarse de ciudad/pueblo.
+- Identificar la **etología** o la causa de una enfermedad y los
+  factores de riesgo relevantes.
 
-- Estudio de campo aleatorizados (Randomized Field Trials): estudios
-  donde se asigna un tratamiento a un grupo determinado. Por ejemplo, a
-  dos escuelas se les da distintos métodos de enseñanza. El que recibe
-  cierto tratamiento tiene la opción de cambiar de escuela para no
-  recibir cierto tratamiento.
+- Conocer **cómo se transmite** una enfermedad de una persona a otra o
+  de un reservorio no humano a una población humana y las razones por
+  las que los comportamientos de riesgo causan enfermedades. Esto sirve
+  para determinar la extensión de una enfermedad y así conocer cuál es
+  el impacto para planear servicios e instalaciones sanitarias.
 
-- Estudios clínicos aleatorizados: el estudio se le hace a un individuo,
-  la asignación es para cada individuo.
+- **Intervenir** para reducir la morbilidad y la mortalidad de la
+  enfermedad. Establecer programas de prevención, reducir o eliminar la
+  exposición a una enfermedad, desarrollar vacunas, etc.
 
-Un ensayo clínico es un estudio prospectivo (que parte desde la variable
-explicativa, fijada por diseño, y registra la variable respuesta, que es
-aleatoria), experimental, de un producto, sustancia, medicamento,
-técnica diagnóstica o terapéutica que, en su aplicación a seres humanos,
-pretende valorar su eficacia y seguridad.
+- **Evaluar los modos de prestación** de la asistencia sanitaria y las
+  medidas terapéuticas y preventivas, tanto las existentes como las
+  nuevas.
 
-## Fases de un ensayo clínico
+## Transición epidemiológica
 
-### Fase I
+La transición epidemiológica es un concepto que describe los cambios en
+los patrones de enfermedad y salud en una población a lo largo del
+tiempo. Identifica cambios en una enfermedad y cómo afecta a la sociedad
+a medida que se desarrolla.
 
-- Objetivo: tolerancia/prueba de máxima dosis tolerable/dosis-respuesta.
-  Interacciones. Farmacodinamia y farmacocinética.
+### Ejercicio: pensar en la transición epidemiológica del COVID
 
-- Grupo reducido de individuos.
+El COVID es una enfermedad que tuvo varias etapas que pueden
+identificarse como una transición epidemiológica:
 
-- Participantes voluntarios.
+1.  Contagios, desconocimiento y muertes: en fines del 2019 e inicios
+    del 2020, se comenzó a escuchar sobre el COVID-19 y su potencial
+    dispersión a nivel mundial. El desconocimiento de la enfermedad y la
+    falta de información y medidas de prevención, ocasionaron una gran
+    cantidad de contagios en todo el mundo y, en consecuencia, muchas
+    muertes. No se conocían los cuidados que había que tener, no se
+    tenia un tratamiento claro que funcione para combatir la enfermedad
+    y tampoco se contaba con la vacuna.
 
-- Estudio simple.
+2.  Etapa de confinamiento: una vez en cuarentena, se comenzó a entender
+    el modo de contagio que tiene la enfermedad. Al no estar en contacto
+    con otros contagiados, uno no se contagiaba. El confinamiento total
+    hizo que los casos bajen radicalmente, y el entendimiento sobre la
+    enfermedad logró que la sociedad pase de la histeria absoluta a una
+    etapa de entendimiento y cooperación para con los demás.
 
-### Fase II
+3.  Contagios controlados: una vez colocada la vacuna, con el mencionado
+    “efecto rebaño”, los contagios eran mucho menos y estaban
+    *controlados*. Los síntomas no eran tan drásticos como al comienzo,
+    no había tantas muertes por COVID y las personas comenzaban a
+    convivir con la enfermedad sin asustarse.
 
-- Objetivo: evaluar si la droga tiene actividad biológica (o efecto) y
-  estimar la tasa de eventos adversos.
+4.  Superación: hoy en día pareciera que nunca existió el COVID,
+    seguimos compartiendo mate, no usamos más barbijos, olvidamos las
+    vacunas. Uno le perdió el “respeto” que se le tenía a la enfermedad
+    y pasó a ser más una anécdota. ¿Será esto lo correcto? ¿Deberíamos
+    haber aprendido más y adoptar algunos hábitos que se tenian en plena
+    pandemia?
 
-- Participantes: tienen muchos criterios de exclusión.
+## Tipos de prevención
 
-- Puede tener objetivos diferentes al estudio fase III
+- Primaria: prevención del desarrollo inicial de una enfermedad (por
+  ejemplo vacuna o disminución de exposición).
 
-### Fase III
+- Secundaria: detección precoz de una enfermedad existente (por ejemplo
+  cribado del cáncer, detección temprana).
 
-- Objetivo: establecer la efectividad de una nueva intervención.
+- Terciatia: reducción del impacto (por ejemplo la rehabilitación del
+  ictus, es decir recuperación física, emocional y cognitiva después de
+  haber sufrido un ACV).
 
-- Tratamiento: puede no ser una droga.
+## Enfoques preventivos
 
-- Período de evaluación o seguimiento: corto.
+Dos posibles enfoques preventivos son el enfoque sobre la población y el
+enfoque sobre la población de alto riesgo. Claramente, las medidas
+aplicadas a toda una población deben ser relativamente poco costosas y
+no invasivas. Una medida que vaya a emplearse en un subgrupo de alto
+riesgo de la población puede ser más cara y también más invasiva o
+incómoda, pero también puede identificar correctamente las personas que
+padecen la enfermedad.
 
-### Fase IV
+Al investigar hay que ser muy duidadoso con las conclusiones a las que
+se llega porque no siempre se puede determinar la causalidad de algun
+fenómeno con los datos disponibles.
 
-- Objetivo: establecer la seguridad de una nueva intervención.
+> Cuanto más comun es la causa, tanto menos explica la distribucion de
+> los casos.
 
-- Seguimiento: largo.
+> Es más dificil identificar aquello que es de presencia universal.
 
-- Validación de datos.
+# dvnavnasnas
+
+> Capítulo 2 del libro de Gordis
+
+completar (tarea)
+
+# AAAAAAAAAAAAAAAAAA
+
+> Capitulo inf Epidemiology (Scklo y Nieto)
+
+## Analisis edad-periodo-cohorte (EPC)
+
+cohorte: grupo de personas q tienen una caracteristica que se quiere
+analizar
+
+El ejemplo de la enfermedad y años es un estudio transversal repetido,
+es decir medido a través del tiempo.
+
+Edad prio-cohorte: tengo una tabla con doble lectura.
+
+- Fila: el cambio en la enf que tuvo en dist periodos.
+
+- Col: el cambio del periodo con respecto a la enfermedad.
+
+- Cohorte: cambio en la enfermedad de una misma cohorte (a través del
+  tiempo).
