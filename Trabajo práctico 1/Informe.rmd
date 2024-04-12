@@ -1,0 +1,32 @@
+---
+title: " "
+author: " "
+output: pdf_document
+---
+
+falta caratula (sacar de bayes)
+
+\pagebreak
+
+# Introducción
+
+En un ensayo clínico aleatorizado se comparan dos drogas para tratar la hemorragia posparto de mujeres embarazadas. El estudio consiste en reclutar mujeres que voluntariamente aceptan formar parte del ensayo, a estas se les asignará aleatoriamente uno de los dos tratamientos y se recolectará información sobre ellas.  
+
+El formulario de parto `DEL` registra las características basales de la mujer e información adicional sobre el nacimiento y administración del tratamiento experimental (ver en anexo). Este ingreso de información se hace en base a las respuestas de un formulario que, aunque no se desea, puede cometer errores.
+
+El objetivo del presente informe es realizar un análisis exhaustivo de validación de datos, empleando técnicas que permiten evaluar la calidad de los datos ingresados y detectar errores sistemáticos en el llenado de los formularios.
+
+\pagebreak
+
+# Desarrollo de reglas de validación
+
+A continuación se detallan las reglas globales que tienen que cumplirse en todas las preguntas y las reglas específicas de cada una con sus respectivas descripciones. Esto se hace con la finalidad de hacer un recorrido detallado del formulario y la validación a realizarse.  
+
+Al final de esta sección, se encontrará el listado de reglas empleadas en un código de R que será probado en la base provista para identificar:
+
+• Participantes limpios.
+
+• Participantes con más inconscistencias.
+
+• Errores más frecuentes.
+
