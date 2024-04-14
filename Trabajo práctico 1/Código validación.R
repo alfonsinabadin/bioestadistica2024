@@ -80,15 +80,15 @@ ggplot(inconsistencias,
   theme_grey() +
   theme(plot.title = element_text(hjust = 0.5))
 
-# Pacientes limpios
-## Inconsistencias (vacío)
+## Pacientes limpios
+### Inconsistencias (vacío)
 comunicacion_vacio <- resultados %>% 
   left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
   select(id, regla, description, status) %>% 
   filter(status == "vacio") %>% 
   arrange(id)
 
-## Inconsistencias (no disponible)
+### Inconsistencias (no disponible)
 comunicacion_nd <- resultados %>% 
   left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
   select(id, regla, description, status) %>% 
