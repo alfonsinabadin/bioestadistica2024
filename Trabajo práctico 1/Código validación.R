@@ -1,88 +1,104 @@
----
-title: " "
-author: " "
-output: pdf_document
----
+# Librerias
+library(tidyverse)
+library(validate)
+library(readxl)
 
-falta caratula (sacar de bayes)
+# Base de datos
+parto <- read_excel("Trabajo práctico 1/parto_sec1_n50.xlsx")
 
-\pagebreak
+# Reglas
+reglas_parto <- tribble(
+  ~name, ~description, ~rule,
+  "R01", "{del01} no puede ser vacía", "is.na(del01)",
+  "R02", "Si {del01} no es vacío, no puede ser mayor o igual a 60", "!is.na(del01) & del01 >= 60",
+  "R03", "{del02} no puede ser vacía", "is.na(del02)",
+  "R04", "{del02} no puede ser menor a 20", "!is.na(del02) & del02 <= 20",
+  "R05", "{del02} no puede ser mayor a 50", "!is.na(del02) & del02 >= 50",
+  "R06", "{del03} no puede ser vacía", "is.na(del03)",
+  "R07", "si {del03} es 0, {del04} debe ser vacía", "del03 ==  0 & !is.na(del04)",
+  "R08", "si {del03} es 0, {del05} debe ser vacía", "del03 ==  0 & !is.na(del05)",
+  "R09", "si {del03} no es 0, {del04} no puede ser vacía", "del03 !=  0 & is.na(del04)",
+  "R10", "si {del03} no es 0, {del05} no puede ser vacía", "del03 !=  0 & is.na(del05)",
+  "R11", "{del06} no puede ser vacía", "is.na(del06)",
+  "R12", "Si {del06} = 0, todas las 6a son vacías", "del06 == 0 & !is.na(del06a1) & !is.na(del06a2) & !is.na(del06a3) & !is.na(del06a4) & !is.na(del06as)",
+  "R13", "Si {del06a4} = 1, {del06as} no puede ser vacío", "del06a4 == 1 & is.na(del06as)",
+  "R14", "Si {del06} = 1, {del06a1} no puede ser vacía", "del06 == 1 & is.na(del06a1)",
+  "R15", "Si {del06} = 1, {del06a2} no puede ser vacía", "del06 == 1 & is.na(del06a2)",
+  "R16", "Si {del06} = 1, {del06a3} no puede ser vacía", "del06 == 1 & is.na(del06a3)",
+  "R17", "Si {del06} = 1, {del06a4} no puede ser vacía", "del06 == 1 & is.na(del06a4)",
+  "R18", "{del07} no puede ser vacía", "is.na(del07)"
+)
+reglas <- validator(.data = reglas_parto)
 
-# Introducción
+# Validación de reglas
+validacion <- confront(parto, reglas)
+errors(validacion)
+valores = values(validacion)
 
-En un ensayo clínico aleatorizado se comparan dos drogas para tratar la hemorragia posparto de mujeres embarazadas. El estudio consiste en reclutar mujeres que voluntariamente aceptan formar parte del ensayo, a estas se les asignará aleatoriamente uno de los dos tratamientos y se recolectará información sobre ellas.  
+# Resultados
+resultados <- validacion %>% 
+  values() %>% 
+  as_tibble() %>% 
+  mutate(id = parto$part_id) %>% 
+  pivot_longer(cols = -id, names_to = "regla", values_to = "status") %>%
+  mutate(
+    status = factor(
+      if_else(status, "vacio", "limpio", "no disponible"),
+      levels = c("limpio", "vacio", "no disponible")
+    )
+  )
+resultados
 
-El formulario de parto `DEL` registra las características basales de la mujer e información adicional sobre el nacimiento y administración del tratamiento experimental (ver en anexo). Este ingreso de información se hace en base a las respuestas de un formulario que, aunque no se desea, puede cometer errores.
+## Análisis de reglas 
+resultados %>% 
+  group_by(regla) %>% 
+  summarise(
+    registros = n(),
+    casos = sum(status == "vacio"),
+    `(%)` = casos/registros*100
+  )
 
-El objetivo del presente informe es realizar un análisis exhaustivo de validación de datos, empleando técnicas que permiten evaluar la calidad de los datos ingresados y detectar errores sistemáticos en el llenado de los formularios.
+## Inconsistencias (vacío - no disponible)
+comunicacion_vacio <- resultados %>% 
+                      left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
+                      select(id, regla, description, status) %>% 
+                      filter(status == "vacio") %>% 
+                      arrange(id)
 
-\pagebreak
+comunicacion_nd <- resultados %>% 
+                   left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
+                   select(id, regla, description, status) %>% 
+                   filter(status == "no disponible") %>% 
+                   arrange(id)
 
-# Desarrollo de reglas de validación
 
-A continuación se detallan las reglas globales que tienen que cumplirse en todas las preguntas y las reglas específicas de cada una con sus respectivas descripciones. Esto se hace con la finalidad de hacer un recorrido detallado del formulario y la validación a realizarse.  
+# Pacientes con inconsistencias
+inconsistencias_vacias <- comunicacion_vacio %>%
+  group_by(id) %>%
+  summarize(inconsistencias_vacias = n())
 
-Al final de esta sección, se encontrará el listado de reglas empleadas en un código de R que será probado en la base provista para identificar:
+inconsistencias_nd <- comunicacion_nd %>%
+  group_by(id) %>%
+  summarize(inconsistencias_nd = n())
 
-• Participantes limpios.
+resultado <- full_join(inconsistencias_vacias, inconsistencias_nd, by = "id") %>%
+  replace(is.na(.), 0)  # Reemplazar NA con 0 para aquellos pacientes sin inconsistencias de un tipo
 
-• Participantes con más inconscistencias.
+resultado$inconsistencia_total <- resultado$inconsistencias_vacias + resultado$inconsistencias_nd
 
-• Errores más frecuentes.
+ggplot(resultado,
+       aes(x = as.factor(id), y = inconsistencia_total)) +
+       geom_bar(stat = "identity", fill = "#C995B7") +
+       labs(title = "Cantidad de inconsistencias por paciente",
+       x = "ID del paciente",
+       y = "Cantidad de inconsistencias") +
+       theme_grey() +
+       theme(plot.title = element_text(hjust = 0.5))
 
-## Reglas globales
+# Pacientes limpios
+todos_los_pacientes <- 1:50
+pacientes_con_inconsistencias <- resultado$id
+pacientes_sin_inconsistencias <- setdiff(todos_los_pacientes, pacientes_con_inconsistencias)
 
-Como regla principal y general para todas las respuestas del formulario, ninguna de ellas puede ser vacía, a no ser que alguna regla específica diga lo contrario.  
-
-Además, se entiende que en las respuestas categóricas con codificación numérica ningún participante puso ni letras ni números que no formaba parte del listado de opciones. Se asume, por ejemplo, que nadie colocó _"No"_ en lugar de $0$, y que nadie utilizó otro número que no sea $0$, $1$ o $9$ ya que, al ser un campo cerrado sólo se admiten respuestas válidas. 
-
-## Reglas específicas
-
-Las reglas específicas se detallan para cada una de las preguntas del formulario que lo requieran, teniendo en cuenta cuáles son las condiciones que cada una requiere y qué implican sus respuestas. 
-
-#### 1 - Edad materna
-
-• No puede ser mayor o igual a 60 años.
-
-#### 2 - Edad gestacional 
-
-• No puede ser menor a 20 semanas (en dicho caso se considera aborto).
-
-• No puede ser mayor a 50 semanas.
-
-#### 3 - Cantidad de embarazos previos
-
-• Si es 0, la respuesta 4 debe ser vacía.
-• Si es 0, la respuesta 5 debe ser vacía.
-
-#### 4 - ¿La mujer tuvo HPP en los embarazos anteriores?
-
-• Sólo puede ser vacía si la respuesta 3 es 0.
-
-#### 5 - ¿La mujer tuvo parto por cesárea anteriormente?
-
-• Sólo puede ser vacía si la respuesta 3 es 0.
-
-#### 6 - ¿Le indujeron el parto a la mujer cuando la ingresaron al hospital para este parto?
-
-• Si es 0, las respuestas 6a1, 6a2, 6a3, 6a4 y 6as deben ser vacías.
-
-#### 6a1 - Oxitocina
-
-• No puede ser vacía si la respuesta 6 es 1.
-
-#### 6a2 - Misoprostol
-
-• No puede ser vacía si la respuesta 6 es 1.
-
-#### 6a3 - Sonda de Foley con globo
-
-• No puede ser vacía si la respuesta 6 es 1.
-
-#### 6a4 - Otro
-
-• No puede ser vacía si la respuesta 6 es 1.
-
-#$$$ 6s - Si la repsuesta es <<Otro>>, especifique.
-
-• No puede ser vacío si 6a4 es 1.
+# Obs:
+# Cambiamos la regla 2 porque a partir de los 45 años hay 1% de prob de quedar emba.
