@@ -10,10 +10,10 @@ parto <- read_excel("Trabajo práctico 1/parto_sec1_n50.xlsx")
 reglas_parto <- tribble(
   ~name, ~description, ~rule,
   "R01", "{del01} no puede ser vacía", "is.na(del01)",
-  "R02", "Si {del01} no es vacío, no puede ser mayor o igual a 60", "!is.na(del01) & del01 >= 60",
+  "R02", "Si {del01} no es vacío, no puede ser mayor o igual a 60", "del01 >= 60",
   "R03", "{del02} no puede ser vacía", "is.na(del02)",
-  "R04", "{del02} no puede ser menor a 20", "!is.na(del02) & del02 <= 20",
-  "R05", "{del02} no puede ser mayor a 50", "!is.na(del02) & del02 >= 50",
+  "R04", "{del02} no puede ser menor a 20", "del02 <= 20",
+  "R05", "{del02} no puede ser mayor a 50", "del02 >= 50",
   "R06", "{del03} no puede ser vacía", "is.na(del03)",
   "R07", "si {del03} es 0, {del04} debe ser vacía", "del03 ==  0 & !is.na(del04)",
   "R08", "si {del03} es 0, {del05} debe ser vacía", "del03 ==  0 & !is.na(del05)",
@@ -44,35 +44,57 @@ resultados <- validacion %>%
   mutate(
     status = factor(
       if_else(status, "vacio", "limpio", "no disponible"),
-      levels = c("limpio", "vacio", "no disponible")
+      levels = c("limpio", "no disponible", "vacio"), ordered = TRUE
     )
   )
 resultados
 
 ## Análisis de reglas 
 resultados %>% 
-  group_by(regla) %>% 
+      group_by(regla) %>% 
+      summarise(
+      registros = n(),
+      casos = sum(status == "vacio"),
+      `(%)` = casos/registros*100
+      )
+
+ggplot(resultados, aes(y = regla, fill = status))+
+  geom_bar(position = "fill") +
+  scale_x_continuous(labels = scales::percent, name = "Porcentaje") +
+  scale_fill_manual(values = c("#EBC4E1", "#B17AA0", "#8A5D86")) +
+  theme_minimal()
+
+## Pacientes con inconsistencias
+inconsistencias <- resultados %>%
+  group_by(id) %>%
   summarise(
-    registros = n(),
-    casos = sum(status == "vacio"),
-    `(%)` = casos/registros*100
+    inconsistencia = sum(status == "vacio")
   )
 
-## Inconsistencias (vacío - no disponible)
+ggplot(inconsistencias,
+       aes(x = as.factor(id), y = inconsistencia)) +
+  geom_bar(stat = "identity", fill = "#C995B7") +
+  labs(title = "Cantidad de inconsistencias por paciente",
+       x = "ID del paciente",
+       y = "Cantidad de inconsistencias") +
+  theme_grey() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Pacientes limpios
+## Inconsistencias (vacío)
 comunicacion_vacio <- resultados %>% 
-                      left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
-                      select(id, regla, description, status) %>% 
-                      filter(status == "vacio") %>% 
-                      arrange(id)
+  left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
+  select(id, regla, description, status) %>% 
+  filter(status == "vacio") %>% 
+  arrange(id)
 
+## Inconsistencias (no disponible)
 comunicacion_nd <- resultados %>% 
-                   left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
-                   select(id, regla, description, status) %>% 
-                   filter(status == "no disponible") %>% 
-                   arrange(id)
+  left_join(y = reglas_parto, by = c("regla" = "name")) %>% 
+  select(id, regla, description, status) %>% 
+  filter(status == "no disponible") %>% 
+  arrange(id)
 
-
-# Pacientes con inconsistencias
 inconsistencias_vacias <- comunicacion_vacio %>%
   group_by(id) %>%
   summarize(inconsistencias_vacias = n())
@@ -86,19 +108,6 @@ resultado <- full_join(inconsistencias_vacias, inconsistencias_nd, by = "id") %>
 
 resultado$inconsistencia_total <- resultado$inconsistencias_vacias + resultado$inconsistencias_nd
 
-ggplot(resultado,
-       aes(x = as.factor(id), y = inconsistencia_total)) +
-       geom_bar(stat = "identity", fill = "#C995B7") +
-       labs(title = "Cantidad de inconsistencias por paciente",
-       x = "ID del paciente",
-       y = "Cantidad de inconsistencias") +
-       theme_grey() +
-       theme(plot.title = element_text(hjust = 0.5))
-
-# Pacientes limpios
 todos_los_pacientes <- 1:50
 pacientes_con_inconsistencias <- resultado$id
 pacientes_sin_inconsistencias <- setdiff(todos_los_pacientes, pacientes_con_inconsistencias)
-
-# Obs:
-# Cambiamos la regla 2 porque a partir de los 45 años hay 1% de prob de quedar emba.
