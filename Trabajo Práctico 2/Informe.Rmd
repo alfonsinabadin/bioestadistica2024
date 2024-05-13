@@ -1,0 +1,183 @@
+---
+title: "Trabajo Práctico II"
+author: "Bioestadística"
+fontsize: 10pt
+linestretch: "1.1"
+output: pdf_document
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+lang: es-ES
+---
+
+```{=tex}
+\begin{center}
+    \vspace*{0.5cm}
+    \Huge\textbf{Lectura crítica de un ensayo clínico}
+    
+    \vspace{4cm}
+    \includegraphics[width=0.4\textwidth]{logo_fceye.png}
+  
+    \vspace{0cm}
+    \large{Facultad de Ciencias Económicas y Estadística, Universidad Nacional de Rosario}
+    
+    \vspace{0.5cm}
+    \large{Alfonsina Badin, Valentina Salvarezza, Camila Sebastiani}
+    
+    \vspace{0.5cm}
+    \large{Mayo de 2024}
+    
+\end{center}
+```
+\clearpage
+
+# Introducción
+
+El artículo _'Efecto de la semaglutida subcutánea semanal frente a la liraglutida diaria sobre el peso corporal en adultos con sobrepeso u obesidad sin diabetes'_ relata el desarrollo de un ensayo clínico que se realizó para identificar si el uso de la Semaglutida es más eficaz al uso de Liraglutida para ayudar a la pérdida de peso en adultos con sobrepeso u obesidad sin diabetes.
+
+La Semaglutida y la Liraglutida son medicamentos utilizados para pacientes con diabetes, ambos funcionan controlando los niveles de azúcar en la sangre. Su diferencia radica en la administración: mientras que la Liraglutida se aplica de forma diaria, la Semaglutida se aplica de forma semanal, ambas mediante inyecciones subcutáneas. Esta última forma de administración es más conveniente para evitar posibles olvidos y el sometimiento del paciente a una inyección diaria. 
+
+\pagebreak
+
+# Sobre el artículo
+
+La primera autora del artículo es Domenica M. Rubino, médica endocrinóloga especializada en endocrinología, diabetes y metabolismo. Cuenta con una afiliación con el Centro de Washington para la Investigación y el Control del Peso de Arlington, Virginia.
+
+La revista donde se publicó el artículo se resume en las siglas JAMA, que hacen referencia a Journal of the American Medical Association. Es una revista de la Asociación Médica Estadounidense, una de las más difundidas en el mundo. 
+
+El artículo se puede referenciar como: 
+
+_Rubino DM, Greenway FL, Khalid U, O'Neil PM, Rosenstock J, Sørrig R, Wadden TA, Wizert A, Garvey WT; STEP 8 Investigators. Effect of Weekly Subcutaneous Semaglutide vs Daily Liraglutide on Body Weight in Adults With Overweight or Obesity Without Diabetes: The STEP 8 Randomized Clinical Trial. JAMA. 2022 Jan 11;327(2):138-150. doi: 10.1001/jama.2021.23619. PMID: 35015037; PMCID: PMC8753508._
+
+# Sobre el estudio
+
+El estudio realizado es de tipo paralelo ya que se conforman dos grupos de pacientes al que se le asignan diferentes intervenciones: Semaglutida o Liraglutida. Un paciente que recibió uno de los dos medicamentos, no recibe el otro durante el seguimiento (no hay Cross-Over). 
+
+La unidad de aleatorización utilizada fue el individuo, lo que implica que cada paciente fue asignado aleatoriamente a uno de los cuatro grupos de intervenciones (Semaglutida - Placebo con formato Semaglutida - Liraglutida - Placebo con formato Liraglutida). Se implementó un diseño de asignación de medicación abierto debido a la variabilidad en la frecuencia de aplicación, lo cual imposibilita ocultar que medicamento se otorga a cada paciente. Además se incorporó un enmascaramiento doble ciego, donde tanto los pacientes como los médicos desconocían si estaban recibiendo el medicamento activo o un placebo. El enfoque descrito ayuda a reducir sesgos en las conclusiones.
+
+Este estudio se encuentra en Fase 3B, es decir, se evalúa la eficacia y seguridad de los tratamientos en un estado de aprobación intermedio: luego de la solicitud pero antes de la aprobación final por parte de autoridades reguladoras. 
+
+Se cuenta con un protocolo junto con enmiendas que fueron aprobados por la junta de revisión institucional o el comité de ética independiente de cada sitio, el mismo fue escrito por Novo Nordisk, empresa farmacéutica danesa, además, todos los participantes dieron su consentimiento informado por escrito.
+
+# Hipótesis estadística
+
+El ensayo propone una hipótesis de no inferioridad, ya que se investiga si la Semaglutida podría ser considerada como una opción viable en comparación con la Liraglutida. La Semaglutida ingresa al cuerpo mediante inyecciones subcutáneas semanales, lo que potencialmente la convierte en una opción de administración más simple en comparación con la Liraglutida, que requiere inyecciones diarias y, por lo tanto, implica mayores costos en tiempo, capacitación y potencialmente dinero. El objetivo del estudio es determinar si la Semaglutida, a pesar de ser menos frecuente en su administración, no es inferior a la Liraglutida en términos de eficacia y seguridad.
+
+# Sobre los pacientes
+
+Se incluyó en el ensayo clínico a adultos (con 18 años o más) con 1 o más esfuerzos dietéticos fallidos para perder peso y un índice de masa corporal (IMC, calculado como el peso en kilogramos dividido por la altura en metros al cuadrado) de 30 o más o 27 o más con 1 o más comorbilidades relacionadas con el peso (hipertensión, dislipidemia, apnea obstructiva del sueño o enfermedad cardiovascular). Aquellas personas con diabetes, nivel de hemoglobina A 1c (HbA 1c ) de 6,5 % (48 mmol/mol) o más, y cambios de peso corporal autoinformados de más de 5 kg 90 días o menos antes de la evaluación fueron excluidos. Para los requisitos reglamentarios, se registraron la raza y el origen étnico, determinados por cada participante de acuerdo con categorías de selección fijas (incluido "otros"). Todos los participantes dieron su consentimiento informado por escrito.
+
+El estudio fue realizado en 19 centros de EE. UU cuyas juntas de revisión institucional o comités de ética aprobaron tanto el protocolo como las enmiendas. El artículo además cumplió con las directrices de la Conferencia Internacional sobre Armonización de Buenas Prácticas Clínicas y la Declaración de Helsinki.
+
+# Análisis estadístico
+
+En el ensayo clínico se realizó un análisis por intención de tratar ya que el análisis final se realiza sobre todos los participantes del estudio, incluyendo aquellos que abandonaron el mismo. Dichos participantes generaron valores faltantes en el conjunto de datos y para tratarlos se empleó un enfoque de imputación múltiple, utilizando muestreo de las mediciones disponibles en la semana 68 de participantes en el mismo grupo de tratamiento y con el mismo estado de finalización del tratamiento. La imputación se basó en un modelo de regresión lineal utilizando el valor inicial y la última observación disponible de la medida de resultado de interés del período de tratamiento como variables independientes (covariables). Se generaron y analizaron 1000 conjuntos de datos completos utilizando este enfoque de imputación múltiple, y los resultados se combinaron utilizando las reglas de Rubin para obtener estimaciones generales.
+
+Las Reglas de Rubin se refieren a un conjunto de condiciones que se deben cumplir para realizar inferencias causales utilizando métodos estadísticos. Establecen condiciones bajo las cuales es posible estimar de manera válida el efecto causal de una variable sobre otra en un estudio observacional garantizando que los resultados obtenidos sean confiables y válidos en términos de inferencia causal.
+
+En el estudio se tomó como variable de interés el cambio porcentual en el peso y se utilizaron distinto análisis estadísticos, entre ellos:
+
+## Análisis de Covarianza
+
+Se plantea una regresión lineal para el cambio porcentual del peso en función del factor tratamiento y el peso corporal basal (kg). El tratamiento se codifica en 3 niveles: Semaglutida 2.4 mg, Liraglutida 3.0 mg y placebo y se plantean las hipótesis
+
+$$H_0)\mu_{Semaglutida}\leq\mu_{Liraglutida}$$
+
+$$H_1)\mu_{Semaglutida}>\mu_{Liraglutida}$$
+
+ya que se desea probar si la pérdida de peso es mayor con la Semaglutida (y por ende, menor porcentaje).  
+
+## Análisis de sensibilidad
+
+Incluye imputaciones múltiples para evaluar la robustez de los resultados frente a diferentes supuestos sobre los datos faltantes y efectos del tratamiento tras interrupciones, se realizó excluyendo e incluyendo pacientes. Se realizaron análisis de punto de inflexión, análisis de salto a referencia preespecificados y análisis de regresión de efectos mixtos post hoc para evaluar la sensibilidad del criterio de valoración principal.
+
+## Regresión Logística
+
+Utilizada para analizar puntos finales binarios como la proporción de sujetos que alcanzan ciertos umbrales de reducción de peso.
+
+## Imputación múltiple
+
+Técnica utilizada para manejar datos faltantes, especialmente para la imputación de datos faltantes en la semana 68 basada en la información de sujetos recuperados y el último valor observado.
+
+## Modelos estadísticos específicos
+
+Para evaluar la estimación secundaria (la estimación del producto del ensayo), se utilizaron modelos estadísticos específicos, como el análisis Post Hoc del cambio en el pulso en la semana 68.
+
+El análisis Post Hoc consiste en encontrar patrones después de que se haya completado el estudio, y encontrar resultados que no eran el objetivo principal.
+
+Control de Multiplicidad
+Sólo se controlaron los criterios de valoración primarios y secundarios de confirmación para determinar la multiplicidad.
+
+Resultados principales
+Entre los adultos con sobrepeso u obesidad sin diabetes, la semaglutida subcutánea una vez a la semana en comparación con la liraglutida subcutánea una vez al día, sumada al asesoramiento sobre dieta y actividad física, resultó en una pérdida de peso significativamente mayor a las 68 semanas.
+
+# Validez del estudio
+
+La validez interna de este estudio es razonable debido a la implementación de técnicas que minimizan el sesgo y maximizan la precisión dentro del entorno controlado del estudio. Sin embargo, la validez externa del estudio puede ser limitada en términos de aceptabilidad fuera del contexto específico en el que se llevó a cabo el estudio, es decir, en Estados Unidos.
+
+La falta de validez externa se debe a las diferencias culturales y contextuales entre Estados Unidos y otros países, las cuales pueden influir en variables importantes como la dieta, la actividad física, las rutinas diarias y otros factores relacionados con el estilo de vida, que a su vez, pueden afectar a los resultados del estudio en diferentes poblaciones. Por lo tanto, los resultados y conclusiones de este estudio pueden no ser directamente extrapolables a otras regiones o países con contextos culturales y ambientales distintos. 
+
+\pagebreak
+
+# Determinación del tamaño de una nueva muestra
+
+Se supone que se realizará un ensayo con las mismas características al analizado previamente, al cual se le debe determinar el tamaño muestral. Para esta determinación se requiere de información previa que se toma del artículo: a la semana 68, el cambio medio porcentual estimado en el peso corporal para los pacientes tratados con Semaglutida fue de un -15.8% mientras que para la Liraglutida fue de -6.4%. Esta información será relevante para definir a la diferencia de cambios porcentuales medios en el peso de pacientes tratados con Semaglutida y con Liraglutida como
+
+$$\delta = \mu_{Semaglutida} - \mu_{Liraglutida} = -15.8 - (-6.4) = -9.4$$
+
+Además, tomando más información del artículo (potencia del 92%, el tamaño de muestra anterior y el nivel de significación utilizado) se puede obtener el desvío común de ambos grupos:
+
+$$n = 2(Z_\alpha+Z_\beta)^2\biggl(\frac{\sigma}{\delta}\biggl)^2\Rightarrow 126=2(1.64+1.40)^2\frac{\sigma^2}{-9.4^2}\Rightarrow 6.82=\frac{\sigma^2}{88.36}\Rightarrow \sqrt{602.35}=\sigma\Rightarrow 24.54=\sigma$$
+
+Ahora, se toma un nivel de significación del 5% $(\alpha=0.05)$ y se probarán distintos niveles de potencia para tener alternativas y que se determine una opción en compañía de un profesional en el caso. Así, se calcula el número de observaciones necesario para cada grupo como
+
+$$n = 2(Z_\alpha+Z_\beta)^2({\sigma}/{\delta})^2$$
+
+Finalmente, se calcula la tercera parte de cada tamaño obtenido para determinar el tamaño de los grupos placebo, siguiendo la línea lógica de muestreo utilizada en el artículo.
+
+| Grupo             | Potencia 80% | Potencia 85% | Potencia 90% |
+|-------------------|--------------|--------------|--------------|
+|Semaglutida        |$n=84$        |$n=98$        |$n=116$|
+|Placebo Semaglutida|$n=28$        |$n=33$        |$n=39$|
+|Liraglutida        |$n=84$        |$n=98$        |$n=116$|
+|Placebo Liraglutida|$n=28$        |$n=33$        |$n=39$|
+
+# Asignación aleatoria de tratamientos
+
+Se decide continuar el análisis con un tamaño de muestra total de como mínimo $N = 310$ que resultó del cálculo con una potencia del 90%. Para asignar los tratamientos a cada individuo de la muestra se continuó con la lógica del artículo, haciendo bloques (3:1:3:1) que se aleatorizan a 20 centros seleccionados de la zona geográfica, con la finalidad de obtener grupos tres veces más grandes en los tratamientos activos en comparación al placebo de cada medicación.
+
+En el anexo del informe, se puede obtener el código utilizado para dicho cálculo.
+
+# Análisis estadístico propuesto
+
+Se propone en primera instancia llevar a cabo un análisis exploratorio de los datos, incluyendo análisis de interacción para explorar potenciales influencias de las variables medidas en la muestra, para identificar patrones en el cambio de peso porcentual respuesta.
+
+Para determinar la eficiencia de la Semaglutida semanal por sobre la Liraglutida diaria, se propone un análisis de datos longitudinales, empleando un modelo mixto que permita estudiar el efecto del tratamiento, el tiempo y de la interacción tratamiento-tiempo, así como efectos aleatorios que determinen resultados diferentes para cada individuo particular. Este modelo es adecuado para manejar la estructura de correlación dentro de los sujetos a lo largo del tiempo.
+
+Finalmente, se evalúan los efectos del tratamiento sobre variables secundarias de interés como los niveles de glucosa en sangre y colesterol. Para estas variables, se aplicarán modelos lineales generalizados ajustando por las mismas covariables utilizadas en el análisis previo. Adicionalmente, se realizarán análisis de subgrupos para investigar si la respuesta al tratamiento difiere según características basales como el género y la edad.
+
+\pagebreak 
+
+# Anexo
+
+```{r eval =FALSE, message=FALSE, warning=FALSE, results='hide'}
+library(blockrand)
+library(writexl)
+
+N <- 16         
+a <- 4              
+tratam <- c("Semaglutida", "Placebo Semaglutida", "Liraglutida", "Placebo Liraglutida")
+levels <- rep(tratam, c(3, 1, 3, 1))
+
+aleatorizacion <- NULL
+for (i in 1:20) {
+  set.seed(562 + i)
+  centro <- blockrand(n = N, num.levels = a, levels = levels, block.sizes = 1, 
+                      id.prefix = paste0("Centro", i, "-"))
+  
+  aleatorizacion <- rbind(aleatorizacion, centro)
+}
+
+write_xlsx(aleatorizacion, path="aleatorizacion.xlsx")
+```
+
