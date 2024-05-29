@@ -1,0 +1,84 @@
+---
+title: "Trabajo Práctico III"
+author: "Bioestadística"
+fontsize: 10pt
+linestretch: "1.1"
+output: pdf_document
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+lang: es-ES
+---
+
+```{=tex}
+\begin{center}
+    \vspace*{0.5cm}
+    \Huge\textbf{Estantarización de tasas de mortalidad para melanoma de piel}
+    
+    \vspace{4cm}
+    \includegraphics[width=0.4\textwidth]{logo_fceye.png}
+  
+    \vspace{0cm}
+    \large{Facultad de Ciencias Económicas y Estadística, Universidad Nacional de Rosario}
+    
+    \vspace{0.5cm}
+    \large{Alfonsina Badin, Valentina Salvarezza, Camila Sebastiani}
+    
+    \vspace{0.5cm}
+    \large{Mayo de 2024}
+    
+\end{center}
+```
+\clearpage
+
+# Introducción
+
+El melanoma es un tipo de cáncer de piel que se origina en los melanocitos, las células encargadas de producir melanina, el pigmento que da color a la piel. A diferencia de otros tipos de cáncer de piel, el melanoma es menos común pero significativamente más peligroso debido a su alta tendencia a diseminarse a otras partes del cuerpo si no se detecta y trata a tiempo.
+
+Los factores de riesgo para el desarrollo de melanoma incluyen la exposición a la radiación ultravioleta, ya sea por la luz solar o por fuentes artificiales como las camas de bronceado. Otros factores de riesgo importantes son el historial familiar de melanoma, el tipo de piel, la presencia de numerosos lunares, entre otros. La identificación temprana y el tratamiento adecuado son cruciales para mejorar el pronóstico y la supervivencia de los pacientes afectados por esta enfermedad.
+
+Con el objetivo de conocer la gravedad de la enfermedad en función de las muertes que ocasiona a nivel provincial, se propone construir tasas e índices que permitan dar una explicación detallada del problema. Para ello, se utiliza información sobre casos de muerte proporcionada por la Dirección de Estadísticas e Información de la Salud (DEIS) referente a la enfermedad con código C43: melanoma maligno de piel, según la Clasificación Internacional de Enfermedades, Décima Edición (CIE-10). Adicionalmente, se incorporaron datos sobre proyecciones demográficas del año 2019, tanto a nivel nacional como provincial, obtenidos del Instituto Nacional de Estadística y Censos (INDEC).
+
+# Procesamiento de la información
+
+Dado que la enfermedad en estudio puede aparecer tanto en hombres como en mujeres, se toma la población total proyectada para el año 2019 y la cantidad de casos en conjunto que informa la DEIS. Además, se toma la edad como variable de confusión ya que la composición etaria que tiene cada provincia es particular, tal como se puede observar en la Figura 1 (véase los códigos de cada provincia en el Cuadro 1).
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Distribución de los grupos etarios por cada provincia argentina",fig.height=2.9}
+library(readxl)
+library(dplyr)
+library(openxlsx)
+library(kableExtra)
+library(ggplot2)
+library(extrafont)
+
+poblaciones2 <- read_excel("Bases limpias/Poblaciones.xlsx")
+
+edades <- c("0-14","15-29","30-44","45-59","60-74","75 y más")
+
+# grafico edades x provincia
+
+poblaciones2$Edad <- factor(poblaciones2$GRUPEDAD, levels = rev(edades))
+
+poblaciones2 %>%
+  ggplot(aes(x = factor(PROVRES), y = POBLACION/1000000, fill = Edad)) +
+  geom_bar(stat = "identity", position = "stack", width = 0.9) +
+  scale_fill_manual(values = rev(c("#ffcdb2","#ffb4a2","#e5989b","#b5838d","#6d6875","#2b2d42"))) +
+  labs(x = "Provincia",
+       y = "Población (por millón)") +
+  theme_grey(base_family = "Times")  # Cambia "Times" por la fuente que uses en tu documento
+```
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+codigos <- read_excel("Bases limpias/Códigos de poblacion.xlsx")
+codigos <- codigos[,c(1,2)]
+colnames(codigos) <- c("Código","Provincia")
+
+knitr::kable(codigos,
+      align = "c",
+      caption = "Codigos por provincia") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+Para lograr consistencia entre las proyecciones demográficas y los datos proporcionados por la Dirección de Estadísticas e Información de la Salud, se compactaron los grupos de edad en las siguientes categorías: "0-14", "15-29", "30-44", "45-59", "60-74", y "75 y más". Esta agrupación se realizó también por la baja frecuencia de casos de muerte en cada grupo etario brindado por la DIES, lo cual permite una mejor interpretación y análisis de los datos.
+Además, se combina la información de hombres y mujeres en un solo grupo. 
+

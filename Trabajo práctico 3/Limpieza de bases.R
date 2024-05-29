@@ -5,8 +5,6 @@ library(openxlsx)
 # Grupo etario
 edades <- c("0-14","15-29","30-44","45-59","60-74","75 y más")
 
-
-
 # Poblaciones x provincia ------------------------------------------------------
 
 # acá tengo codigo de provincia y nombre de la hoja en el excel
@@ -102,6 +100,20 @@ defun2 <- defun %>%
 casos <- merge(poblaciones2, defun2, by = c("PROVRES","GRUPEDAD"), all.x = TRUE)
 for(i in 1:nrow(casos)) {if(is.na(casos$C43[i])) {casos$C43[i]=0}}
 
+# Tasas M.I --------------------------------------------------------------------
+
+# Limpio base
+tasas <- defun2 %>%
+  group_by(GRUPEDAD) %>% # agrupo por cada linea que tiene misma prov y
+  # mismo grupo de edad (saco division x sexo)
+  summarise(CASOS = sum(C43))   # guardo al suma de casos en una var C43
+
+pob_tipo2 <- merge(pob_tipo2,tasas,by = "GRUPEDAD", all.x=TRUE)
+pob_tipo2$CASOS <- ifelse(is.na(pob_tipo2$CASOS),0,pob_tipo2$CASOS)
+pob_tipo2$TASAS <- 100000*pob_tipo2$CASOS/pob_tipo2$POBLACION
+
 # guardo
 write.xlsx(casos,"Trabajo práctico 3/Bases limpias/Defunciones por provincia.xlsx")
 write.xlsx(pob_tipo2,"Trabajo práctico 3/Bases limpias/Población tipo.xlsx")
+write.xlsx(poblaciones2,"Trabajo práctico 3/Bases limpias/Poblaciones.xlsx")
+write.xlsx(provres,"Trabajo práctico 3/Bases limpias/Códigos de poblacion.xlsx")
