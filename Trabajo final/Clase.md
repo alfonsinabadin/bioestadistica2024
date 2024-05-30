@@ -49,5 +49,9 @@ A Belen le interesa relacionar:
 - indices generales ¿Se cumplen?   (podemos hacer metodo directo con la poblacion tipo de arg y ver si reamente es asi el indice en rosario).
 
 Leer:
-OEA CICAD !https://www.oas.org/ext/es/principal/oea/nuestra-estructura/entidades-y-organismos/comision-cicad/
-SEDRONAR !https://www.argentina.gob.ar/salud/sedronar 
+
+OEA CICAD https://www.oas.org/ext/es/principal/oea/nuestra-estructura/entidades-y-organismos/comision-cicad/
+
+OAD SEDRONAR https://www.argentina.gob.ar/salud/sedronar 
+
+Rosario se relacione super con narcotrafico ¿y la droga? ¿y el consumo?
