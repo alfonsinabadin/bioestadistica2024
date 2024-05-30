@@ -71,6 +71,8 @@ poblaciones2 %>%
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
 codigos <- read_excel("Bases limpias/Códigos de poblacion.xlsx")
 codigos <- codigos[,c(1,2)]
+codigos <- subset(codigos,codigos$CODIGO != 98)
+codigos <- subset(codigos,codigos$CODIGO != 99)
 colnames(codigos) <- c("Código","Provincia")
 
 knitr::kable(codigos,
