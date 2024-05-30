@@ -1,12 +1,12 @@
 ---
 title: "Trabajo Práctico III"
 author: "Bioestadística"
-fontsize: 10pt
-linestretch: "1.1"
+fontsize: 12pt  # Cambiando el tamaño de letra a 12pt
+linestretch: "1.5"  # Cambiando el interlineado a 1.5 (puedes ajustarlo según tus preferencias)
 output: pdf_document
 header-includes:
   - \usepackage{setspace}
-  - \doublespacing
+  - \onehalfspacing  # Cambiando a interlineado de 1.5
 lang: es-ES
 ---
 
@@ -16,7 +16,7 @@ lang: es-ES
     \Huge\textbf{Estantarización de tasas de mortalidad para melanoma de piel}
     
     \vspace{4cm}
-    \includegraphics[width=0.4\textwidth]{logo_fceye.png}
+    \includegraphics[width=0.2\textwidth]{logo_fceye.png}
   
     \vspace{0cm}
     \large{Facultad de Ciencias Económicas y Estadística, Universidad Nacional de Rosario}
@@ -39,9 +39,11 @@ Los factores de riesgo para el desarrollo de melanoma incluyen la exposición a 
 
 Con el objetivo de conocer la gravedad de la enfermedad en función de las muertes que ocasiona a nivel provincial, se propone construir tasas e índices que permitan dar una explicación detallada del problema. Para ello, se utiliza información sobre casos de muerte proporcionada por la Dirección de Estadísticas e Información de la Salud (DEIS) referente a la enfermedad con código C43: melanoma maligno de piel, según la Clasificación Internacional de Enfermedades, Décima Edición (CIE-10). Adicionalmente, se incorporaron datos sobre proyecciones demográficas del año 2019, tanto a nivel nacional como provincial, obtenidos del Instituto Nacional de Estadística y Censos (INDEC).
 
+\pagebreak
+
 # Procesamiento de la información
 
-Dado que la enfermedad en estudio puede aparecer tanto en hombres como en mujeres, se toma la población total proyectada para el año 2019 y la cantidad de casos en conjunto que informa la DEIS. Además, se toma la edad como variable de confusión ya que la composición etaria que tiene cada provincia es particular, tal como se puede observar en la Figura 1 (véase los códigos de cada provincia en el Cuadro 1).
+Dado que la enfermedad en estudio puede aparecer tanto en hombres como en mujeres, se toma la población total proyectada para el año 2019 y la cantidad de casos en conjunto que informa la DEIS, es decir sin diferenciar por sexo. Además, se toma la edad como variable de confusión ya que la composición etaria que tiene cada provincia es particular, tal como se puede observar en la Figura 1 (véase los códigos de cada provincia en el Cuadro 1).
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Distribución de los grupos etarios por cada provincia argentina",fig.height=2.9}
 library(readxl)
@@ -49,9 +51,11 @@ library(dplyr)
 library(openxlsx)
 library(kableExtra)
 library(ggplot2)
-library(extrafont)
+par(family = "serif")
 
 poblaciones2 <- read_excel("Bases limpias/Poblaciones.xlsx")
+poblaciones2 <- subset(poblaciones2,poblaciones2$PROVRES != 98)
+poblaciones2 <- subset(poblaciones2,poblaciones2$PROVRES != 99)
 
 edades <- c("0-14","15-29","30-44","45-59","60-74","75 y más")
 
@@ -65,7 +69,10 @@ poblaciones2 %>%
   scale_fill_manual(values = rev(c("#ffcdb2","#ffb4a2","#e5989b","#b5838d","#6d6875","#2b2d42"))) +
   labs(x = "Provincia",
        y = "Población (por millón)") +
-  theme_grey(base_family = "Times")  # Cambia "Times" por la fuente que uses en tu documento
+  theme_grey() +  # Cambia "Times" por la fuente que uses en tu documento
+  theme(
+    text = element_text(family = "serif")
+  )
 ```
 
 ```{r warning=FALSE, message=FALSE, echo=FALSE}
@@ -81,6 +88,100 @@ knitr::kable(codigos,
   kable_styling(latex_options = "HOLD_position")
 ```
 
-Para lograr consistencia entre las proyecciones demográficas y los datos proporcionados por la Dirección de Estadísticas e Información de la Salud, se compactaron los grupos de edad en las siguientes categorías: "0-14", "15-29", "30-44", "45-59", "60-74", y "75 y más". Esta agrupación se realizó también por la baja frecuencia de casos de muerte en cada grupo etario brindado por la DIES, lo cual permite una mejor interpretación y análisis de los datos.
-Además, se combina la información de hombres y mujeres en un solo grupo. 
+Además, para lograr consistencia entre las proyecciones demográficas y los datos proporcionados por la Dirección de Estadísticas e Información de la Salud, se compactaron los grupos de edad en las siguientes categorías: "0-14", "15-29", "30-44", "45-59", "60-74", y "75 y más". Esta agrupación se realizó también por la baja frecuencia de casos de muerte en algunos grupos etarios, lo cual permite una mejor interpretación y análisis de los datos.
 
+\pagebreak
+
+# Estandarización de Tasas
+
+Se realizó un estudio de estandarización de tasas de mortalidad para comparar diferentes poblaciones controlando el efecto de la edad, para así obtener comparaciones más precisas y equitativas. La estandarización ajusta estas tasas para evitar que las diferencias en la estructura etaria afecten las comparaciones. Se aplica tanto el método directo como el indirecto, utilizando la población de Argentina como población estándar (o población tipo) para eliminar el error al comparar la mortalidad entre provincias con tasas crudas. Comparar tasas crudas no es válido en este contexto debido a la variación en la distribución de edades entre provincias que se observó previamente. 
+
+El _método directo_ aplica las tasas específicas por cada estrato de edad de las poblaciones que se comparan a una población estándar dividida en los mismos estratos. Esto permite construir tasas ajustadas comparables gracias al empleo de una misma población tipo. En el método directo, se determinan cuántos casos de mortalidad por melanoma se esperarían en cada provincia si su población total (masculinos y femeninos) tuviera la misma distribución de edad que la población estándar.
+
+En el _método indirecto_, se parte del conocimiento del número total de casos de muerte por melanoma en cada grupo etario definido sin la distribución específica por provincia. Se calculan las tasas específicas de mortalidad por melanoma para Argentina en su conjunto, sumando los casos de muerte por cada grupo etario y dividiendo por la población total correspondiente. Con esta información, se estima el número esperado de muertes por melanoma en cada provincia, asumiendo que la población en estudio (hombres y mujeres) tiene las mismas tasas de incidencia específica por edad que Argentina. Este método se suele utilizar cuando el número de casos en cada grupo es muy pequeño. Además, obtiene la razón de mortalidad estandarizada (RME) que permite evaluar si la mortalidad observada en las provincias analizadas es mayor o menor que la mortalidad esperada si esas provincias tuvieran la misma estructura de edad que Argentina.  Este ajuste es crucial porque la estructura de edad puede influir significativamente en las tasas de mortalidad, y las comparaciones sin ajustar pueden ser engañosas.
+
+\pagebreak
+
+# Conclusiones
+
+En general, las tasas de mortalidad por melanoma son muy bajas en todas las provincias argentinas, con la mayoría de los valores por debajo de 18 muertes por cada 1.000.000 de habitantes. Esto puede deberse a que, aunque el melanoma es una enfermedad grave, su tasa de mortalidad no es alta cuando se asume una distribución de edad igual a la de la población argentina. Estos resultados sugieren que el melanoma, bajo las condiciones de análisis estandarizadas, no representa una causa recurrente de mortalidad en el país.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Resultados de las 10 tasas ajustadas más altas obtenidas por el método directo",fig.height=2.9}
+# grafico metodo directo
+
+metodo_directo <- read.delim2("metodo_directo.txt")
+
+codigos <- read_excel("Bases limpias/Códigos de poblacion.xlsx")[,1:2]
+colnames(codigos) <- c("Población","Provincia")
+
+metodo_directo <- merge(metodo_directo,codigos,by ="Población",all.x = TRUE)
+
+top10_md <- metodo_directo[order(-metodo_directo$Tasa.ajustada), ][1:10, ]
+top10_md[1,7] <- "CABA"
+
+ggplot(top10_md) +
+  geom_point(aes(x = Provincia, y = LI), color = "#6d6875") +
+  geom_point(aes(x = Provincia, y = LS), color = "#6d6875") +
+  geom_segment(aes(x = Provincia, xend = Provincia, y = LI, yend = LS), color = "#6d6875") +
+  geom_point(aes(x = Provincia, y = Tasa.ajustada), color = "#2b2d42", size = 3, shape = 15) +
+  labs(y = "Tasa ajustada e intervalos de confianza del 95%", 
+       x = "Provincia") +
+  coord_flip() +
+  theme_grey() +
+  theme(
+    text = element_text(family = "serif")
+  )
+```
+
+En la Figura 2 se pueden observar 10 provincias con mayores tasas ajustadas de muerte por melanoma de piel y sus respectivos intervalos de confianza. La provincia con la mayor tasa de mortalidad por melanoma es la Ciudad Autónoma de Buenos Aires (CABA). Se estima que, si su población total (tanto masculina como femenina) tuviera la misma estructura etaria que Argentina, se esperarían aproximadamente 18 muertes por melanoma por cada 1.000.000 de habitantes.
+
+Por otro lado, la provincia con la menor tasa de mortalidad es La Pampa. En esta provincia, se esperan aproximadamente 3 muertes por melanoma por cada 1.000.000 de habitantes, bajo la misma suposición de una estructura etaria igual a la de Argentina.
+Además, se destaca el amplio intervalo de confianza sujeto a la tasa ajustada de mortalidad para la provincia de Catamarca. Esto puede deberse al número relativamente bajo de casos registrados de cáncer de piel en dicha provincia, lo que hace que la estimación sea menos precisa en comparación al resto.  Esta incertidumbre implica que no se puede concluir con certeza si la mortalidad por melanoma es alta o baja.
+
+En la Figura 3 se puede apreciar que los valores de la Razón de Mortalidad Estandarizada (RME) para las 24 provincias varían considerablemente, desde 24 hasta 163, con una media de aproximadamente 91. Esto indica una amplia disparidad en la mortalidad por melanoma ajustada por edad entre las diferentes provincias.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Resultados del IME obtenidos por el método indirecto",fig.height=5.9}
+# grafico metodo indirecto
+
+metodo_indirecto <- read.delim2("metodo_indirecto.txt")
+metodo_indirecto <- merge(metodo_indirecto,codigos,by ="Población",all.x = TRUE)
+metodo_indirecto[1,8] <- "CABA"
+
+media_IME <- mean(metodo_indirecto$IME.)
+
+# Crear el gráfico con fondo en las etiquetas
+ggplot(metodo_indirecto, aes(x = IME., y = reorder(Provincia, IME.))) +
+  geom_segment(aes(x = media_IME, xend = IME., y = Provincia, yend = Provincia), color = "#6d6875",
+               linetype = "dashed") +
+  geom_vline(xintercept = media_IME, linetype = "dashed", color = "#6d6875") +
+  geom_label(aes(label = Provincia), hjust = 0, nudge_x = 1.5, size = 3, fill = "#2b2d42", 
+             color = "white", label.padding = unit(0.5, "lines")) +
+  geom_point(size = 2.5, color = "#2b2d42") +
+  scale_x_continuous(breaks = seq(40,180,15), limits = c(40,180)) +
+  scale_y_discrete("", breaks = "") +
+  theme_grey() +
+  labs(x = "Índice de mortalidad estandar", y = NULL) +
+  theme(
+    text = element_text(family = "serif")
+  )
+```
+
+# Anexo
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+metodo_directo <- read.delim2("metodo_directo.txt")
+
+knitr::kable(metodo_directo,
+      align = "c",
+      caption = "Resultados obtenidos por el método directo") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+metodo_indirecto <- read.delim2("metodo_indirecto.txt")
+
+knitr::kable(metodo_indirecto,
+      align = "c",
+      caption = "Resultados obtenidos por el método indirecto") %>%
+  kable_styling(latex_options = "HOLD_position")
+```
