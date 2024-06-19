@@ -1,5 +1,6 @@
 library(readxl)
 
+
 base <- read_excel("Trabajo práctico final/2024 ADMISIÓN_ANONIMIZADA.xlsx")[1:97,]
 
 fecha_psiq <- base$Fecha...6
