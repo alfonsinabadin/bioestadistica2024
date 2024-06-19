@@ -1,386 +1,355 @@
+# Cargar las bibliotecas necesarias
 library(shiny)
 library(shinyWidgets)
 library(readxl)
 library(writexl)
 library(DT)
+library(shinyvalidate)
+library(shinydashboard)
+library(geoAr)
 
-# Definir la ruta del archivo Excel
+# Definir la ruta del archivo Excel donde se guardarán los datos
 file_path <- "ADMISIÓN.xlsx"
 
-# Leer los datos del archivo Excel
+# Función para leer los datos del archivo Excel
 read_data <- function() {
-  read_excel(file_path)
+  if (file.exists(file_path)) {
+    read_excel(file_path)
+  } else {
+    data.frame(
+      Apellido_nombres = character(),
+      DNI = numeric(),
+      Entrevista_psicológica_fecha = character(),
+      Entrevista_psicológica_asistencia = character(),
+      Entrevista_psiquiátrica_fecha = character(),
+      Entrevista_psiquiátrica_asistencia = character(),
+      Entrevista_ts_fecha = character(),
+      Entrevista_ts_asistencia = character(),
+      Tratamiento = character(),
+      Contacto = character(),
+      Fecha_de_nacimiento = character(),
+      Edad = numeric(),
+      Nivel_educativo = character(),
+      Situacion_habitacional = character(),
+      Provincia = character(),
+      Localidad = character(),
+      Barrio = character(),
+      Redes_de_apoyo = character(),
+      Tiene_CUD = character(),
+      Trabajo = character(),
+      Ingresos_económicos = character(),
+      Situación_Judicial = character(),
+      Referencia_APS = character(),
+      Derivado_de = character(),
+      Policonsumo = character(),
+      Sustancia_actual = character(),
+      Edad_de_inicio = numeric(),
+      Sustancia_de_inicio = character(),
+      Tratamientos_previos = character(),
+      Observaciones = character(),
+      stringsAsFactors = FALSE
+    )
+  }
 }
 
-# Escribir los datos al archivo Excel
+provincias <- show_arg_codes()[2:25,5]
+
+localidades_por_provincia <- list(
+  "Buenos Aires" = c("La Plata", "Mar del Plata", "Bahía Blanca", "Tandil"),
+  "Ciudad Autónoma de Buenos Aires" = c("Palermo", "Recoleta", "Belgrano"),
+  "Catamarca" = c("San Fernando del Valle de Catamarca", "Valle Viejo", "Andalgalá"),
+  "Chaco" = c("Resistencia", "Sáenz Peña", "Villa Ángela"),
+  "Chubut" = c("Rawson", "Comodoro Rivadavia", "Trelew"),
+  "Córdoba" = c("Córdoba", "Villa María", "Río Cuarto"),
+  "Corrientes" = c("Corrientes", "Goya", "Paso de los Libres"),
+  "Entre Ríos" = c("Paraná", "Concordia", "Gualeguaychú"),
+  "Formosa" = c("Formosa", "Clorinda", "Pirané"),
+  "Jujuy" = c("San Salvador de Jujuy", "Palpalá", "Perico"),
+  "La Pampa" = c("Santa Rosa", "General Pico", "Toay"),
+  "La Rioja" = c("La Rioja", "Chilecito", "Aimogasta"),
+  "Mendoza" = c("Mendoza", "San Rafael", "San Martín"),
+  "Misiones" = c("Posadas", "Oberá", "Eldorado"),
+  "Neuquén" = c("Neuquén", "Plottier", "San Martín de los Andes"),
+  "Río Negro" = c("Viedma", "Bariloche", "Cipolletti"),
+  "Salta" = c("Salta", "Tartagal", "Orán"),
+  "San Juan" = c("San Juan", "Rawson", "Chimbas"),
+  "San Luis" = c("San Luis", "Villa Mercedes", "Merlo"),
+  "Santa Cruz" = c("Río Gallegos", "Caleta Olivia", "El Calafate"),
+  "Santa Fe" = c("Santa Fe", "Rosario", "Rafaela"),
+  "Santiago del Estero" = c("Santiago del Estero", "La Banda", "Termas de Río Hondo"),
+  "Tierra del Fuego" = c("Ushuaia", "Río Grande", "Tolhuin"),
+  "Tucumán" = c("San Miguel de Tucumán", "Tafí Viejo", "Concepción")
+)
+
+barrios <- if (file.exists(file_path)) {
+  unique(read_excel(file_path)$Barrio)
+} else {
+  character()
+}
+
+# Función para escribir los datos en el archivo Excel
 write_data <- function(data) {
-  write_xlsx(data, file_path)
+  temp_file <- tempfile(fileext = ".xlsx")
+  write_xlsx(data, temp_file)
+  file.copy(temp_file, file_path, overwrite = TRUE)
 }
 
-# Definir la interfaz de usuario
+# Definir la interfaz de usuario (UI) de la aplicación Shiny
 ui <- fluidPage(
-  navbarPage("Admisiones - Comunidad Padre Misericordioso",
-             tabPanel("Nuevo Registro",
-                      fluidRow(
-                        column(2, textInput("apellido", "Apellido")),
-                        column(2, textInput("nombres", "Nombres"))
-                      ),
-                      fluidRow(
-                        column(2, textInput("dni", "DNI")),
-                        column(2, textInput("contacto", "Contacto"))
-                      ),
-                      fluidRow(
-                        column(2, dateInput("fecha_nacimiento", "Fecha de Nacimiento", format = "dd/mm/yyyy")),
-                        column(2, textInput("edad", "Edad"))
-                      ),
-                      fluidRow(
-                        column(3, selectInput("nivel_educativo", "Nivel Educativo", selected = NULL ,choices = c(
-                          "Ningún nivel educativo", "Primario incompleto", "Primario completo",
-                          "Secundario incompleto", "Secundario Completo",
-                          "Nivel Superior incompleto", "Nivel superior completo", "Otro"
-                        ))),
-                        column(4, selectizeInput("situacion_habitacional", "Situación Habitacional", choices = c(
-                          "Casa/depto propio", "Casa/depto alquilado", "Casa/depto cedido",
-                          "Internado en efector de salud", "Refugio", "Situación de calle",
-                          "Pensión", "Institucionalizado", "En institución penal",
-                          "En institución de SM", "En institución terapéutica"), selected = NULL,
-                          options = list(create = TRUE,placeholder = 'Escriba la opción')))
-                      ),
-                      fluidRow(
-                        column(4, selectInput("redes_de_apoyo", "Redes de Apoyo", choices = c(
-                          "Ninguna", "Escasa", "Buena", "Escasa", "Nula", "Familia + Institucionales", 
-                          "Familia", "Sin vínculos actualmente", "Institucionales", 
-                          "Familia + Amistades"
-                        ))),
-                        column(4, selectInput("tiene_cud", "Tiene CUD", choices = c("Sí", "No"))),
-                        column(4, selectInput("trabajo", "Trabajo", choices = c(
-                          NA, "No tiene", "Estable", "Esporádico", "Secundaria incompleta"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, selectInput("ingresos_economicos", "Ingresos Económicos", choices = c(
-                          NA, "Sin ingresos", "PNC nacional", "Salario informal + subsidio", "Salario informal"
-                        ))),
-                        column(4, selectInput("situacion_judicial", "Situación Judicial", choices = c(
-                          NA, "Con causa cerrada", "Sin causas Judiciales", "Desconoce"
-                        ))),
-                        column(4, selectInput("referencia_aps", "Referencia APS", choices = c(
-                          "Sólo clínica médica", "Referencia con seguimiento", NA, 
-                          "Referencia sin seguimiento", "No está referenciado"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, selectInput("equipo_referencia", "Equipo de Referencia", choices = c(
-                          "C.S. Juana Azurduy", "Centro de salud toba", NA, "Centro de vida: Las flores.", 
-                          "Centro de vida: Las flores", "carrasco", "Centro de vida La lata", 
-                          "Pquia Ma. Auxiliadora", "Buen Pastor CDD", "Centro de vida La Lata", 
-                          "COLONIA OLIVEROS", "Reconstruyendo vidas.", "Eva Perón / Madres territoriales.", 
-                          "Agudo Ávila", "Agudo avila", "Centro de salud Maradona", 
-                          "Centro de salud Villa flores /Roldan", "Serv. penotenciario unidad 6", 
-                          "Tto ambulatorio actualmente en el agudo.", "Preso en coronda.", "CRSM Agudo Avila", 
-                          "Toxicologa Martinez", "Refugio Buen Pastor", "Madres territoriales", 
-                          "Hospital Eva peron.", "Betina zubeldia", "Toxicologa Martinez.", 
-                          "Centro de Vida Las flores", "Area consumos problematicos Municipalidad de Villa constitucion", 
-                          "Centro de Vida La Lata", "Centro de Vida Del Valle .", 
-                          "Se envio Propuesta de tratamiento en Centro de Dia Zeballos Via mail el 29/11para autorizacion del juez", 
-                          "HEEP baigorria", "Hospital provincial", "TS Roxana Raimondi", 
-                          "Defensora Laura Blacich", "APRECOD", "CARRASCO - APRECOD", "APRECOD - CERPJ", 
-                          "Cristalería", "CENTRO DE SALUD EMAUS", "APRECOD/ AGUDO AVILA", 
-                          "MADRES TERRITORIALES", "SALUD MENTAL", "APRECOD - Hospital Provincial", 
-                          "CENTRO DE VIDA LUDUEÑA", "CDS CASIANO CASAS", "Buen pastor / CDV la lata", 
-                          "HECA / APRECOD", "APRECOD?? chequear", "CENTRO DE SALUD N° 16 \"Pablo 6to\"", 
-                          "Buen pastor, refugio y CDD", "CDV LAS FLORES", "SEDRONAR", 
-                          "APRECOD - CASA PUEBLO mov evita", "APRECOD - HOSPITAL CENTENARIO", 
-                          "Psiq. Colonia oliveros", "SAMCO SANDFORD", "REFUGIO BUEN PASTOR", 
-                          "CENTRO DE VIDA LA LATA", "HECCA", "Clínica \"Es por acá\"", "CDV TIO ROLO", 
-                          "HECA", "CDV La Lata", "Hospital Casilda", "APRECOD / AGUDO", 
-                          "CENTRO DE VIDA \"LAS FLORES\"", "APRECOD - Madres Territoriales", 
-                          "PSICÓLOGO MAXIMILIANO BLANCHE", "-", "APRECOD / A. AVILA", "CAI APRECOD", 
-                          "(crista)", "CENTENARIO", "CPM hogar baigorria (eze)", "HEEP - APRECOD", 
-                          "APRECOd", "Clinica ALEM", "ex paciente CDD. dejo hace 4m, se define hacer 1 entrevista sola", 
-                          "Agudo Avila", "(ver observaciones)", "Oficio Judicial", 
-                          "no sabe si de APRECOD (ver)", "colonia oliveros", "casa Bolten Roldan", 
-                          "centro de vida la lata (prioridad)", "refugio buen pastor", "aprecod", 
-                          "clinica alem - la posta - aprecod", "buen pastor", "policlinico san martin", 
-                          "HEEP equipo matricial", "CERPJ", "aprecod (fue dsp)", "manos a la obra villa constitucion", 
-                          "Aprecod (fue dsp)", "CDV la lata", "padre fabian", "cdv la lata", 
-                          "APRECOD - Hogar de cristo", "colonia oliveros - hospital provincial", 
-                          "fue a APRECOD", "ex paciente", "APRECOD - Samco Ibarlucea", "DEFENSORIA", 
-                          "Iglesia Yapeyú Casilda", "Colonia Oliveros", "CAI - APRECOD (SAN JORGE)", 
-                          "APRECOD - ALEM", "CAPS Juana Azurduy", "Grupo abrazando la vida VGG", 
-                          "CDV San Martin Sur", "Hospital villa constitucion", "Espontáneo", 
-                          "U. P 16 perez", "aprecod (ellos dicen que fueron, no hay registro de eso)", 
-                          "CDV Ludueña", "APRECOD - HECA", "(dice que fue a aprecod)", 
-                          "APRECOD - GAMEN", "hogar padre juan, zona norte", "CS San Martin A", 
-                          "La posta - APRECOD", "APRECOD- AGUDO AVILA", "APRECOD/MADRES TERITORIALES", 
-                          "SEDRONAR / HOGARES DE CRISTO", "APRECOD - Municipalidad de Funes"
-                        ))),
-                        column(4, selectInput("consumo_actual", "Consumo Actual", choices = c(
-                          NA, "Alcohol", "Policonsumo", "Cocaína", "Marihuana", "Crack", 
-                          "Cocaína y alcohol", "Crack y marihuana", "Psicofármacos", "Crack y alcohol", 
-                          "Cocaína y psicofármacos", "Cocaína y marihuana", "nafta aspirada", 
-                          "Marihuana y alcohol", "Otras"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, textInput("edad_inicio", "Edad de Inicio")),
-                        column(4, selectInput("sustancia_inicio", "Sustancia de Inicio", choices = c(
-                          NA, "Cocaína", "Pegamento", "Marihuana", "Alcohol", "Psicofármacos", "Otras"
-                        ))),
-                        column(4, selectInput("tratamientos_previos", "Tratamientos Previos", choices = c(
-                          NA, "entre 1 y 2", "No", "más de 3"
-                        )))
-                      ),
-                      fluidRow(
-                        column(12, textAreaInput("observaciones", "Observaciones", rows = 3))
-                      ),
-                      actionButton("submit", "Registrar")
-             ),
-             tabPanel("Modificación de Registro",
-                      fluidRow(
-                        column(4, textInput("dni_modificar", "DNI del Registro")),
-                        column(4, actionButton("buscar", "Buscar"))
-                      ),
-                      fluidRow(
-                        column(6, textInput("apellido_modificar", "Apellido")),
-                        column(6, textInput("nombres_modificar", "Nombres"))
-                      ),
-                      fluidRow(
-                        column(4, textInput("dni_modificar_val", "DNI")),
-                        column(4, dateInput("fecha_nacimiento_modificar", "Fecha de Nacimiento", format = "dd/mm/yyyy")),
-                        column(4, textInput("edad_modificar", "Edad"))
-                      ),
-                      fluidRow(
-                        column(4, textInput("contacto_modificar", "Contacto")),
-                        column(4, selectInput("nivel_educativo_modificar", "Nivel Educativo", choices = c(
-                          "Primaria incompleta", "Secundaria incompleta", "Nivel Superior incompleto", 
-                          "Secundaria en curso", NA, "Secundaria completa", "Primaria completa", 
-                          "Primaria en curso", "Ningún nivel educativo", "Nivel superior completo", 
-                          "Nivel superior incompleto", "Nivel superior en curso"
-                        ))),
-                        column(4, selectizeInput("situacion_habitacional_modificar", "Situación Habitacional", choices = c(
-                          "Internado en efector de salud", "Casa/depto", NA, "Refugio", "Situación de calle", 
-                          "Pensión", "Institucionalizado", "En inst. penal", "En inst. de SM", 
-                          "Casa/depto propio", "Casa/depto alquilado", "Casa/depto cedido", 
-                          "En inst. terapéutica"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, selectInput("redes_de_apoyo_modificar", "Redes de Apoyo", choices = c(
-                          NA, "Buena", "Escasa", "Nula", "Familia + Institucionales", 
-                          "Familia", "Sin vínculos actualmente", "Institucionales", 
-                          "Familia + Amistades"
-                        ))),
-                        column(4, selectInput("tiene_cud_modificar", "Tiene CUD", choices = c("Sí", "No"))),
-                        column(4, selectInput("trabajo_modificar", "Trabajo", choices = c(
-                          NA, "No tiene", "Estable", "Esporádico", "Secundaria incompleta"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, selectInput("ingresos_economicos_modificar", "Ingresos Económicos", choices = c(
-                          NA, "Sin ingresos", "PNC nacional", "Salario informal + subsidio", "Salario informal"
-                        ))),
-                        column(4, selectInput("situacion_judicial_modificar", "Situación Judicial", choices = c(
-                          NA, "Con causa cerrada", "Sin causas Judiciales", "Desconoce"
-                        ))),
-                        column(4, selectInput("referencia_aps_modificar", "Referencia APS", choices = c(
-                          "Sólo clínica médica", "Referencia con seguimiento", NA, 
-                          "Referencia sin seguimiento", "No está referenciado"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, selectInput("equipo_referencia_modificar", "Equipo de Referencia", choices = c(
-                          "C.S. Juana Azurduy", "Centro de salud toba", NA, "Centro de vida: Las flores.", 
-                          "Centro de vida: Las flores", "carrasco", "Centro de vida La lata", 
-                          "Pquia Ma. Auxiliadora", "Buen Pastor CDD", "Centro de vida La Lata", 
-                          "COLONIA OLIVEROS", "Reconstruyendo vidas.", "Eva Perón / Madres territoriales.", 
-                          "Agudo Ávila", "Agudo avila", "Centro de salud Maradona", 
-                          "Centro de salud Villa flores /Roldan", "Serv. penotenciario unidad 6", 
-                          "Tto ambulatorio actualmente en el agudo.", "Preso en coronda.", "CRSM Agudo Avila", 
-                          "Toxicologa Martinez", "Refugio Buen Pastor", "Madres territoriales", 
-                          "Hospital Eva peron.", "Betina zubeldia", "Toxicologa Martinez.", 
-                          "Centro de Vida Las flores", "Area consumos problematicos Municipalidad de Villa constitucion", 
-                          "Centro de Vida La Lata", "Centro de Vida Del Valle .", 
-                          "Se envio Propuesta de tratamiento en Centro de Dia Zeballos Via mail el 29/11para autorizacion del juez", 
-                          "HEEP baigorria", "Hospital provincial", "TS Roxana Raimondi", 
-                          "Defensora Laura Blacich", "APRECOD", "CARRASCO - APRECOD", "APRECOD - CERPJ", 
-                          "Cristalería", "CENTRO DE SALUD EMAUS", "APRECOD/ AGUDO AVILA", 
-                          "MADRES TERRITORIALES", "SALUD MENTAL", "APRECOD - Hospital Provincial", 
-                          "CENTRO DE VIDA LUDUEÑA", "CDS CASIANO CASAS", "Buen pastor / CDV la lata", 
-                          "HECA / APRECOD", "APRECOD?? chequear", "CENTRO DE SALUD N° 16 \"Pablo 6to\"", 
-                          "Buen pastor, refugio y CDD", "CDV LAS FLORES", "SEDRONAR", 
-                          "APRECOD - CASA PUEBLO mov evita", "APRECOD - HOSPITAL CENTENARIO", 
-                          "Psiq. Colonia oliveros", "SAMCO SANDFORD", "REFUGIO BUEN PASTOR", 
-                          "CENTRO DE VIDA LA LATA", "HECCA", "Clínica \"Es por acá\"", "CDV TIO ROLO", 
-                          "HECA", "CDV La Lata", "Hospital Casilda", "APRECOD / AGUDO", 
-                          "CENTRO DE VIDA \"LAS FLORES\"", "APRECOD - Madres Territoriales", 
-                          "PSICÓLOGO MAXIMILIANO BLANCHE", "-", "APRECOD / A. AVILA", "CAI APRECOD", 
-                          "(crista)", "CENTENARIO", "CPM hogar baigorria (eze)", "HEEP - APRECOD", 
-                          "APRECOd", "Clinica ALEM", "ex paciente CDD. dejo hace 4m, se define hacer 1 entrevista sola", 
-                          "Agudo Avila", "(ver observaciones)", "Oficio Judicial", 
-                          "no sabe si de APRECOD (ver)", "colonia oliveros", "casa Bolten Roldan", 
-                          "centro de vida la lata (prioridad)", "refugio buen pastor", "aprecod", 
-                          "clinica alem - la posta - aprecod", "buen pastor", "policlinico san martin", 
-                          "HEEP equipo matricial", "CERPJ", "aprecod (fue dsp)", "manos a la obra villa constitucion", 
-                          "Aprecod (fue dsp)", "CDV la lata", "padre fabian", "cdv la lata", 
-                          "APRECOD - Hogar de cristo", "colonia oliveros - hospital provincial", 
-                          "fue a APRECOD", "ex paciente", "APRECOD - Samco Ibarlucea", "DEFENSORIA", 
-                          "Iglesia Yapeyú Casilda", "Colonia Oliveros", "CAI - APRECOD (SAN JORGE)", 
-                          "APRECOD - ALEM", "CAPS Juana Azurduy", "Grupo abrazando la vida VGG", 
-                          "CDV San Martin Sur", "Hospital villa constitucion", "Espontáneo", 
-                          "U. P 16 perez", "aprecod (ellos dicen que fueron, no hay registro de eso)", 
-                          "CDV Ludueña", "APRECOD - HECA", "(dice que fue a aprecod)", 
-                          "APRECOD - GAMEN", "hogar padre juan, zona norte", "CS San Martin A", 
-                          "La posta - APRECOD", "APRECOD- AGUDO AVILA", "APRECOD/MADRES TERITORIALES", 
-                          "SEDRONAR / HOGARES DE CRISTO", "APRECOD - Municipalidad de Funes"
-                        ))),
-                        column(4, selectInput("consumo_actual_modificar", "Consumo Actual", choices = c(
-                          NA, "Alcohol", "Policonsumo", "Cocaína", "Marihuana", "Crack", 
-                          "Cocaína y alcohol", "Crack y marihuana", "Psicofármacos", "Crack y alcohol", 
-                          "Cocaína y psicofármacos", "Cocaína y marihuana", "nafta aspirada", 
-                          "Marihuana y alcohol", "Otras"
-                        )))
-                      ),
-                      fluidRow(
-                        column(4, textInput("edad_inicio_modificar", "Edad de Inicio")),
-                        column(4, selectInput("sustancia_inicio_modificar", "Sustancia de Inicio", choices = c(
-                          NA, "Cocaína", "Pegamento", "Marihuana", "Alcohol", "Psicofármacos", "Otras"
-                        ))),
-                        column(4, selectInput("tratamientos_previos_modificar", "Tratamientos Previos", choices = c(
-                          NA, "entre 1 y 2", "No", "más de 3"
-                        )))
-                      ),
-                      fluidRow(
-                        column(12, textAreaInput("observaciones_modificar", "Observaciones", rows = 3))
-                      ),
-                      actionButton("modificar", "Modificar")
-             ),
-             tabPanel("Visualización de Datos",
-                      dataTableOutput("tabla")
-             )
+  dashboardPage(skin = "black",
+                dashboardHeader(title = tags$div(
+                  tags$img(src = "logo.png", height = "51px", style = "margin-right: 10px;"),
+                  "Admisiones - Comunidad Padre Misericordioso"
+                ), titleWidth = 550),
+                dashboardSidebar(disable = TRUE),
+                dashboardBody(
+                  tabsetPanel(
+                    # Pestaña "Nuevo registro" ------------------------------------------------------------------------------------------------------------------
+                    tabPanel("Nuevo registro",
+                             fluidRow(
+                               box(
+                                 title = "Identificación",
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 3,
+                                 fluidRow(
+                                   column(12, textInput("apellido_nombres", "Apellido, Nombres"),)
+                                 ),
+                                 fluidRow(
+                                   column(6, numericInput("dni", "DNI", value = NULL)),
+                                   column(6, dateInput("fecha_nacimiento", "Fecha de nacimiento", format = "dd/mm/yyyy", 
+                                                       value = ""))
+                                 ),
+                                 fluidRow(
+                                   column(12, numericInput("contacto", "Teléfono de contacto", value = NULL))
+                                 )
+                               ),
+                               box(
+                                 title = "Tratamiento actual",
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 9,
+                                 box(
+                                   title = "Entrevista psicológica",
+                                   status = "warning",
+                                   solidHeader = FALSE,
+                                   width = 4,
+                                   fluidRow(
+                                     column(6, dateInput("psico_fecha", "Fecha", value = "", format = "dd/mm/yyyy")),
+                                     column(6, selectInput("psico", "Estado",
+                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                   )
+                                 ),
+                                 box(
+                                   title = "Entrevista psiquiátrica",
+                                   status = "warning",
+                                   solidHeader = FALSE,
+                                   width = 4,
+                                   fluidRow(
+                                     column(6, dateInput("psiqui_fecha", "Fecha", value = "", format = "dd/mm/yyyy")),
+                                     column(6, selectInput("psiqui", "Estado",
+                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                   )
+                                 ),
+                                 box(
+                                   title = "Entrevista T.S.",
+                                   status = "warning",
+                                   solidHeader = FALSE,
+                                   width = 4,
+                                   fluidRow(
+                                     column(6, dateInput("ts_fecha", "Fecha", value = "", format = "dd/mm/yyyy")),
+                                     column(6, selectInput("ts", "Estado",
+                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                   )
+                                 ),
+                                 fluidRow(
+                                   column(1,""),
+                                   column(10, selectInput("tratamiento", "Tratamiento asignado", choices = c(
+                                     "Continúa en seguimiento", "Internación Cristalería", "Internación Baigorria",
+                                     "Internación Buen Pastor", "Internación B.P", "Centro de día Zeballos",
+                                     "Centro de día Buen Pastor", "Centro de día Baigorria", "Derivado",
+                                     "No finalizó el proceso", "Rechaza tratamiento"))),
+                                   column(1,""))
+                               ),
+                               box(
+                                 title = "Información personal",
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 6,
+                                 fluidRow(
+                                   column(4, selectInput("identidad_gen", "Identidad de género", choices = c(
+                                     "Mujer", "Varón", "Mujer Trans", "Varón Trans", "No binario", "Otro"
+                                   ))),
+                                   column(4, selectInput("nivel_educativo", "Nivel educativo", choices = c(
+                                     "Sin instrucción formal", "Inicial", "Primario incompleto (incluye educación especial)",
+                                     "Primario completo", "Secundario incompleto", "Secundario completo",
+                                     "Superior terciario o universitario incompleto", "Superior terciario o universitario completo",
+                                     "No sabe / No responde"))),
+                                   column(4, selectInput("tiene_cud", "Tiene CUD", choices = c("Sí", "No")))
+                                 ),
+                                 fluidRow(
+                                   column(3, selectizeInput("situacion_habitacional", "Situación Habitacional", choices = c(
+                                     "Casa/depto propio", "Casa/depto alquilado", "Casa/depto cedido", "Pensión", 
+                                     "Internado / Institucionalizado", "Refugio", "Situación de calle"), selected = NULL,
+                                     options = list(create = TRUE, placeholder = 'Escriba la opción'))),
+                                   column(3, selectInput("provincia", "Provincia", choices = provincias)),
+                                   column(3, uiOutput("localidad_ui")),
+                                   column(3, selectizeInput("barrio", "Barrio", choices = barrios,
+                                                            options = list(create = TRUE)))
+                                 ),
+                                 fluidRow(
+                                   column(3, selectInput("redes_de_apoyo", "Redes de Apoyo", choices = c(
+                                     "Ninguna", "Escasa", "Buena", "Familia/Amigos", "Institución", "Familia/Amigos e Institución"))),
+                                   column(3, selectInput("trabajo", "Trabajo", choices = c("No tiene", "Esporádico", "Estable"))),
+                                   column(3, selectInput("ingresos_economicos", "Ingresos Económicos", choices = c(
+                                     "Sin ingresos", "Pensión no Contributiva (PNC)", "Subsidio", "Salario informal","Salario informal + subsidio",  "Salario formal"))),
+                                   column(3, selectInput("situacion_judicial", "Situación Judicial", choices = c(
+                                     "Sin causas Judiciales", "Con causa cerrada", "Desconoce")))
+                                 )
+                               ),
+                               box(
+                                 title = "Consumo",
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 6,
+                                 fluidRow(
+                                   column(6, textInput("consumo",                                   "Consumo actual", placeholder = "Droga más prevalente")),
+                                   column(6, selectInput("policonsumo", "Policonsumo", choices = c("No", "Sí"))),
+                                   column(6, textInput("sustancia", "Sustancia de inicio", placeholder = "Completar con una sola droga")),
+                                   column(6, numericInput("edad_inicio", "Edad de inicio", value = NULL)),
+                                   column(4, selectInput("referencia_aps", "Referencia APS", choices = c(
+                                     "Sólo clínica médica", "Referencia con seguimiento", "Referencia sin seguimiento", "No está referenciado"))),
+                                   column(4, textInput("derivado_de", "Derivado de:")),
+                                   column(4, selectInput("trat_prev", "Tratamientos previos", choices = c("No", "Entre 1 y 2", "3 o más")))
+                                 )
+                               ),
+                               box(
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 10,
+                                 fluidRow(
+                                   column(12, textInput("obs", "Observaciones"))
+                                 )
+                               ),
+                               box(
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 2,
+                                 fluidRow(
+                                   column(12, actionButton("guardar", "Guardar Registro"))
+                                 ),
+                                 fluidRow(
+                                   column(12, " "),
+                                   column(12, downloadButton("download_data", "Descargar Base de Datos"))
+                                 )
+                               )
+                             )
+                    ),
+                    # Pestaña "Modificación de registros" ----------------------------------------------------------------------------------------------------------
+                    tabPanel("Modificación de registros",
+                             fluidRow(
+                               box(
+                                 title = "Modificación de registros",
+                                 status = "warning",
+                                 solidHeader = TRUE,
+                                 width = 12,
+                                 "Aquí puedes modificar los registros existentes."
+                               )
+                             )
+                    )
+                  )
+                )
   )
 )
 
-# Definir el servidor
+# Definir la lógica del servidor de la aplicación Shiny
 server <- function(input, output, session) {
   
-  # Leer los datos del archivo Excel
-  data <- reactiveVal(read_data())
+  # Validación del campo DNI (tiene que estar sí o sí)
+  iv <- InputValidator$new()
+  iv$add_rule("dni", sv_required(" "))
+  iv$enable()
   
-  # Registrar nuevo registro
-  observeEvent(input$submit, {
-    new_data <- data()
-    nuevo_registro <- data.frame(
-      Apellido_nombres = paste(input$apellido, input$nombres, sep = ", "),
-      DNI = input$dni,
-      Entrevista_psicológica_fecha = NA,
-      Entrevista_psicológica_asistencia = NA,
-      Entrevista_psiquiátrica_fecha = NA,
-      Entrevista_psiquiátrica_asistencia = NA,
-      Entrevista_ts_fecha = NA,
-      Entrevista_ts_asistencia = NA,
-      Tratamiento = NA,
-      Contacto = input$contacto,
-      Fecha_de_nacimiento = as.character(input$fecha_nacimiento),
-      Edad = as.character(input$edad),
-      Nivel_educativo = input$nivel_educativo,
-      Situacion_habitacional = input$situacion_habitacional,
-      Redes_de_apoyo = input$redes_de_apoyo,
-      Tiene_CUD = input$tiene_cud,
-      Trabajo = input$trabajo,
-      Ingresos_económicos = input$ingresos_economicos,
-      Situación_Judicial = input$situacion_judicial,
-      Referencia_APS = input$referencia_aps,
-      Equipo_referencia = input$equipo_referencia,
-      Consumo_actual = input$consumo_actual,
-      Edad_de_inicio = as.character(input$edad_inicio),
-      Sustancia_de_inicio = input$sustancia_inicio,
-      Tratamientos_previos = input$tratamientos_previos,
-      Observaciones = input$observaciones
+  # Crear el uiOutput para las localidades
+  output$localidad_ui <- renderUI({
+    selectInput("localidad", "Localidad", choices = NULL)
+  })
+  
+  # Actualizar las localidades en función de la provincia seleccionada
+  observeEvent(input$provincia, {
+    localidades <- localidades_por_provincia[[input$provincia]]
+    updateSelectInput(session, "localidad", choices = localidades)
+  })
+  
+  # Acción al presionar el botón "Guardar Registro"
+  observeEvent(input$guardar, {
+    # Leer los datos actuales
+    data <- read_data()
+    data$Edad <- as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(data$Fecha_de_nacimiento, format = "%d/%m/%Y"), "%Y"))
+    
+    # Crear un nuevo registro con los datos de entrada
+    new_entry <- data.frame(
+      Apellido_nombres = ifelse(is.null(input$apellido_nombres), NA, input$apellido_nombres),
+      DNI = ifelse(is.null(input$dni), NA, input$dni),
+      Entrevista_psicológica_fecha = as.character(ifelse(is.null(input$psico_fecha), NA, input$psico_fecha)),
+      Entrevista_psicológica_asistencia = ifelse(is.null(input$psico), NA, input$psico),
+      Entrevista_psiquiátrica_fecha = as.character(ifelse(is.null(input$psiqui_fecha), NA, input$psiqui_fecha)),
+      Entrevista_psiquiátrica_asistencia = ifelse(is.null(input$psiqui), NA, input$psiqui),
+      Entrevista_ts_fecha = as.character(ifelse(is.null(input$ts_fecha), NA, input$ts_fecha)),
+      Entrevista_ts_asistencia = ifelse(is.null(input$ts), NA, input$ts),
+      Tratamiento = ifelse(is.null(input$tratamiento), NA, input$tratamiento),
+      Contacto = ifelse(is.null(input$contacto), NA, input$contacto),
+      Fecha_de_nacimiento = as.character(ifelse(is.null(input$fecha_nacimiento), NA, input$fecha_nacimiento)),
+      Edad = ifelse(is.na(input$fecha_nacimiento), NA, as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(input$fecha_nacimiento, format = "%d/%m/%Y"), "%Y"))),
+      Nivel_educativo = ifelse(is.null(input$nivel_educativo), NA, input$nivel_educativo),
+      Situacion_habitacional = ifelse(is.null(input$situacion_habitacional), NA, input$situacion_habitacional),
+      Provincia = ifelse(is.null(input$provincia), NA, input$provincia),
+      Localidad = ifelse(is.null(input$localidad), NA, input$localidad),
+      Barrio = ifelse(is.null(input$barrio), NA, input$barrio),
+      Redes_de_apoyo = ifelse(is.null(input$redes_de_apoyo), NA, input$redes_de_apoyo),
+      Tiene_CUD = ifelse(is.null(input$tiene_cud), NA, input$tiene_cud),
+      Trabajo = ifelse(is.null(input$trabajo), NA, input$trabajo),
+      Ingresos_económicos = ifelse(is.null(input$ingresos_economicos), NA, input$ingresos_economicos),
+      Situación_Judicial = ifelse(is.null(input$situacion_judicial), NA, input$situacion_judicial),
+      Referencia_APS = ifelse(is.null(input$referencia_aps), NA, input$referencia_aps),
+      Derivado_de = ifelse(is.null(input$derivado_de), NA, input$derivado_de),
+      Policonsumo = ifelse(is.null(input$policonsumo), NA, input$policonsumo),
+      Sustancia_actual = ifelse(is.null(input$sustancia), NA, input$sustancia),
+      Edad_de_inicio = ifelse(is.na(input$edad_inicio), NA, input$edad_inicio),
+      Sustancia_de_inicio = ifelse(is.null(input$sustancia), NA, input$sustancia),
+      Tratamientos_previos = ifelse(is.null(input$trat_prev), NA, input$trat_prev),
+      Observaciones = ifelse(is.null(input$obs), NA, input$obs),
+      stringsAsFactors = FALSE
     )
-    new_data <- rbind(new_data, nuevo_registro)
-    write_data(new_data)
-    data(new_data)
-    showNotification("Registro añadido con éxito", type = "message")
+    
+    # Agregar el nuevo registro a los datos actuales
+    data <- rbind(data, new_entry)
+    
+    # Escribir los datos actualizados en el archivo Excel
+    write_data(data)
+    
+    # Mostrar un mensaje de confirmación
+    showModal(modalDialog(
+      title = "Registro Guardado",
+      "El registro ha sido guardado exitosamente.",
+      easyClose = TRUE,
+      footer = NULL
+    ))
   })
   
-  # Buscar registro para modificación
-  observeEvent(input$buscar, {
-    registro <- data()[data()$DNI == input$dni_modificar, ]
-    if(nrow(registro) > 0) {
-      updateTextInput(session, "apellido_modificar", value = sub(",.*", "", registro$Apellido_nombres))
-      updateTextInput(session, "nombres_modificar", value = sub(".*, ", "", registro$Apellido_nombres))
-      updateTextInput(session, "dni_modificar_val", value = registro$DNI)
-      updateDateInput(session, "fecha_nacimiento_modificar", value = as.Date(registro$Fecha_de_nacimiento, format = "%d/%m/%Y"))
-      updateTextInput(session, "edad_modificar", value = registro$Edad)
-      updateTextInput(session, "contacto_modificar", value = registro$Contacto)
-      updateSelectInput(session, "nivel_educativo_modificar", selected = registro$Nivel_educativo)
-      updateSelectizeInput(session, "situacion_habitacional_modificar", selected = registro$Situacion_habitacional)
-      updateSelectInput(session, "redes_de_apoyo_modificar", selected = registro$Redes_de_apoyo)
-      updateSelectInput(session, "tiene_cud_modificar", selected = registro$Tiene_CUD)
-      updateSelectInput(session, "trabajo_modificar", selected = registro$Trabajo)
-      updateSelectInput(session, "ingresos_economicos_modificar", selected = registro$Ingresos_economicos)
-      updateSelectInput(session, "situacion_judicial_modificar", selected = registro$Situación_Judicial)
-      updateSelectInput(session, "referencia_aps_modificar", selected = registro$Referencia_APS)
-      updateSelectInput(session, "equipo_referencia_modificar", selected = registro$Equipo_referencia)
-      updateSelectInput(session, "consumo_actual_modificar", selected = registro$Consumo_actual)
-      updateTextInput(session, "edad_inicio_modificar", value = registro$Edad_de_inicio)
-      updateSelectInput(session, "sustancia_inicio_modificar", selected = registro$Sustancia_de_inicio)
-      updateSelectInput(session, "tratamientos_previos_modificar", selected = registro$Tratamientos_previos)
-      updateTextAreaInput(session, "observaciones_modificar", value = registro$Observaciones)
-    } else {
-      showNotification("DNI no encontrado", type = "error")
+  # Acción para descargar la base de datos completa
+  output$download_data <- downloadHandler(
+    filename = function() {
+      paste("ADMISIÓN", Sys.Date(), ".xlsx", sep = "")
+    },
+    content = function(file) {
+      data <- read_data()
+      write_xlsx(data, file)
     }
-  })
-  
-  # Modificar registro existente
-  observeEvent(input$modificar, {
-    new_data <- data()
-    index <- which(new_data$DNI == input$dni_modificar_val)
-    if(length(index) > 0) {
-      new_data[index, ] <- list(
-        Apellido_nombres = paste(input$apellido_modificar, input$nombres_modificar, sep = ", "),
-        DNI = input$dni_modificar_val,
-        Entrevista_psicológica_fecha = NA,
-        Entrevista_psicológica_asistencia = NA,
-        Entrevista_psiquiátrica_fecha = NA,
-        Entrevista_psiquiátrica_asistencia = NA,
-        Entrevista_ts_fecha = NA,
-        Entrevista_ts_asistencia = NA,
-        Tratamiento = NA,
-        Contacto = input$contacto_modificar,
-        Fecha_de_nacimiento = as.character(input$fecha_nacimiento_modificar),
-        Edad = as.character(input$edad_modificar),
-        Nivel_educativo = input$nivel_educativo_modificar,
-        Situacion_habitacional = input$situacion_habitacional_modificar,
-        Redes_de_apoyo = input$redes_de_apoyo_modificar,
-        Tiene_CUD = input$tiene_cud_modificar,
-        Trabajo = input$trabajo_modificar,
-        Ingresos_economicos = input$ingresos_economicos_modificar,
-        Situación_Judicial = input$situacion_judicial_modificar,
-        Referencia_APS = input$referencia_aps_modificar,
-        Equipo_referencia = input$equipo_referencia_modificar,
-        Consumo_actual = input$consumo_actual_modificar,
-        Edad_de_inicio = as.character(input$edad_inicio_modificar),
-        Sustancia_de_inicio = input$sustancia_inicio_modificar,
-        Tratamientos_previos = input$tratamientos_previos_modificar,
-        Observaciones = input$observaciones_modificar
-      )
-      write_data(new_data)
-      data(new_data)
-      showNotification("Registro modificado con éxito", type = "message")
-    } else {
-      showNotification("ID no encontrado", type = "error")
-    }
-  })
-  
-  # Mostrar tabla de datos
-  output$tabla <- renderDataTable({
-    datatable(data())
-  })
+  )
 }
 
-# Ejecutar la aplicación
+# Ejecutar la aplicación Shiny
 shinyApp(ui, server)
 
-
+                                                       

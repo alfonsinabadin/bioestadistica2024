@@ -1,5 +1,6 @@
 library(readxl)
-
+library(writexl)
+library(tidyverse)
 
 base <- read_excel("Trabajo práctico final/2024 ADMISIÓN_ANONIMIZADA.xlsx")[1:97,]
 
@@ -47,7 +48,7 @@ adm24 <- data.frame(
   Edad_de_inicio = base$`Edad de inicio`,
   Sustancia_de_inicio = base$`Sustancia de inicio`,
   Tratamientos_previos = base$`Tratamientos previos`,
-  Observaciones = base$OBSERVACIONES
+  Observaciones = base$OBSERVACIONES,
 )
 
 write_xlsx(adm24,"Trabajo práctico final/Limpieza de bases/2024 ADMISIÓN_LIMPIA.xlsx")
@@ -57,5 +58,39 @@ base <- rbind(
   read_excel("Trabajo práctico final/Limpieza de bases/2023 ADMISIÓN_LIMPIA.xlsx"),
   read_excel("Trabajo práctico final/Limpieza de bases/2024 ADMISIÓN_LIMPIA.xlsx")
   )
+
+Policonsumo <- ifelse(base$Consumo_actual == "Policonsumo" |
+                             base$Consumo_actual == "Cocaína y alcohol" |
+                             base$Consumo_actual == "Crack y marihuana" |
+                             base$Consumo_actual == "Crack y alcohol" |
+                             base$Consumo_actual == "Cocaína y psicofármacos" |
+                             base$Consumo_actual == "Cocaína y marihuana" |
+                             base$Consumo_actual == "Marihuana y alcohol",
+                           "Si", "No"
+                             )
+
+Sustancia_actual <- ifelse(base$Consumo_actual == "Policonsumo", "Policonsumo",
+                                ifelse(grepl("y",base$Consumo_actual), sapply(strsplit(base$Consumo_actual, "y"), `[`, 1),
+                                       base$Consumo_actual))
+
+base <- base %>% 
+  add_column(Policonsumo, .before = "Consumo_actual") %>% 
+  add_column(Sustancia_actual, .before = "Consumo_actual") %>% 
+  select(!(Consumo_actual)) %>% 
+  select(!(Edad)) %>%
+  add_column(Provincia = NA, .after = "Situacion_habitacional") %>%
+  add_column(Localidad = NA, .after = "Provincia") %>%
+  add_column(Barrio = NA, .after = "Localidad") %>%
+  add_column(Edad = year(format(Sys.Date(), format = "%d/%m/%Y")) - year(base$Fecha_de_nacimiento), .after = "Fecha_de_nacimiento")
+
+base$Edad_de_inicio <-ifelse(base$Edad_de_inicio == "Antes de los 12", "Niños/as de hasta 12 años", 
+                             ifelse(base$Edad_de_inicio == "Antes de los 11", "Niños/as de hasta 12 años",
+                                    ifelse(base$Edad_de_inicio == "entre 13 y 17", "Adolescentes entre 13 a 17 años",
+                                           ifelse(base$Edad_de_inicio == "entre 15/16/17", "Adolescentes entre 13 a 17 años",
+                                                  ifelse(base$Edad_de_inicio == "entre 12/13/14", "Adolescentes entre 13 a 17 años",
+                                                         ifelse(base$Edad_de_inicio == "de 18 en adelante", "Jóvenes de 18 a 29 años", NA)
+                                                  )))))
+
+colnames(base)[24] <- "Derivado_de"
 
 write_xlsx(base,"Trabajo práctico final/Limpieza de bases/ADMISIÓN.xlsx")
