@@ -7,6 +7,7 @@ library(DT)
 library(shinyvalidate)
 library(shinydashboard)
 library(geoAr)
+library(dplyr)
 
 # Definir la ruta del archivo Excel donde se guardarán los datos
 file_path <- "ADMISIÓN.xlsx"
@@ -53,39 +54,9 @@ read_data <- function() {
 }
 
 provincias <- show_arg_codes()[2:25,5]
+provincias[[1]][1] <- "CABA"
 
-localidades_por_provincia <- list(
-  "Buenos Aires" = c("La Plata", "Mar del Plata", "Bahía Blanca", "Tandil"),
-  "Ciudad Autónoma de Buenos Aires" = c("Palermo", "Recoleta", "Belgrano"),
-  "Catamarca" = c("San Fernando del Valle de Catamarca", "Valle Viejo", "Andalgalá"),
-  "Chaco" = c("Resistencia", "Sáenz Peña", "Villa Ángela"),
-  "Chubut" = c("Rawson", "Comodoro Rivadavia", "Trelew"),
-  "Córdoba" = c("Córdoba", "Villa María", "Río Cuarto"),
-  "Corrientes" = c("Corrientes", "Goya", "Paso de los Libres"),
-  "Entre Ríos" = c("Paraná", "Concordia", "Gualeguaychú"),
-  "Formosa" = c("Formosa", "Clorinda", "Pirané"),
-  "Jujuy" = c("San Salvador de Jujuy", "Palpalá", "Perico"),
-  "La Pampa" = c("Santa Rosa", "General Pico", "Toay"),
-  "La Rioja" = c("La Rioja", "Chilecito", "Aimogasta"),
-  "Mendoza" = c("Mendoza", "San Rafael", "San Martín"),
-  "Misiones" = c("Posadas", "Oberá", "Eldorado"),
-  "Neuquén" = c("Neuquén", "Plottier", "San Martín de los Andes"),
-  "Río Negro" = c("Viedma", "Bariloche", "Cipolletti"),
-  "Salta" = c("Salta", "Tartagal", "Orán"),
-  "San Juan" = c("San Juan", "Rawson", "Chimbas"),
-  "San Luis" = c("San Luis", "Villa Mercedes", "Merlo"),
-  "Santa Cruz" = c("Río Gallegos", "Caleta Olivia", "El Calafate"),
-  "Santa Fe" = c("Santa Fe", "Rosario", "Rafaela"),
-  "Santiago del Estero" = c("Santiago del Estero", "La Banda", "Termas de Río Hondo"),
-  "Tierra del Fuego" = c("Ushuaia", "Río Grande", "Tolhuin"),
-  "Tucumán" = c("San Miguel de Tucumán", "Tafí Viejo", "Concepción")
-)
-
-barrios <- if (file.exists(file_path)) {
-  unique(read_excel(file_path)$Barrio)
-} else {
-  character()
-}
+localidades_por_provincia <- readRDS("localidades.rds")
 
 # Función para escribir los datos en el archivo Excel
 write_data <- function(data) {
@@ -194,8 +165,7 @@ ui <- fluidPage(
                                      options = list(create = TRUE, placeholder = 'Escriba la opción'))),
                                    column(3, selectInput("provincia", "Provincia", choices = provincias)),
                                    column(3, uiOutput("localidad_ui")),
-                                   column(3, selectizeInput("barrio", "Barrio", choices = barrios,
-                                                            options = list(create = TRUE)))
+                                   column(3, textInput("barrio", "Barrio"))
                                  ),
                                  fluidRow(
                                    column(3, selectInput("redes_de_apoyo", "Redes de Apoyo", choices = c(
@@ -249,11 +219,15 @@ ui <- fluidPage(
                     tabPanel("Modificación de registros",
                              fluidRow(
                                box(
-                                 title = "Modificación de registros",
+                                 title = "Buscar y Modificar Registro",
                                  status = "warning",
                                  solidHeader = TRUE,
                                  width = 12,
-                                 "Aquí puedes modificar los registros existentes."
+                                 fluidRow(
+                                   column(4, textInput("buscar_dni", "Buscar por DNI")),
+                                   column(2, actionButton("buscar", "Buscar"))
+                                 ),
+                                 uiOutput("resultados_busqueda")
                                )
                              )
                     )
@@ -264,6 +238,150 @@ ui <- fluidPage(
 
 # Definir la lógica del servidor de la aplicación Shiny
 server <- function(input, output, session) {
+  
+  # Acción al presionar el botón "Buscar"
+  observeEvent(input$buscar, {
+    data <- read_data()
+    registro <- data[data$DNI == input$buscar_dni, ]
+    
+    if (nrow(registro) > 0) {
+      updateTextInput(session, "apellido_nombres", value = registro$Apellido_nombres[1])
+      updateNumericInput(session, "dni", value = registro$DNI[1])
+      updateDateInput(session, "fecha_nacimiento", value = as.Date(registro$Fecha_de_nacimiento[1], format = "%Y-%m-%d"))
+      updateNumericInput(session, "contacto", value = registro$Contacto[1])
+      updateDateInput(session, "psico_fecha", value = as.Date(registro$Entrevista_psicológica_fecha[1], format = "%Y-%m-%d"))
+      updateSelectInput(session, "psico", selected = registro$Entrevista_psicológica_asistencia[1])
+      updateDateInput(session, "psiqui_fecha", value = as.Date(registro$Entrevista_psiquiátrica_fecha[1], format = "%Y-%m-%d"))
+      updateSelectInput(session, "psiqui", selected = registro$Entrevista_psiquiátrica_asistencia[1])
+      updateDateInput(session, "ts_fecha", value = as.Date(registro$Entrevista_ts_fecha[1], format = "%Y-%m-%d"))
+      updateSelectInput(session, "ts", selected = registro$Entrevista_ts_asistencia[1])
+      updateSelectInput(session, "tratamiento", selected = registro$Tratamiento[1])
+      updateSelectInput(session, "nivel_educativo", selected = registro$Nivel_educativo[1])
+      updateSelectInput(session, "situacion_habitacional", selected = registro$Situacion_habitacional[1])
+      updateSelectInput(session, "provincia", selected = registro$Provincia[1])
+      updateSelectInput(session, "localidad", selected = registro$Localidad[1])
+      updateTextInput(session, "barrio", value = registro$Barrio[1])
+      updateSelectInput(session, "redes_de_apoyo", selected = registro$Redes_de_apoyo[1])
+      updateSelectInput(session, "tiene_cud", selected = registro$Tiene_CUD[1])
+      updateSelectInput(session, "trabajo", selected = registro$Trabajo[1])
+      updateSelectInput(session, "ingresos_economicos", selected = registro$Ingresos_económicos[1])
+      updateSelectInput(session, "situacion_judicial", selected = registro$Situación_Judicial[1])
+      updateSelectInput(session, "referencia_aps", selected = registro$Referencia_APS[1])
+      updateTextInput(session, "derivado_de", value = registro$Derivado_de[1])
+      updateSelectInput(session, "policonsumo", selected = registro$Policonsumo[1])
+      updateTextInput(session, "sustancia", value = registro$Sustancia_actual[1])
+      updateNumericInput(session, "edad_inicio", value = registro$Edad_de_inicio[1])
+      updateTextInput(session, "sustancia", value = registro$Sustancia_de_inicio[1])
+      updateSelectInput(session, "trat_prev", selected = registro$Tratamientos_previos[1])
+      updateTextInput(session, "obs", value = registro$Observaciones[1])
+    } else {
+      showModal(modalDialog(
+        title = "Registro no encontrado",
+        "No se encontró ningún registro con el DNI proporcionado.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+    }
+  })
+  
+  # Modificar el botón de guardar para actualizar registros existentes
+  observeEvent(input$guardar, {
+    data <- read_data()
+    registro <- data[data$DNI == input$dni, ]
+    
+    if (nrow(registro) > 0) {
+      data[data$DNI == input$dni, ] <- data.frame(
+        Apellido_nombres = ifelse(is.null(input$apellido_nombres), NA, input$apellido_nombres),
+        DNI = ifelse(is.null(input$dni), NA, input$dni),
+        Entrevista_psicológica_fecha = as.character(ifelse(is.null(input$psico_fecha), NA, input$psico_fecha)),
+        Entrevista_psicológica_asistencia = ifelse(is.null(input$psico), NA, input$psico),
+        Entrevista_psiquiátrica_fecha = as.character(ifelse(is.null(input$psiqui_fecha), NA, input$psiqui_fecha)),
+        Entrevista_psiquiátrica_asistencia = ifelse(is.null(input$psiqui), NA, input$psiqui),
+        Entrevista_ts_fecha = as.character(ifelse(is.null(input$ts_fecha), NA, input$ts_fecha)),
+        Entrevista_ts_asistencia = ifelse(is.null(input$ts), NA, input$ts),
+        Tratamiento = ifelse(is.null(input$tratamiento), NA, input$tratamiento),
+        Contacto = ifelse(is.null(input$contacto), NA, input$contacto),
+        Fecha_de_nacimiento = as.character(ifelse(is.null(input$fecha_nacimiento), NA, input$fecha_nacimiento)),
+        Edad = ifelse(is.na(input$fecha_nacimiento), NA, as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(input$fecha_nacimiento, format = "%d/%m/%Y"), "%Y"))),
+        Nivel_educativo = ifelse(is.null(input$nivel_educativo), NA, input$nivel_educativo),
+        Situacion_habitacional = ifelse(is.null(input$situacion_habitacional), NA, input$situacion_habitacional),
+        Provincia = ifelse(is.null(input$provincia), NA, input$provincia),
+        Localidad = ifelse(is.null(input$localidad), NA, input$localidad),
+        Barrio = ifelse(is.null(input$barrio), NA, input$barrio),
+        Redes_de_apoyo = ifelse(is.null(input$redes_de_apoyo), NA, input$redes_de_apoyo),
+        Tiene_CUD = ifelse(is.null(input$tiene_cud), NA, input$tiene_cud),
+        Trabajo = ifelse(is.null(input$trabajo), NA, input$trabajo),
+        Ingresos_económicos = ifelse(is.null(input$ingresos_economicos), NA, input$ingresos_economicos),
+        Situación_Judicial = ifelse(is.null(input$situacion_judicial), NA, input$situacion_judicial),
+        Referencia_APS = ifelse(is.null(input$referencia_aps), NA, input$referencia_aps),
+        Derivado_de = ifelse(is.null(input$derivado_de), NA, input$derivado_de),
+        Policonsumo = ifelse(is.null(input$policonsumo), NA, input$policonsumo),
+        Sustancia_actual = ifelse(is.null(input$sustancia), NA, input$sustancia),
+        Edad_de_inicio = ifelse(is.na(input$edad_inicio), NA, input$edad_inicio),
+        Sustancia_de_inicio = ifelse(is.null(input$sustancia), NA, input$sustancia),
+        Tratamientos_previos = ifelse(is.null(input$trat_prev), NA, input$trat_prev),
+        Observaciones = ifelse(is.null(input$obs), NA, input$obs),
+        stringsAsFactors = FALSE
+      )
+    } else {
+      new_entry <- data.frame(
+        Apellido_nombres = ifelse(is.null(input$apellido_nombres), NA, input$apellido_nombres),
+        DNI = ifelse(is.null(input$dni), NA, input$dni),
+        Entrevista_psicológica_fecha = as.character(ifelse(is.null(input$psico_fecha), NA, input$psico_fecha)),
+        Entrevista_psicológica_asistencia = ifelse(is.null(input$psico), NA, input$psico),
+        Entrevista_psiquiátrica_fecha = as.character(ifelse(is.null(input$psiqui_fecha), NA, input$psiqui_fecha)),
+        Entrevista_psiquiátrica_asistencia = ifelse(is.null(input$psiqui), NA, input$psiqui),
+        Entrevista_ts_fecha = as.character(ifelse(is.null(input$ts_fecha), NA, input$ts_fecha)),
+        Entrevista_ts_asistencia = ifelse(is.null(input$ts), NA, input$ts),
+        Tratamiento = ifelse(is.null(input$tratamiento), NA, input$tratamiento),
+        Contacto = ifelse(is.null(input$contacto), NA, input$contacto),
+        Fecha_de_nacimiento = as.character(ifelse(is.null(input$fecha_nacimiento), NA, input$fecha_nacimiento)),
+        Edad = ifelse(is.na(input$fecha_nacimiento), NA, as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(input$fecha_nacimiento, format = "%d/%m/%Y"), "%Y"))),
+        Nivel_educativo = ifelse(is.null(input$nivel_educativo), NA, input$nivel_educativo),
+        Situacion_habitacional = ifelse(is.null(input$situacion_habitacional), NA, input$situacion_habitacional),
+        Provincia = ifelse(is.null(input$provincia), NA, input$provincia),
+        Localidad = ifelse(is.null(input$localidad), NA, input$localidad),
+        Barrio = ifelse(is.null(input$barrio), NA, input$barrio),
+        Redes_de_apoyo = ifelse(is.null(input$redes_de_apoyo), NA, input$redes_de_apoyo),
+        Tiene_CUD = ifelse(is.null(input$tiene_cud), NA, input$tiene_cud),
+        Trabajo = ifelse(is.null(input$trabajo), NA, input$trabajo),
+        Ingresos_económicos = ifelse(is.null(input$ingresos_economicos), NA, input$ingresos_economicos),
+        Situación_Judicial = ifelse(is.null(input$situacion_judicial), NA, input$situacion_judicial),
+        Referencia_APS = ifelse(is.null(input$referencia_aps), NA, input$referencia_aps),
+        Derivado_de = ifelse(is.null(input$derivado_de), NA, input$derivado_de),
+        Policonsumo = ifelse(is.null(input$policonsumo), NA, input$policonsumo),
+        Sustancia_actual = ifelse(is.null(input$sustancia), NA, input$sustancia),
+        Edad_de_inicio = ifelse(is.na(input$edad_inicio), NA, input$edad_inicio),
+        Sustancia_de_inicio = ifelse(is.null(input$sustancia), NA, input$sustancia),
+        Tratamientos_previos = ifelse(is.null(input$trat_prev), NA, input$trat_prev),
+        Observaciones = ifelse(is.null(input$obs), NA, input$obs),
+        stringsAsFactors = FALSE
+      )
+      data <- rbind(data, new_entry)
+    }
+    
+    # Escribir los datos actualizados en el archivo Excel
+    write_data(data)
+    
+    # Mostrar un mensaje de confirmación
+    showModal(modalDialog(
+      title = "Registro Guardado",
+      "El registro ha sido guardado exitosamente.",
+      easyClose = TRUE,
+      footer = NULL
+    ))
+  })
+  
+  # Acción para descargar la base de datos completa
+  output$download_data <- downloadHandler(
+    filename = function() {
+      paste("ADMISIÓN", Sys.Date(), ".xlsx", sep = "")
+    },
+    content = function(file) {
+      data <- read_data()
+      write_xlsx(data, file)
+    }
+  )
   
   # Validación del campo DNI (tiene que estar sí o sí)
   iv <- InputValidator$new()
@@ -351,5 +469,3 @@ server <- function(input, output, session) {
 
 # Ejecutar la aplicación Shiny
 shinyApp(ui, server)
-
-                                                       
