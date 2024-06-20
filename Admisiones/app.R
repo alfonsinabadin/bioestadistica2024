@@ -403,7 +403,8 @@ server <- function(input, output, session) {
   observeEvent(input$guardar, {
     # Leer los datos actuales
     data <- read_data()
-    data$Edad <- as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(data$Fecha_de_nacimiento, format = "%d/%m/%Y"), "%Y"))
+    data$Edad = round(as.numeric(difftime(Sys.Date(), as.Date(data$Fecha_de_nacimiento, format = "%d/%m/%Y"),units = "days"))/365,0)
+    data$Entrevista_psicológica_fecha = format(data$Entrevista_psicológica_fecha, format = "%d/%m/%Y")
     
     # Crear un nuevo registro con los datos de entrada
     new_entry <- data.frame(

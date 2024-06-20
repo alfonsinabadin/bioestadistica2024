@@ -1,6 +1,8 @@
 # Cambios de nombres como estan en el formulario a la base ADMISION
-## Tratamiento
+library(readxl)
+ADMISIÓN <- read_excel("Admisiones/ADMISIÓN.xlsx")
 
+## Tratamiento
 ADMISIÓN <- ADMISIÓN %>%
   mutate(Tratamiento = recode(Tratamiento, "INTERNACIÓN CRISTALERÍA" = "Internación Cristalería", 
                               "NO FINALIZÓ ADMISIÓN" = "No finalizó el proceso", 
@@ -13,6 +15,7 @@ ADMISIÓN <- ADMISIÓN %>%
                               "CDD BAIGORRIA" = "Centro de día Baigorria",
                               "INTERNACION BUEN PASTOR" = "Internación Buen Pastor",
                               "INTERNACION B.P / Baig" = "Internación B.P"))
+
 ## Nivel educativo
 ADMISIÓN <- ADMISIÓN %>%
   mutate(Nivel_educativo = recode(Nivel_educativo, "Primaria incompleta" = "Primario incompleto (incluye educación especial)",
@@ -26,7 +29,7 @@ ADMISIÓN <- ADMISIÓN %>%
                                   "Nivel superior completo" = "Superior terciario o universitario completo",
                                   "Nivel superior incompleto" = "Superior terciario o universitario incompleto",
                                   "Nivel superior en curso" = "Superior terciario o universitario en curso"))
-### Habia 2 nivel de secundario incompleto
+
 
 ## Situacion habitacional
 ADMISIÓN <- ADMISIÓN %>%
@@ -54,16 +57,16 @@ ADMISIÓN <- ADMISIÓN %>%
                                  "Sin vínculos actualmente" = "Ninguna",
                                  "Institucionales" = "Institución",
                                  "Familia + Amistades" = "Familia/Amigos",
-                                 "38" = NA))
-### Borramos ese 38 ?, ademas junte Nula y Sin vinculos actualmente en "ninguna" y a Familia lo agregue a "Familia/Amigos" 
+                                 "38" = NULL))
+### Borramos ese 38, ademas junte Nula y Sin vinculos actualmente en "ninguna" y a Familia lo agregue a "Familia/Amigos" 
 
 ## Trabajo
 ADMISIÓN <- ADMISIÓN %>%
   mutate(Trabajo = recode(Trabajo, "No tiene" = "No tiene",
                           "Estable" = "Estable",
                           "Esporádico" = "Esporádico",
-                          "Secundaria incompleta" = NA))
-### Borramos ese secundaria incompleta?
+                          "Secundaria incompleta" = NULL))
+### Borramos ese secundaria incompleta
 
 ## Ingresos Economicos
 ADMISIÓN <- ADMISIÓN %>%
@@ -84,4 +87,5 @@ ADMISIÓN <- ADMISIÓN %>%
                                        "entre 1 y 2" = "Entre 1 y 2",
                                        "más de 3" = "3 o más"))
 
-
+write_xlsx(ADMISIÓN,"Trabajo práctico final/Limpieza de bases/ADMISIÓN.xlsx")
+write_xlsx(ADMISIÓN,"Admisiones/ADMISIÓN.xlsx")
