@@ -152,8 +152,8 @@ ui <- fluidPage(
                                      "Mujer", "Varón", "Mujer Trans", "Varón Trans", "No binario", "Otro"
                                    ))),
                                    column(4, selectInput("nivel_educativo", "Nivel educativo", choices = c(
-                                     "Sin instrucción formal", "Inicial", "Primario incompleto (incluye educación especial)",
-                                     "Primario completo", "Secundario incompleto", "Secundario completo",
+                                     "Sin instrucción formal", "Inicial", "Primario en curso", "Primario incompleto (incluye educación especial)",
+                                     "Primario completo", "Secundario en curso", "Secundario incompleto", "Secundario completo", "Superior terciario o universitario en curso",
                                      "Superior terciario o universitario incompleto", "Superior terciario o universitario completo",
                                      "No sabe / No responde"))),
                                    column(4, selectInput("tiene_cud", "Tiene CUD", choices = c("Sí", "No")))
@@ -174,7 +174,7 @@ ui <- fluidPage(
                                    column(3, selectInput("ingresos_economicos", "Ingresos Económicos", choices = c(
                                      "Sin ingresos", "Pensión no Contributiva (PNC)", "Subsidio", "Salario informal","Salario informal + subsidio",  "Salario formal"))),
                                    column(3, selectInput("situacion_judicial", "Situación Judicial", choices = c(
-                                     "Sin causas Judiciales", "Con causa cerrada", "Desconoce")))
+                                     "Sin causas Judiciales","Con causa abierta", "Con causa cerrada", "Desconoce")))
                                  )
                                ),
                                box(
@@ -183,7 +183,7 @@ ui <- fluidPage(
                                  solidHeader = TRUE,
                                  width = 6,
                                  fluidRow(
-                                   column(6, textInput("consumo",                                   "Consumo actual", placeholder = "Droga más prevalente")),
+                                   column(6, textInput("consumo", "Consumo actual", placeholder = "Droga más prevalente")),
                                    column(6, selectInput("policonsumo", "Policonsumo", choices = c("No", "Sí"))),
                                    column(6, textInput("sustancia", "Sustancia de inicio", placeholder = "Completar con una sola droga")),
                                    column(6, numericInput("edad_inicio", "Edad de inicio", value = NULL)),
