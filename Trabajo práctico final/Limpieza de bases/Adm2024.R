@@ -18,7 +18,6 @@ fecha_psico <- format(fecha_psico, "%d/%m/%Y")
 
 # Convertir fecha de nacimiento
 fecha_nacimiento <- base$`Fecha de Nacimiento`
-fecha_nacimiento <- as.Date(as.numeric(fecha_nacimiento), origin = "1899-12-30")
 fecha_nacimiento <- format(fecha_nacimiento, "%d/%m/%Y")
 
 adm24 <- data.frame(
@@ -88,7 +87,7 @@ base <- base %>%
   add_column(Provincia = NA, .after = "Situacion_habitacional") %>%
   add_column(Localidad = NA, .after = "Provincia") %>%
   add_column(Barrio = NA, .after = "Localidad") %>%
-  add_column(Edad = year(format(Sys.Date(), format = "%d/%m/%Y")) - year(base$Fecha_de_nacimiento), .after = "Fecha_de_nacimiento")
+  add_column(Edad = round(as.numeric(difftime(Sys.Date(), as.Date(base$Fecha_de_nacimiento, format = "%d/%m/%Y"),units = "days"))/365,0), .after = "Fecha_de_nacimiento")
 
 base$Edad_de_inicio <-ifelse(base$Edad_de_inicio == "Antes de los 12", "Niños/as de hasta 12 años", 
                              ifelse(base$Edad_de_inicio == "Antes de los 11", "Niños/as de hasta 12 años",
