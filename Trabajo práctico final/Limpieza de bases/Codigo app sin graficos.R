@@ -8,8 +8,6 @@ library(shinyvalidate)
 library(shinydashboard)
 library(geoAr)
 library(dplyr)
-library(ggplot2)
-library(plotly)
 
 # Definir la ruta del archivo Excel donde se guardarán los datos
 file_path <- "ADMISIÓN.xlsx"
@@ -646,8 +644,8 @@ ui <- fluidPage(
                                  solidHeader = TRUE,
                                  width = 12,
                                  fluidRow(
-                                   column(3, selectInput("filtro_anio", "Año", choices = c("Todos", unique(data$anio)))), 
-                                   column(3, selectInput("filtro_genero", "Género", choices = c("Todos", unique(data$Sexo)))),
+                                   column(3, selectInput("filtro_genero", "Identidad de género", choices = c("Todos", "Mujer", "Varón", "Mujer Trans", "Varón Trans", "No binario", "Otro"))),
+                                   column(3, selectInput("filtro_tratamiento", "Tratamiento asignado", choices = c("Todos", "Continúa en seguimiento", "Internación Cristalería", "Internación Baigorria", "Internación Buen Pastor", "Internación B.P", "Centro de día Zeballos", "Centro de día Buen Pastor", "Centro de día Baigorria", "Derivado", "No finalizó el proceso", "Rechaza tratamiento"))),
                                    column(3, selectInput("filtro_provincia", "Provincia", choices = c("Todas", provincias)))
                                  )
                                ),
@@ -659,14 +657,14 @@ ui <- fluidPage(
                                  tabsetPanel(
                                    tabPanel("Gráficos",
                                             fluidRow(
-                                              column(3, plotOutput("grafico_barras_sustancias")),
-                                              column(3, plotOutput("grafico_policonsumo")),
-                                              column(6, plotOutput("grafico_edad_inicio"))
+                                              column(6, plotOutput("grafico_genero")),
+                                              column(6, plotOutput("grafico_tratamiento"))
                                             )
-                                            
                                    ),
-                                   tabPanel("Tablas"
-                                            
+                                   tabPanel("Tablas",
+                                            fluidRow(
+                                              column(12, dataTableOutput("tabla_datos"))
+                                            )
                                    )
                                  )
                                )
@@ -895,75 +893,6 @@ server <- function(input, output, session) {
       write_xlsx(data, file)
     }
   )
-  # Filtrar datos según los filtros seleccionados
-  datos_filtrados <- reactive({
-    datos_filtrados <- data
-    if (input$filtro_anio != "Todos") {
-      datos_filtrados <- datos_filtrados %>% filter(Año == input$filtro_anio)
-    }
-    if (input$filtro_genero != "Todos") {
-      datos_filtrados <- datos_filtrados %>% filter(Genero == input$filtro_genero)
-    }
-    if (input$filtro_provincia != "Todas") {
-      datos_filtrados <- datos_filtrados %>% filter(Provincia == input$filtro_provincia)
-    }
-    datos_filtrados
-  })
-  # GRAFICOS
-  # Grafico de barras sustancia de inicio
-  conteo_sustancias <- reactive({
-    data <- ADMISIÓN  
-    conteo <- table(data$Sustancia_de_inicio)
-    conteo_df <- as.data.frame(conteo)
-    names(conteo_df) <- c("Sustancia", "Cantidad")
-    return(conteo_df)
-  })
-  
-  output$grafico_barras_sustancias <- renderPlot({
-    datos <- conteo_sustancias()
-    ggplot(datos, aes(x = Sustancia, y = Cantidad, fill = Sustancia)) +
-      geom_bar(stat = "identity") +
-      labs(x = "", y = "Cantidad", title = "Consumo según sustancia de inicio", fill = "Sustancia de inicio") +
-      theme_minimal() +
-      theme(axis.text.x = element_blank())+
-      scale_fill_manual(values = c("Cocaína" = "#e9c46a", "Pegamento" = "#f4d35e",
-                                   "Marihuana" = "#e5a845", "Alcohol" = "#5e503f",
-                                   "Psicofármacos" = "#b08a61", "Otras" = "#FDC500"))
-    })
-  
-  # Grafico de barra policonsumo
-  frecuencia_policonsumo <- as.data.frame(table(data$Policonsumo))
-  names(frecuencia_policonsumo) <- c("Policonsumo", "Cantidad")
-  
-  output$grafico_policonsumo <- renderPlot({
-    ggplot(frecuencia_policonsumo, aes(x = "", y = Cantidad, fill = Policonsumo)) +
-      geom_bar(stat = "identity") +
-      labs(title = "Distribución de Policonsumo", fill = "Policonsumo", y = "Cantidad de jóvenes",
-           x = NULL) +
-      geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5),
-                colour = "white") +
-      theme_minimal() +
-      scale_fill_manual(values = c("Si" = "#e9c46a", "No" = "#5e503f"))
-  })
-  # Gráfico Tratamiento vs edad de inicio
-  conteo_tratamiento_edad <- as.data.frame(table(data$Tratamiento, data$Edad_de_inicio))
-  names(conteo_tratamiento_edad) <- c("Tratamiento", "Edad_de_inicio", "Cantidad")
-  output$grafico_edad_inicio <- renderPlot({
-    ggplot(conteo_tratamiento_edad, aes(x = Tratamiento, y = Cantidad, fill = Edad_de_inicio)) +
-      geom_bar(stat = "identity", position = "stack") +
-      labs(title = "Relación entre Tratamiento y Edad de Inicio",
-           x = "Tratamiento",
-           y = "",
-           fill = "Edad de Inicio") +
-      theme_minimal()+
-      geom_text(aes(label=Cantidad),
-                position=position_stack(vjust=0.5),
-                colour = "white")+
-      coord_flip()+
-      scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#e9c46a", 
-                                   "Jóvenes de 18 a 29 años" = "#e5a845",
-                                   "Niños/as de hasta 12 años" = "#b08a61"))
-  })
 }
 
 # Ejecutar la aplicación Shiny
