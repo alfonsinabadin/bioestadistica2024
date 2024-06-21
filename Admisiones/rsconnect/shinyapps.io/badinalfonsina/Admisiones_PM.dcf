@@ -1,0 +1,12 @@
+name: Admisiones_PM
+title: Admisiones_PM
+username: badinalfonsina
+account: badinalfonsina
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12217537
+bundleId: 8773651
+url: https://badinalfonsina.shinyapps.io/Admisiones_PM/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
