@@ -14,7 +14,7 @@ ADMISIÓN <- ADMISIÓN %>%
                               "CDD BUEN PASTOR" = "Centro de día Buen Pastor",
                               "CDD BAIGORRIA" = "Centro de día Baigorria",
                               "INTERNACION BUEN PASTOR" = "Internación Buen Pastor",
-                              "INTERNACION B.P / Baig" = "Internación B.P"))
+                              "INTERNACION B.P / Baig" = "Internación Buen Pastor"))
 
 ## Nivel educativo
 ADMISIÓN <- ADMISIÓN %>%

@@ -28,10 +28,10 @@ read_data <- function() {
       stop("El archivo Excel no contiene las columnas esperadas.")
     }
     # Asegurar que las fechas se leen correctamente
-    data$Fecha_de_nacimiento <- as.Date(data$Fecha_de_nacimiento, format = "%Y-%m-%d")
-    data$Entrevista_psicológica_fecha <- as.Date(data$Entrevista_psicológica_fecha, format = "%Y-%m-%d")
-    data$Entrevista_psiquiátrica_fecha <- as.Date(data$Entrevista_psiquiátrica_fecha, format = "%Y-%m-%d")
-    data$Entrevista_ts_fecha <- as.Date(data$Entrevista_ts_fecha, format = "%Y-%m-%d")
+    data$Fecha_de_nacimiento <- as.Date(data$Fecha_de_nacimiento, format = "%d/%m/%Y")
+    data$Entrevista_psicológica_fecha <- as.Date(data$Entrevista_psicológica_fecha, format = "%d/%m/%Y")
+    data$Entrevista_psiquiátrica_fecha <- as.Date(data$Entrevista_psiquiátrica_fecha, format = "%d/%m/%Y")
+    data$Entrevista_ts_fecha <- as.Date(data$Entrevista_ts_fecha, format = "%d/%m/%Y")
     return(data)
   } else {
     data.frame(
@@ -62,7 +62,7 @@ read_data <- function() {
       Derivado_de = character(),
       Policonsumo = character(),
       Sustancia_actual = character(),
-      Edad_de_inicio = numeric(),
+      Edad_de_inicio = character(),
       Sustancia_de_inicio = character(),
       Tratamientos_previos = character(),
       Observaciones = character(),
@@ -107,18 +107,14 @@ ui <- fluidPage(
                                    column(12, textInput("apellido_nombres", 
                                                         "Apellido, Nombres", 
                                                         value = NULL,
-                                                        placeholder = "Ejemplo: Perez, Juan"))
-                                 ),
-                                 fluidRow(
-                                   column(6, numericInput("dni", 
+                                                        placeholder = "Ejemplo: Perez, Juan")),
+                                   column(12, numericInput("dni", 
                                                           "DNI", 
                                                           value = NULL)),
-                                   column(6, dateInput("fecha_nacimiento", 
+                                   column(12, dateInput("fecha_nacimiento", 
                                                        "Fecha de nacimiento",
                                                        value = "",
-                                                       format = "dd/mm/yyyy"))
-                                 ),
-                                 fluidRow(
+                                                       format = "dd/mm/yyyy")),
                                    column(12, numericInput("contacto", 
                                                            "Teléfono de contacto", 
                                                            value = NULL))
@@ -149,8 +145,7 @@ ui <- fluidPage(
                                                                   selected = "No asignada",
                                                                   size = "xs",
                                                                   justified = TRUE,
-                                                                  width = "100%",
-                                                                  status = "warning"))
+                                                                  width = "100%"))
                                    )
                                  ),
                                  box(
@@ -159,9 +154,22 @@ ui <- fluidPage(
                                    solidHeader = FALSE,
                                    width = 4,
                                    fluidRow(
-                                     column(6, dateInput("psiqui_fecha", "Fecha", value = "", format = "dd/mm/yyyy")),
-                                     column(6, selectInput("psiqui", "Estado",
-                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                     column(12, dateInput("psiqui_fecha", 
+                                                         "Fecha", 
+                                                         value = "", 
+                                                         format = "dd/mm/yyyy"))
+                                     ),
+                                   fluidRow(
+                                     column(12, radioGroupButtons("psiqui", 
+                                                           "Estado",
+                                                           choices = c("No asignada", 
+                                                                       "Presente", 
+                                                                       "Ausente", 
+                                                                       "Pendiente"), 
+                                                           selected = "No asignada",
+                                                           size = "xs",
+                                                           justified = TRUE,
+                                                           width = "100%"))
                                    )
                                  ),
                                  box(
@@ -170,54 +178,130 @@ ui <- fluidPage(
                                    solidHeader = FALSE,
                                    width = 4,
                                    fluidRow(
-                                     column(6, dateInput("ts_fecha", "Fecha", value = "", format = "dd/mm/yyyy")),
-                                     column(6, selectInput("ts", "Estado",
-                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                     column(12, dateInput("ts_fecha", 
+                                                         "Fecha", 
+                                                         value = "", 
+                                                         format = "dd/mm/yyyy"))
+                                     ),
+                                   fluidRow(
+                                     column(12, radioGroupButtons("ts", 
+                                                                  "Estado",
+                                                                  choices = c("No asignada", 
+                                                                              "Presente", 
+                                                                              "Ausente", 
+                                                                              "Pendiente"), 
+                                                                  selected = "No asignada",
+                                                                  size = "xs",
+                                                                  justified = TRUE,
+                                                                  width = "100%"))
                                    )
                                  ),
                                  fluidRow(
                                    column(1, ""),
-                                   column(10, selectInput("tratamiento", "Tratamiento asignado", choices = c(
-                                     "Continúa en seguimiento", "Internación Cristalería", "Internación Baigorria",
-                                     "Internación Buen Pastor", "Internación B.P", "Centro de día Zeballos",
-                                     "Centro de día Buen Pastor", "Centro de día Baigorria", "Derivado",
-                                     "No finalizó el proceso", "Rechaza tratamiento"))),
+                                   column(10, selectInput("tratamiento", 
+                                                          "Tratamiento asignado", 
+                                                          choices = c("Continúa en seguimiento", 
+                                                                      "Internación Cristalería", 
+                                                                      "Internación Baigorria",
+                                                                      "Internación Buen Pastor", 
+                                                                      "Centro de día Zeballos",
+                                                                      "Centro de día Buen Pastor",
+                                                                      "Centro de día Baigorria",
+                                                                      "Derivado",
+                                                                      "No finalizó el proceso",
+                                                                      "Rechaza tratamiento"))),
                                    column(1, ""))
                                ),
+                               # Espacio para q no se rompa todo
+                               fluidRow(
+                                 column(12, "")
+                               ),
+                               # Cajita información especial
                                box(
                                  title = "Información personal",
                                  status = "warning",
                                  solidHeader = TRUE,
                                  width = 6,
                                  fluidRow(
-                                   column(4, selectInput("identidad_gen", "Identidad de género", choices = c(
-                                     "Mujer", "Varón", "Mujer Trans", "Varón Trans", "No binario", "Otro"
-                                   ))),
-                                   column(4, selectInput("nivel_educativo", "Nivel educativo", choices = c(
-                                     "Sin instrucción formal", "Inicial", "Primario en curso", "Primario incompleto (incluye educación especial)",
-                                     "Primario completo", "Secundario en curso", "Secundario incompleto", "Secundario completo", "Superior terciario o universitario en curso",
-                                     "Superior terciario o universitario incompleto", "Superior terciario o universitario completo",
-                                     "No sabe / No responde"))),
-                                   column(4, selectInput("tiene_cud", "Tiene CUD", choices = c("Sí", "No")))
+                                   column(4, selectInput("identidad_gen", 
+                                                         "Identidad de género", 
+                                                         choices = c("Mujer", 
+                                                                     "Mujer Trans", 
+                                                                     "Varón", 
+                                                                     "Varón Trans", 
+                                                                     "No binario", 
+                                                                     "Otro",
+                                                                     "No responde"),
+                                                         selected = "No responde")),
+                                   column(4, selectInput("nivel_educativo", 
+                                                         "Nivel educativo", 
+                                                         choices = c("Sin instrucción formal", 
+                                                                     "Inicial", 
+                                                                     "Primario en curso", 
+                                                                     "Primario incompleto (incluye educación especial)",
+                                                                     "Primario completo", 
+                                                                     "Secundario en curso", 
+                                                                     "Secundario incompleto", 
+                                                                     "Secundario completo", 
+                                                                     "Superior terciario o universitario en curso",
+                                                                     "Superior terciario o universitario incompleto", 
+                                                                     "Superior terciario o universitario completo",
+                                                                     "No sabe / No responde"))),
+                                   column(4, selectInput("tiene_cud", 
+                                                         "Tiene CUD", 
+                                                         choices = c("Sí", "No"),
+                                                         selected = "No"))
                                  ),
                                  fluidRow(
-                                   column(3, selectizeInput("situacion_habitacional", "Situación Habitacional", choices = c(
-                                     "Casa/depto propio", "Casa/depto alquilado", "Casa/depto cedido", "Pensión",
-                                     "Internado / Institucionalizado", "Refugio", "Situación de calle"), selected = NULL,
-                                     options = list(create = TRUE, placeholder = 'Escriba la opción'))),
-                                   column(3, selectInput("provincia", "Provincia", choices = provincias)),
+                                   column(3, selectizeInput("situacion_habitacional", 
+                                                            "Situación Habitacional", 
+                                                            choices = c("Casa/depto propio", 
+                                                                        "Casa/depto alquilado", 
+                                                                        "Casa/depto cedido", 
+                                                                        "Pensión",
+                                                                        "Internado / Institucionalizado", 
+                                                                        "Refugio", 
+                                                                        "Situación de calle"),
+                                                            options = list(create = TRUE, 
+                                                                           placeholder = 'Escriba la opción'))),
+                                   column(3, selectInput("provincia", 
+                                                         "Provincia", 
+                                                         choices = provincias,
+                                                         selected = "Santa Fe")),
                                    column(3, uiOutput("localidad_ui")),
-                                   column(3, textInput("barrio", "Barrio"))
+                                   column(3, textInput("barrio", 
+                                                       "Barrio"))
                                  ),
                                  fluidRow(
-                                   column(3, selectInput("redes_de_apoyo", "Redes de Apoyo", choices = c(
-                                     "Ninguna", "Escasa", "Buena", "Familia/Amigos", "Institución", "Familia/Amigos e Institución"))),
-                                   column(3, selectInput("trabajo", "Trabajo", choices = c("No tiene", "Esporádico", "Estable"))),
-                                   column(3, selectInput("ingresos_economicos", "Ingresos Económicos", choices = c(
-                                     "Sin ingresos", "Pensión no Contributiva (PNC)", "Subsidio", "Salario informal", "Salario informal + subsidio", "Salario formal"))),
-                                   column(3, selectInput("situacion_judicial", "Situación Judicial", choices = c(
-                                     "Sin causas Judiciales", "Con causa abierta", "Con causa cerrada", "Desconoce")))
-                                 )
+                                   column(3, selectInput("redes_de_apoyo", 
+                                                         "Redes de Apoyo", 
+                                                         choices = c("Ninguna", 
+                                                                     "Escasa", 
+                                                                     "Buena", 
+                                                                     "Familia/Amigos", 
+                                                                     "Institución", 
+                                                                     "Familia/Amigos e Institución"))),
+                                   column(3, selectInput("trabajo", 
+                                                         "Trabajo", 
+                                                         choices = c("No tiene", 
+                                                                     "Esporádico", 
+                                                                     "Estable"))),
+                                   column(3, selectInput("ingresos_economicos", 
+                                                         "Ingresos Económicos", 
+                                                         choices = c("Sin ingresos", 
+                                                                     "Pensión no Contributiva (PNC)", 
+                                                                     "Subsidio", 
+                                                                     "Salario informal", 
+                                                                     "Salario informal + subsidio", 
+                                                                     "Salario formal"))),
+                                   column(3, selectInput("situacion_judicial", 
+                                                         "Situación Judicial", 
+                                                         choices = c("Sin causas Judiciales", 
+                                                                     "Con causa abierta", 
+                                                                     "Con causa cerrada", 
+                                                                     "Desconoce"))),
+                                 ),
+                                 fluidRow(column(12,textInput("obs", "Observaciones")))
                                ),
                                box(
                                  title = "Consumo",
@@ -225,34 +309,53 @@ ui <- fluidPage(
                                  solidHeader = TRUE,
                                  width = 6,
                                  fluidRow(
-                                   column(6, textInput("consumo", "Consumo actual", placeholder = "Droga más prevalente")),
-                                   column(6, selectInput("policonsumo", "Policonsumo", choices = c("No", "Sí"))),
-                                   column(6, textInput("sustancia", "Sustancia de inicio", placeholder = "Completar con una sola droga")),
-                                   column(6, numericInput("edad_inicio", "Edad de inicio", value = NULL)),
-                                   column(4, selectInput("referencia_aps", "Referencia APS", choices = c(
-                                     "Sólo clínica médica", "Referencia con seguimiento", "Referencia sin seguimiento", "No está referenciado"))),
-                                   column(4, textInput("derivado_de", "Derivado de:")),
-                                   column(4, selectInput("trat_prev", "Tratamientos previos", choices = c("No", "Entre 1 y 2", "3 o más")))
-                                 )
+                                   column(6, 
+                                          textInput("consumo",
+                                                    "Consumo actual",
+                                                    placeholder = "Droga más prevalente"), 
+                                          selectInput("policonsumo",
+                                                      "Policonsumo",
+                                                      choices = c("No", "Sí")),
+                                          selectInput("referencia_aps", 
+                                                      "Referencia APS", 
+                                                      choices = c("No está referenciado",
+                                                                  "Sólo clínica médica", 
+                                                                  "Referencia con seguimiento", 
+                                                                  "Referencia sin seguimiento"
+                                            ))
+                                          ),
+                                   column(6, 
+                                          textInput("sustancia", 
+                                                       "Sustancia de inicio", 
+                                                       placeholder = "Completar con una sola droga"),
+                                          radioGroupButtons("edad_inicio",
+                                                            "Edad de inicio",
+                                                            choices = c("Niños/as de hasta 12 años",
+                                                                        "Adolescentes entre 13 a 17 años",
+                                                                        "Jóvenes de 18 a 29 años",
+                                                                        "Personas adultas de 30 a 59 años",
+                                                                        "Personas de 60 años o más"),
+                                                            individual = TRUE,
+                                                            size = "s"))
+                                   ),
+                                 fluidRow(column(6, 
+                                                 selectInput("trat_prev", 
+                                                             "Tratamientos previos", 
+                                                             choices = c("No", 
+                                                                         "Entre 1 y 2", 
+                                                                         "3 o más"))),
+                                          column(6,
+                                                 textInput("derivado_de", 
+                                                           "Derivado de:")))
                                ),
                                box(
                                  status = "warning",
                                  solidHeader = TRUE,
-                                 width = 10,
+                                 width = 12,
                                  fluidRow(
-                                   column(12, textInput("obs", "Observaciones"))
-                                 )
-                               ),
-                               box(
-                                 status = "warning",
-                                 solidHeader = TRUE,
-                                 width = 2,
-                                 fluidRow(
-                                   column(12, actionButton("guardar", "Guardar Registro"))
-                                 ),
-                                 fluidRow(
-                                   column(12, " "),
-                                   column(12, downloadButton("download_data", "Descargar Base de Datos"))
+                                   column(12, 
+                                          actionButton("guardar", "Guardar Registro"),
+                                          downloadButton("download_data", "Descargar Base de Datos"))
                                  )
                                )
                              )
@@ -278,15 +381,20 @@ ui <- fluidPage(
                                  solidHeader = TRUE,
                                  width = 3,
                                  fluidRow(
-                                   column(12, textInput("apellido_nombres_modificar", "Apellido, Nombres"), )
-                                 ),
-                                 fluidRow(
-                                   column(6, numericInput("dni_modificar", "DNI", value = NULL)),
-                                   column(6, dateInput("fecha_nacimiento_modificar", "Fecha de nacimiento", format = "dd/mm/yyyy",
-                                                       value = ""))
-                                 ),
-                                 fluidRow(
-                                   column(12, numericInput("contacto_modificar", "Teléfono de contacto", value = NULL))
+                                   column(12, textInput("apellido_nombres_modificar", 
+                                                        "Apellido, Nombres", 
+                                                        value = NULL,
+                                                        placeholder = "Ejemplo: Perez, Juan")),
+                                   column(12, numericInput("dni_modificar", 
+                                                           "DNI", 
+                                                           value = NULL)),
+                                   column(12, dateInput("fecha_nacimiento_modificar", 
+                                                        "Fecha de nacimiento",
+                                                        value = "",
+                                                        format = "dd/mm/yyyy")),
+                                   column(12, numericInput("contacto_modificar", 
+                                                           "Teléfono de contacto", 
+                                                           value = NULL))
                                  )
                                ),
                                box(
@@ -300,9 +408,21 @@ ui <- fluidPage(
                                    solidHeader = FALSE,
                                    width = 4,
                                    fluidRow(
-                                     column(6, dateInput("psico_fecha_modificar", "Fecha", value = "", format = "dd/mm/yyyy")),
-                                     column(6, selectInput("psico_modificar", "Estado",
-                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                     column(12, dateInput("psico_fecha_modificar", 
+                                                          "Fecha", 
+                                                          value = "", 
+                                                          format = "dd/mm/yyyy"))), 
+                                   fluidRow(
+                                     column(12, radioGroupButtons("psico_modificar", 
+                                                                  "Estado",
+                                                                  choices = c("No asignada", 
+                                                                              "Presente", 
+                                                                              "Ausente", 
+                                                                              "Pendiente"), 
+                                                                  selected = "No asignada",
+                                                                  size = "xs",
+                                                                  justified = TRUE,
+                                                                  width = "100%"))
                                    )
                                  ),
                                  box(
@@ -311,9 +431,22 @@ ui <- fluidPage(
                                    solidHeader = FALSE,
                                    width = 4,
                                    fluidRow(
-                                     column(6, dateInput("psiqui_fecha_modificar", "Fecha", value = "", format = "dd/mm/yyyy")),
-                                     column(6, selectInput("psiqui_modificar", "Estado",
-                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                     column(12, dateInput("psiqui_fecha_modificar", 
+                                                          "Fecha", 
+                                                          value = "", 
+                                                          format = "dd/mm/yyyy"))
+                                   ),
+                                   fluidRow(
+                                     column(12, radioGroupButtons("psiqui_modificar", 
+                                                                  "Estado",
+                                                                  choices = c("No asignada", 
+                                                                              "Presente", 
+                                                                              "Ausente", 
+                                                                              "Pendiente"), 
+                                                                  selected = "No asignada",
+                                                                  size = "xs",
+                                                                  justified = TRUE,
+                                                                  width = "100%"))
                                    )
                                  ),
                                  box(
@@ -322,54 +455,130 @@ ui <- fluidPage(
                                    solidHeader = FALSE,
                                    width = 4,
                                    fluidRow(
-                                     column(6, dateInput("ts_fecha_modificar", "Fecha", value = "", format = "dd/mm/yyyy")),
-                                     column(6, selectInput("ts_modificar", "Estado",
-                                                           choices = c("No asignada", "Presente", "Ausente", "Pendiente"), selected = "No asignada"))
+                                     column(12, dateInput("ts_fecha_modificar", 
+                                                          "Fecha", 
+                                                          value = "", 
+                                                          format = "dd/mm/yyyy"))
+                                   ),
+                                   fluidRow(
+                                     column(12, radioGroupButtons("ts_modificar", 
+                                                                  "Estado",
+                                                                  choices = c("No asignada", 
+                                                                              "Presente", 
+                                                                              "Ausente", 
+                                                                              "Pendiente"), 
+                                                                  selected = "No asignada",
+                                                                  size = "xs",
+                                                                  justified = TRUE,
+                                                                  width = "100%"))
                                    )
                                  ),
                                  fluidRow(
                                    column(1, ""),
-                                   column(10, selectInput("tratamiento_modificar", "Tratamiento asignado", choices = c(
-                                     "Continúa en seguimiento", "Internación Cristalería", "Internación Baigorria",
-                                     "Internación Buen Pastor", "Internación B.P", "Centro de día Zeballos",
-                                     "Centro de día Buen Pastor", "Centro de día Baigorria", "Derivado",
-                                     "No finalizó el proceso", "Rechaza tratamiento"))),
+                                   column(10, selectInput("tratamiento_modificar", 
+                                                          "Tratamiento asignado", 
+                                                          choices = c("Continúa en seguimiento", 
+                                                                      "Internación Cristalería", 
+                                                                      "Internación Baigorria",
+                                                                      "Internación Buen Pastor", 
+                                                                      "Centro de día Zeballos",
+                                                                      "Centro de día Buen Pastor",
+                                                                      "Centro de día Baigorria",
+                                                                      "Derivado",
+                                                                      "No finalizó el proceso",
+                                                                      "Rechaza tratamiento"))),
                                    column(1, ""))
                                ),
+                               # Espacio para q no se rompa todo
+                               fluidRow(
+                                 column(12, "")
+                               ),
+                               # Cajita información especial
                                box(
                                  title = "Información personal",
                                  status = "warning",
                                  solidHeader = TRUE,
                                  width = 6,
                                  fluidRow(
-                                   column(4, selectInput("identidad_gen_modificar", "Identidad de género", choices = c(
-                                     "Mujer", "Varón", "Mujer Trans", "Varón Trans", "No binario", "Otro"
-                                   ))),
-                                   column(4, selectInput("nivel_educativo_modificar", "Nivel educativo", choices = c(
-                                     "Sin instrucción formal", "Inicial", "Primario en curso", "Primario incompleto (incluye educación especial)",
-                                     "Primario completo", "Secundario en curso", "Secundario incompleto", "Secundario completo", "Superior terciario o universitario en curso",
-                                     "Superior terciario o universitario incompleto", "Superior terciario o universitario completo",
-                                     "No sabe / No responde"))),
-                                   column(4, selectInput("tiene_cud_modificar", "Tiene CUD", choices = c("Sí", "No")))
+                                   column(4, selectInput("identidad_gen_modificar", 
+                                                         "Identidad de género", 
+                                                         choices = c("Mujer", 
+                                                                     "Mujer Trans", 
+                                                                     "Varón", 
+                                                                     "Varón Trans", 
+                                                                     "No binario", 
+                                                                     "Otro",
+                                                                     "No responde"),
+                                                         selected = "No responde")),
+                                   column(4, selectInput("nivel_educativo_modificar", 
+                                                         "Nivel educativo", 
+                                                         choices = c("Sin instrucción formal", 
+                                                                     "Inicial", 
+                                                                     "Primario en curso", 
+                                                                     "Primario incompleto (incluye educación especial)",
+                                                                     "Primario completo", 
+                                                                     "Secundario en curso", 
+                                                                     "Secundario incompleto", 
+                                                                     "Secundario completo", 
+                                                                     "Superior terciario o universitario en curso",
+                                                                     "Superior terciario o universitario incompleto", 
+                                                                     "Superior terciario o universitario completo",
+                                                                     "No sabe / No responde"))),
+                                   column(4, selectInput("tiene_cud_modificar", 
+                                                         "Tiene CUD", 
+                                                         choices = c("Sí", "No"),
+                                                         selected = "No"))
                                  ),
                                  fluidRow(
-                                   column(3, selectizeInput("situacion_habitacional_modificar", "Situación Habitacional", choices = c(
-                                     "Casa/depto propio", "Casa/depto alquilado", "Casa/depto cedido", "Pensión",
-                                     "Internado / Institucionalizado", "Refugio", "Situación de calle"), selected = NULL,
-                                     options = list(create = TRUE, placeholder = 'Escriba la opción'))),
-                                   column(3, selectInput("provincia_modificar", "Provincia", choices = provincias)),
+                                   column(3, selectizeInput("situacion_habitacional_modificar", 
+                                                            "Situación Habitacional", 
+                                                            choices = c("Casa/depto propio", 
+                                                                        "Casa/depto alquilado", 
+                                                                        "Casa/depto cedido", 
+                                                                        "Pensión",
+                                                                        "Internado / Institucionalizado", 
+                                                                        "Refugio", 
+                                                                        "Situación de calle"),
+                                                            options = list(create = TRUE, 
+                                                                           placeholder = 'Escriba la opción'))),
+                                   column(3, selectInput("provincia_modificar", 
+                                                         "Provincia", 
+                                                         choices = provincias,
+                                                         selected = "Santa Fe")),
                                    column(3, uiOutput("localidad_ui_modificar")),
-                                   column(3, textInput("barrio_modificar", "Barrio"))
+                                   column(3, textInput("barrio_modificar", 
+                                                       "Barrio"))
                                  ),
                                  fluidRow(
-                                   column(3, selectInput("redes_de_apoyo_modificar", "Redes de Apoyo", choices = c(
-                                     "Ninguna", "Escasa", "Buena", "Familia/Amigos", "Institución", "Familia/Amigos e Institución"))),
-                                   column(3, selectInput("trabajo_modificar", "Trabajo", choices = c("No tiene", "Esporádico", "Estable"))),
-                                   column(3, selectInput("ingresos_economicos_modificar", "Ingresos Económicos", choices = c(
-                                     "Sin ingresos", "Pensión no Contributiva (PNC)", "Subsidio", "Salario informal", "Salario informal + subsidio", "Salario formal"))),
-                                   column(3, selectInput("situacion_judicial_modificar", "Situación Judicial", choices = c(
-                                     "Sin causas Judiciales", "Con causa abierta", "Con causa cerrada", "Desconoce")))
-                                 )
+                                   column(3, selectInput("redes_de_apoyo_modificar", 
+                                                         "Redes de Apoyo", 
+                                                         choices = c("Ninguna", 
+                                                                     "Escasa", 
+                                                                     "Buena", 
+                                                                     "Familia/Amigos", 
+                                                                     "Institución", 
+                                                                     "Familia/Amigos e Institución"))),
+                                   column(3, selectInput("trabajo_modificar", 
+                                                         "Trabajo", 
+                                                         choices = c("No tiene", 
+                                                                     "Esporádico", 
+                                                                     "Estable"))),
+                                   column(3, selectInput("ingresos_economicos_modificar", 
+                                                         "Ingresos Económicos", 
+                                                         choices = c("Sin ingresos", 
+                                                                     "Pensión no Contributiva (PNC)", 
+                                                                     "Subsidio", 
+                                                                     "Salario informal", 
+                                                                     "Salario informal + subsidio", 
+                                                                     "Salario formal"))),
+                                   column(3, selectInput("situacion_judicial_modificar", 
+                                                         "Situación Judicial", 
+                                                         choices = c("Sin causas Judiciales", 
+                                                                     "Con causa abierta", 
+                                                                     "Con causa cerrada", 
+                                                                     "Desconoce"))),
+                                 ),
+                                 fluidRow(column(12,textInput("obs_modificar", "Observaciones")))
                                ),
                                box(
                                  title = "Consumo",
@@ -377,23 +586,44 @@ ui <- fluidPage(
                                  solidHeader = TRUE,
                                  width = 6,
                                  fluidRow(
-                                   column(6, textInput("consumo_modificar", "Consumo actual", placeholder = "Droga más prevalente")),
-                                   column(6, selectInput("policonsumo_modificar", "Policonsumo", choices = c("No", "Sí"))),
-                                   column(6, textInput("sustancia_modificar", "Sustancia de inicio", placeholder = "Completar con una sola droga")),
-                                   column(6, numericInput("edad_inicio_modificar", "Edad de inicio", value = NULL)),
-                                   column(4, selectInput("referencia_aps_modificar", "Referencia APS", choices = c(
-                                     "Sólo clínica médica", "Referencia con seguimiento", "Referencia sin seguimiento", "No está referenciado"))),
-                                   column(4, textInput("derivado_de_modificar", "Derivado de:")),
-                                   column(4, selectInput("trat_prev_modificar", "Tratamientos previos", choices = c("No", "Entre 1 y 2", "3 o más")))
-                                 )
-                               ),
-                               box(
-                                 status = "warning",
-                                 solidHeader = TRUE,
-                                 width = 10,
-                                 fluidRow(
-                                   column(12, textInput("obs_modificar", "Observaciones"))
-                                 )
+                                   column(6, 
+                                          textInput("consumo",
+                                                    "Consumo actual_modificar",
+                                                    placeholder = "Droga más prevalente"), 
+                                          selectInput("policonsumo_modificar",
+                                                      "Policonsumo",
+                                                      choices = c("No", "Sí")),
+                                          selectInput("referencia_aps_modificar", 
+                                                      "Referencia APS", 
+                                                      choices = c("No está referenciado",
+                                                                  "Sólo clínica médica", 
+                                                                  "Referencia con seguimiento", 
+                                                                  "Referencia sin seguimiento"
+                                                      ))
+                                   ),
+                                   column(6, 
+                                          textInput("sustancia_modificar", 
+                                                    "Sustancia de inicio", 
+                                                    placeholder = "Completar con una sola droga"),
+                                          radioGroupButtons("edad_inicio_modificar",
+                                                            "Edad de inicio",
+                                                            choices = c("Niños/as de hasta 12 años",
+                                                                        "Adolescentes entre 13 a 17 años",
+                                                                        "Jóvenes de 18 a 29 años",
+                                                                        "Personas adultas de 30 a 59 años",
+                                                                        "Personas de 60 años o más"),
+                                                            individual = TRUE,
+                                                            size = "s"))
+                                 ),
+                                 fluidRow(column(6, 
+                                                 selectInput("trat_prev_modificar", 
+                                                             "Tratamientos previos", 
+                                                             choices = c("No", 
+                                                                         "Entre 1 y 2", 
+                                                                         "3 o más"))),
+                                          column(6,
+                                                 textInput("derivado_de_modificar", 
+                                                           "Derivado de:")))
                                ),
                                box(
                                  status = "warning",
@@ -493,23 +723,23 @@ server <- function(input, output, session) {
   observeEvent(input$actualizar, {
     # Leer los datos actuales
     data <- read_data()
-    data$Edad = round(as.numeric(difftime(Sys.Date(), as.Date(data$Fecha_de_nacimiento, format = "%d/%m/%Y"), units = "days")) / 365, 0)
+    data$Edad = round(as.numeric(difftime(Sys.Date(), data$Fecha_de_nacimiento, units = "days")) / 365, 0)
     
     # Crear un nuevo registro con los datos de entrada
     act_entry <- data.frame(
       Apellido_nombres = ifelse(is.null(input$apellido_nombres_modificar), NA, input$apellido_nombres_modificar),
-      DNI = ifelse(is.null(input$dni_modificar), NA, input$dni_modificar),
-      Entrevista_psicológica_fecha = as.character(ifelse(is.null(input$psico_fecha_modificar), NA, input$psico_fecha_modificar)),
+      DNI = ifelse(is.na(input$dni_modificar), NA, input$dni_modificar),
+      Entrevista_psicológica_fecha = ifelse(is.null(input$psico_fecha_modificar), NA, input$psico_fecha_modificar),
       Entrevista_psicológica_asistencia = ifelse(is.null(input$psico_modificar), NA, input$psico_modificar),
-      Entrevista_psiquiátrica_fecha = as.character(ifelse(is.null(input$psiqui_fecha_modificar), NA, input$psiqui_fecha_modificar)),
+      Entrevista_psiquiátrica_fecha = (ifelse(is.null(input$psiqui_fecha_modificar), NA, input$psiqui_fecha_modificar)),
       Entrevista_psiquiátrica_asistencia = ifelse(is.null(input$psiqui_modificar), NA, input$psiqui_modificar),
-      Entrevista_ts_fecha = as.character(ifelse(is.null(input$ts_fecha_modificar), NA, input$ts_fecha_modificar)),
+      Entrevista_ts_fecha = ifelse(is.null(input$ts_fecha_modificar), NA, input$ts_fecha_modificar),
       Entrevista_ts_asistencia = ifelse(is.null(input$ts_modificar), NA, input$ts_modificar),
       Tratamiento = ifelse(is.null(input$tratamiento_modificar), NA, input$tratamiento_modificar),
       Contacto = ifelse(is.null(input$contacto_modificar), NA, input$contacto_modificar),
-      Fecha_de_nacimiento = as.character(ifelse(is.null(input$fecha_nacimiento_modificar), NA, input$fecha_nacimiento_modificar)),
+      Fecha_de_nacimiento = (ifelse(is.null(input$fecha_nacimiento_modificar), NA, input$fecha_nacimiento_modificar)),
       Edad = ifelse(is.na(input$fecha_nacimiento_modificar), NA, 
-                    round(difftime(Sys.Date(), as.Date(input$Fecha_de_nacimiento, format = "%d/%m/%Y"), units = "days")/ 365, 0)),
+                    round(difftime(Sys.Date(), input$Fecha_de_nacimiento, units = "days")/ 365, 0)),
       Sexo = ifelse(is.null(input$identidad_gen_modificar), NA, input$identidad_gen_modificar),
       Nivel_educativo = ifelse(is.null(input$nivel_educativo_modificar), NA, input$nivel_educativo_modificar),
       Situacion_habitacional = ifelse(is.null(input$situacion_habitacional_modificar), NA, input$situacion_habitacional_modificar),
@@ -537,7 +767,8 @@ server <- function(input, output, session) {
     
     # Reemplazar el registro en la posición correcta
     if (length(idx) > 0) {
-      data[last(idx), ] <- act_entry
+      data <- data[-last(idx), ]
+      data <- rbind(data,act_entry)
       
       # Escribir los datos actualizados en el archivo Excel
       write_data(data)
@@ -569,15 +800,15 @@ server <- function(input, output, session) {
     new_entry <- data.frame(
       Apellido_nombres = ifelse(is.null(input$apellido_nombres), NA, input$apellido_nombres),
       DNI = ifelse(is.na(input$dni), NA, input$dni),
-      Entrevista_psicológica_fecha = ifelse(is.null(input$psico_fecha) || input$psico_fecha == "", NA, format(input$psico_fecha, "%d/%m/%Y")),
+      Entrevista_psicológica_fecha = ifelse(is.null(input$psico_fecha),NA,input$psico_fecha),
       Entrevista_psicológica_asistencia = ifelse(is.null(input$psico), NA, input$psico),
-      Entrevista_psiquiátrica_fecha = ifelse(is.null(input$psiqui_fecha) || input$psiqui_fecha == "", NA, format(input$psiqui_fecha, "%d/%m/%Y")),
+      Entrevista_psiquiátrica_fecha = ifelse(is.null(input$psiqui_fecha), NA, input$psiqui_fecha),
       Entrevista_psiquiátrica_asistencia = ifelse(is.null(input$psiqui), NA, input$psiqui),
-      Entrevista_ts_fecha = ifelse(is.null(input$ts_fecha) || input$ts_fecha == "", NA, format(input$ts_fecha, "%d/%m/%Y")),
+      Entrevista_ts_fecha = ifelse(is.null(input$ts_fecha), NA, input$ts_fecha),
       Entrevista_ts_asistencia = ifelse(is.null(input$ts), NA, input$ts),
       Tratamiento = ifelse(is.null(input$tratamiento), NA, input$tratamiento),
       Contacto = ifelse(is.null(input$contacto), NA, input$contacto),
-      Fecha_de_nacimiento = ifelse(is.null(input$fecha_nacimiento) || input$fecha_nacimiento == "", NA, format(input$fecha_nacimiento, "%d/%m/%Y")),
+      Fecha_de_nacimiento = ifelse(is.null(input$fecha_nacimiento), NA, input$fecha_nacimiento),
       Edad = ifelse(is.na(input$fecha_nacimiento) || input$fecha_nacimiento == "", NA, as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(input$fecha_nacimiento, format = "%d/%m/%Y"), "%Y"))),
       Sexo = ifelse(is.null(input$identidad_gen), NA, input$identidad_gen),
       Nivel_educativo = ifelse(is.null(input$nivel_educativo), NA, input$nivel_educativo),
