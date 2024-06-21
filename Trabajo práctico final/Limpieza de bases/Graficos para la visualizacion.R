@@ -3,17 +3,31 @@ data$Entrevista_psicológica_fecha <- as.Date(data$Entrevista_psicológica_fecha
 data$anio <- format(data$Entrevista_psicológica_fecha, "%Y")
 
 # Graficos
-# Gráfico de torta policonsumo
+# Grafico sustancia de inicio
+conteo <- table(data$Sustancia_de_inicio)
+conteo_df <- as.data.frame(conteo)
+names(conteo_df) <- c("Sustancia", "Cantidad")
+ggplot(datos, aes(x = Sustancia, y = Cantidad, fill = Sustancia)) +
+  geom_bar(stat = "identity") +
+  labs(x = "", y = "Cantidad", title = "Consumo según sustancia de inicio", fill = "Sustancia de inicio") +
+  theme_minimal() +
+  theme(axis.text.x = element_blank())+
+  scale_fill_manual(values = c("Cocaína" = "#e9c46a", "Pegamento" = "#f4d35e",
+                               "Marihuana" = "#e5a845", "Alcohol" = "#5e503f",
+                               "Psicofármacos" = "#b08a61", "Otras" = "#FDC500"))
+
+# Gráfico  policonsumo
 frecuencia_policonsumo <- as.data.frame(table(data$Policonsumo))
 names(frecuencia_policonsumo) <- c("Policonsumo", "Cantidad")
 
 ggplot(frecuencia_policonsumo, aes(x = "", y = Cantidad, fill = Policonsumo)) +
   geom_bar(stat = "identity") +
-  labs(title = "", fill = "Policonsumo", y = "Cantidad de jóvenes", x = NULL) +
-  geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5)) +
+  labs(title = "Distribución de Policonsumo", fill = "Policonsumo", y = "Cantidad de jóvenes",
+       x = NULL) +
+  geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5),
+            colour = "white") +
   theme_minimal() +
-  scale_fill_manual(values = c("Si" = "#dfba74", "No" = "#e8a249"))
-
+  scale_fill_manual(values = c("Si" = "#e9c46a", "No" = "#5e503f"))
 
 # Edad de inicio vs tratamiento
 conteo_tratamiento_edad <- as.data.frame(table(data$Tratamiento, data$Edad_de_inicio))
@@ -36,8 +50,7 @@ ggplot(conteo_tratamiento_edad, aes(x = Tratamiento, y = Cantidad, fill = Edad_d
 
 
 # Tratamiento vs CUD
-# Creación del gráfico girado
-frecuencia_cud <- as.data.frame(table(data$Tiene_CUD))
+]frecuencia_cud <- as.data.frame(table(data$Tiene_CUD))
 names(frecuencia_cud) <- c("CUD", "Cantidad")
 
 ggplot(frecuencia_cud, aes(x = "", y = Cantidad, fill = CUD)) +
