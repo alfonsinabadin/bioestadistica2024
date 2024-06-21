@@ -1,6 +1,6 @@
 # Cambios de nombres como estan en el formulario a la base ADMISION
 library(readxl)
-ADMISIÓN <- read_excel("Admisiones/ADMISIÓN.xlsx")
+ADMISIÓN <- read_excel("Trabajo práctico final/Limpieza de bases/ADMISIÓN.xlsx")
 
 ## Tratamiento
 ADMISIÓN <- ADMISIÓN %>%
@@ -86,6 +86,8 @@ ADMISIÓN <- ADMISIÓN %>%
   mutate(Tratamientos_previos = recode(Tratamientos_previos, "No" = "No",
                                        "entre 1 y 2" = "Entre 1 y 2",
                                        "más de 3" = "3 o más"))
+
+ADMISIÓN$DNI[6] <- NA
 
 write_xlsx(ADMISIÓN,"Trabajo práctico final/Limpieza de bases/ADMISIÓN.xlsx")
 write_xlsx(ADMISIÓN,"Admisiones/ADMISIÓN.xlsx")

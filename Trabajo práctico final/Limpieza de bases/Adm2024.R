@@ -87,7 +87,8 @@ base <- base %>%
   add_column(Provincia = NA, .after = "Situacion_habitacional") %>%
   add_column(Localidad = NA, .after = "Provincia") %>%
   add_column(Barrio = NA, .after = "Localidad") %>%
-  add_column(Edad = round(as.numeric(difftime(Sys.Date(), as.Date(base$Fecha_de_nacimiento, format = "%d/%m/%Y"),units = "days"))/365,0), .after = "Fecha_de_nacimiento")
+  add_column(Edad = round(as.numeric(difftime(Sys.Date(), as.Date(base$Fecha_de_nacimiento, format = "%d/%m/%Y"),units = "days"))/365,0), .after = "Fecha_de_nacimiento") %>%
+  add_column(Sexo = "Varón", .before = "Nivel_educativo")
 
 base$Edad_de_inicio <-ifelse(base$Edad_de_inicio == "Antes de los 12", "Niños/as de hasta 12 años", 
                              ifelse(base$Edad_de_inicio == "Antes de los 11", "Niños/as de hasta 12 años",
@@ -97,6 +98,7 @@ base$Edad_de_inicio <-ifelse(base$Edad_de_inicio == "Antes de los 12", "Niños/a
                                                          ifelse(base$Edad_de_inicio == "de 18 en adelante", "Jóvenes de 18 a 29 años", NA)
                                                   )))))
 
-colnames(base)[24] <- "Derivado_de"
+colnames(base)[25] <- "Derivado_de"
 
 write_xlsx(base,"Trabajo práctico final/Limpieza de bases/ADMISIÓN.xlsx")
+write_xlsx(base,"Admisiones/ADMISIÓN.xlsx")
