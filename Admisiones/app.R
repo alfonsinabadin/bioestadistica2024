@@ -8,6 +8,8 @@ library(shinyvalidate)
 library(shinydashboard)
 library(geoAr)
 library(dplyr)
+library(ggplot2)
+library(DT)
 
 # Definir la ruta del archivo Excel donde se guardarán los datos
 file_path <- "ADMISIÓN.xlsx"
@@ -638,28 +640,10 @@ ui <- fluidPage(
                     # Pestaña "Visualización" ----------------------------------------------------------------------------------------------------------
                     tabPanel("Visualización",
                              fluidRow(
-                               box(
-                                 title = "Filtros",
-                                 status = "warning",
-                                 solidHeader = TRUE,
-                                 width = 12,
-                                 fluidRow(
-                                   column(3, selectInput("filtro_anio", 
-                                                         "Año", 
-                                                         choices = c(2022:format(Sys.Date(),format = "%Y")))), 
-                                   column(3, selectInput("filtro_genero", 
-                                                         "Género", 
-                                                         choices = c("Mujer",
-                                                                     "Mujer Trans",
-                                                                     "Varón",
-                                                                     "Varón Trans",
-                                                                     "No binario",
-                                                                     "Otro",
-                                                                     "No responde"))),
-                                   column(3, selectInput("filtro_provincia", 
-                                                         "Provincia", 
-                                                         choices = provincias)))
-                               ),
+                               box(width = 2,
+                                   selectInput(inputId = "anio", label = "Selecione año", 
+                                               choices = unique(data$anio), 
+                                               selected = 1)),
                                box(
                                  title = "Gráficos y Tablas",
                                  status = "warning",
@@ -674,7 +658,8 @@ ui <- fluidPage(
                                             )
                                             
                                    ),
-                                   tabPanel("Tablas"
+                                   tabPanel("Tablas",
+                                            dataTableOutput("tabla_resumen")
                                             
                                    )
                                  )
@@ -939,9 +924,9 @@ server <- function(input, output, session) {
       labs(x = "", y = "Cantidad", title = "Consumo según sustancia de inicio", fill = "Sustancia de inicio") +
       theme_minimal() +
       theme(axis.text.x = element_blank())+
-      scale_fill_manual(values = c("Cocaína" = "#e9c46a", "Pegamento" = "#f4d35e",
-                                   "Marihuana" = "#e5a845", "Alcohol" = "#5e503f",
-                                   "Psicofármacos" = "#b08a61", "Otras" = "#FDC500"))
+      scale_fill_manual(values = c("Cocaína" = "#1A237E", "Pegamento" = "#303F9F",
+                                   "Marihuana" = "#3F51B5", "Alcohol" = "#7986CB",
+                                   "Psicofármacos" = "#C5CAE9", "Otras" = "#1A237E"))
   })
   
   # Grafico de barra policonsumo
@@ -958,7 +943,7 @@ server <- function(input, output, session) {
       geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5),
                 colour = "white") +
       theme_minimal() +
-      scale_fill_manual(values = c("Si" = "#e9c46a", "No" = "#5e503f"))
+      scale_fill_manual(values = c("Si" = "#1A237E", "No" = "#3F51B5"))
   })
   
   # Gráfico Tratamiento vs edad de inicio
@@ -978,9 +963,51 @@ server <- function(input, output, session) {
                 position=position_stack(vjust=0.5),
                 colour = "white")+
       coord_flip()+
-      scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#e9c46a", 
-                                   "Jóvenes de 18 a 29 años" = "#e5a845",
-                                   "Niños/as de hasta 12 años" = "#b08a61"))
+      scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#3F51B5", 
+                                   "Jóvenes de 18 a 29 años" = "#7986CB",
+                                   "Niños/as de hasta 12 años" = "#1A237E"))
+  })
+  
+  
+  # Tabla resumen de datos
+  output$tabla_resumen <- renderDT({
+    datatable(
+      data,
+      extensions = 'Scroller',
+      options = list(
+        lengthChange = TRUE,
+        scrollX = TRUE,
+        deferRender = TRUE,
+        scrollY = 350,
+        scroller = TRUE,
+        autoWidth = TRUE,
+        order = list(list(3, 'desc')),
+        columnDefs = list(list(width = '147px', targets = c(1:31))),
+        initComplete = JS(
+          "function(settings, json) {",
+          "$(this.api().table().header()).css({'background-color': '#D97F11', 'color': 'white'});",
+          "}"
+        ),
+        language = list(
+          url = "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json",
+          infoFiltered = "Todos" # supuestamente cambia el All por todos pero no anda
+        )
+      ),
+      style = "bootstrap",
+      colnames = c('Apellido, Nombre', 'DNI', 'Fecha Entrevista Psico', 
+                   'Asistencia Entrevista Psico', 'Fecha Entrevista Psiqui',
+                   "Asistencia Entrevista Psiqui", "Fecha Entrevista TS",
+                   "Asistencia Entrevista TS", "Tratamiento", 
+                   "Contacto", "Fecha de Nacimiento", "Edad", 
+                   "Sexo", "Nivel Educativo", "Situación Habitacional", 
+                   "Provincia", "Localidad", "Barrio", "Redes de Apoyo", 
+                   "Tiene CUD", "Trabajo", "Ingresos Económicos", 
+                   "Situación Judicial", "Referencia APS", "Derivado de", 
+                   "Policonsumo", "Sustancia Actual", "Edad de Inicio",
+                   "Sustancia de Inicio", "Tratamientos Previos", "Observaciones", 
+                   "Año"),
+      filter = "top"
+    )
   })
   
   # Alfon
