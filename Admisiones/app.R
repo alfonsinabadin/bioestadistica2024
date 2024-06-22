@@ -977,9 +977,8 @@ server <- function(input, output, session) {
         deferRender = TRUE,
         scrollY = 350,
         scroller = TRUE,
-        autoWidth = TRUE,
         order = list(list(3, 'desc')),
-        columnDefs = list(list(width = '147px', targets = c(1:31))),
+        columnDefs = list(list(width = '150px', targets = c(1:31))),
         initComplete = JS(
           "function(settings, json) {",
           "$(this.api().table().header()).css({'background-color': '#D97F11', 'color': 'white'});",
@@ -1001,8 +1000,7 @@ server <- function(input, output, session) {
                    "Tiene CUD", "Trabajo", "Ingresos Económicos", 
                    "Situación Judicial", "Referencia APS", "Derivado de", 
                    "Policonsumo", "Sustancia Actual", "Edad de Inicio",
-                   "Sustancia de Inicio", "Tratamientos Previos", "Observaciones", 
-                   "Año"),
+                   "Sustancia de Inicio", "Tratamientos Previos", "Observaciones"),
       filter = "top"
     )
   })
