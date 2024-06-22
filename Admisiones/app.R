@@ -640,10 +640,6 @@ ui <- fluidPage(
                     # Pestaña "Visualización" ----------------------------------------------------------------------------------------------------------
                     tabPanel("Visualización",
                              fluidRow(
-                               box(width = 2,
-                                   selectInput(inputId = "anio", label = "Selecione año", 
-                                               choices = unique(data$anio), 
-                                               selected = 1)),
                                box(
                                  title = "Gráficos y Tablas",
                                  status = "warning",
@@ -924,9 +920,9 @@ server <- function(input, output, session) {
       labs(x = "", y = "Cantidad", title = "Consumo según sustancia de inicio", fill = "Sustancia de inicio") +
       theme_minimal() +
       theme(axis.text.x = element_blank())+
-      scale_fill_manual(values = c("Cocaína" = "#1A237E", "Pegamento" = "#303F9F",
-                                   "Marihuana" = "#3F51B5", "Alcohol" = "#7986CB",
-                                   "Psicofármacos" = "#C5CAE9", "Otras" = "#1A237E"))
+      scale_fill_manual(values = c("Cocaína" = "#993F00", "Pegamento" = "#CC5800",
+                                   "Marihuana" = "#FFB053", "Alcohol" = "#993D00",
+                                   "Psicofármacos" = "#FFCA99", "Otras" = "#FFD17A"))
   })
   
   # Grafico de barra policonsumo
@@ -943,7 +939,7 @@ server <- function(input, output, session) {
       geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5),
                 colour = "white") +
       theme_minimal() +
-      scale_fill_manual(values = c("Si" = "#1A237E", "No" = "#3F51B5"))
+      scale_fill_manual(values = c("Si" = "#993F00", "No" = "#CC5800"))
   })
   
   # Gráfico Tratamiento vs edad de inicio
@@ -963,9 +959,9 @@ server <- function(input, output, session) {
                 position=position_stack(vjust=0.5),
                 colour = "white")+
       coord_flip()+
-      scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#3F51B5", 
-                                   "Jóvenes de 18 a 29 años" = "#7986CB",
-                                   "Niños/as de hasta 12 años" = "#1A237E"))
+      scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#993D00", 
+                                   "Jóvenes de 18 a 29 años" = "#FF8E32",
+                                   "Niños/as de hasta 12 años" = "#993F00"))
   })
   
   
