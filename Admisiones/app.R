@@ -967,6 +967,7 @@ server <- function(input, output, session) {
   
   # Tabla resumen de datos
   output$tabla_resumen <- renderDT({
+    data <- read_data()      
     datatable(
       data,
       extensions = 'Scroller',
