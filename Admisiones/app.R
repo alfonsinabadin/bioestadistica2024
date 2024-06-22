@@ -8,8 +8,6 @@ library(shinyvalidate)
 library(shinydashboard)
 library(geoAr)
 library(dplyr)
-library(ggplot2)
-library(plotly)
 
 # Definir la ruta del archivo Excel donde se guardarán los datos
 file_path <- "ADMISIÓN.xlsx"
@@ -637,8 +635,8 @@ ui <- fluidPage(
                                )
                              )
                     ),
-                    # Nueva pestaña "Visualización de datos" ----------------------------------------------------------------------------------------------------------
-                    tabPanel("Visualización de datos",
+                    # Pestaña "Visualización" ----------------------------------------------------------------------------------------------------------
+                    tabPanel("Visualización",
                              fluidRow(
                                box(
                                  title = "Filtros",
@@ -646,10 +644,21 @@ ui <- fluidPage(
                                  solidHeader = TRUE,
                                  width = 12,
                                  fluidRow(
-                                   column(3, selectInput("filtro_anio", "Año", choices = c("Todos", unique(data$anio)))), 
-                                   column(3, selectInput("filtro_genero", "Género", choices = c("Todos", unique(data$Sexo)))),
-                                   column(3, selectInput("filtro_provincia", "Provincia", choices = c("Todas", provincias)))
-                                 )
+                                   column(3, selectInput("filtro_anio", 
+                                                         "Año", 
+                                                         choices = c(2022:format(Sys.Date(),format = "%Y")))), 
+                                   column(3, selectInput("filtro_genero", 
+                                                         "Género", 
+                                                         choices = c("Mujer",
+                                                                     "Mujer Trans",
+                                                                     "Varón",
+                                                                     "Varón Trans",
+                                                                     "No binario",
+                                                                     "Otro",
+                                                                     "No responde"))),
+                                   column(3, selectInput("filtro_provincia", 
+                                                         "Provincia", 
+                                                         choices = provincias)))
                                ),
                                box(
                                  title = "Gráficos y Tablas",
@@ -671,6 +680,25 @@ ui <- fluidPage(
                                  )
                                )
                              )
+                    ),
+                    tabPanel("Visualizaciones Alfon",
+                             fluidRow(
+                               column(5, valueBoxOutput("continua"),
+                                      valueBoxOutput("rechaza_tto"),
+                                      valueBoxOutput("no_finaliza"))
+                               ),
+                             fluidRow(
+                               column(5, 
+                                      valueBoxOutput("int_cristaleria"),
+                                      valueBoxOutput("int_baigorria"),
+                                      valueBoxOutput("int_bp"))
+                               ),
+                             fluidRow(
+                               column(5, 
+                                      valueBoxOutput("cdd_zeballos"),
+                                      valueBoxOutput("cdd_bp"),
+                                      valueBoxOutput("cdd_baigorria"))
+                               )
                     )
                   )
                 )
@@ -760,23 +788,24 @@ server <- function(input, output, session) {
   observeEvent(input$actualizar, {
     # Leer los datos actuales
     data <- read_data()
-    data$Edad = round(as.numeric(difftime(Sys.Date(), data$Fecha_de_nacimiento, units = "days")) / 365, 0)
+    data$Edad <- round(as.numeric(difftime(Sys.Date(), data$Fecha_de_nacimiento, units = "days")) / 365, 0)
+    # Encontrar el índice de la fila a actualizar
+    idx <- which(data$DNI == input$buscar_dni)
     
     # Crear un nuevo registro con los datos de entrada
     act_entry <- data.frame(
       Apellido_nombres = ifelse(is.null(input$apellido_nombres_modificar), NA, input$apellido_nombres_modificar),
       DNI = ifelse(is.na(input$dni_modificar), NA, input$dni_modificar),
-      Entrevista_psicológica_fecha = ifelse(is.null(input$psico_fecha_modificar), NA, input$psico_fecha_modificar),
+      Entrevista_psicológica_fecha = ifelse(is.null(input$psico_fecha_modificar),NA,input$psico_fecha_modificar),
       Entrevista_psicológica_asistencia = ifelse(is.null(input$psico_modificar), NA, input$psico_modificar),
-      Entrevista_psiquiátrica_fecha = (ifelse(is.null(input$psiqui_fecha_modificar), NA, input$psiqui_fecha_modificar)),
+      Entrevista_psiquiátrica_fecha = ifelse(is.null(input$psiqui_fecha_modificar), NA, input$psiqui_fecha_modificar),
       Entrevista_psiquiátrica_asistencia = ifelse(is.null(input$psiqui_modificar), NA, input$psiqui_modificar),
       Entrevista_ts_fecha = ifelse(is.null(input$ts_fecha_modificar), NA, input$ts_fecha_modificar),
       Entrevista_ts_asistencia = ifelse(is.null(input$ts_modificar), NA, input$ts_modificar),
       Tratamiento = ifelse(is.null(input$tratamiento_modificar), NA, input$tratamiento_modificar),
       Contacto = ifelse(is.null(input$contacto_modificar), NA, input$contacto_modificar),
-      Fecha_de_nacimiento = (ifelse(is.null(input$fecha_nacimiento_modificar), NA, input$fecha_nacimiento_modificar)),
-      Edad = ifelse(is.na(input$fecha_nacimiento_modificar), NA, 
-                    round(difftime(Sys.Date(), input$Fecha_de_nacimiento, units = "days")/ 365, 0)),
+      Fecha_de_nacimiento = ifelse(is.null(input$fecha_nacimiento_modificar), NA, input$fecha_nacimiento_modificar),
+      Edad = ifelse(is.na(input$fecha_nacimiento_modificar) || input$fecha_nacimiento_modificar == "", NA, as.numeric(format(Sys.Date(), "%Y")) - as.numeric(format(as.Date(input$fecha_nacimiento_modificar, format = "%d/%m/%Y"), "%Y"))),
       Sexo = ifelse(is.null(input$identidad_gen_modificar), NA, input$identidad_gen_modificar),
       Nivel_educativo = ifelse(is.null(input$nivel_educativo_modificar), NA, input$nivel_educativo_modificar),
       Situacion_habitacional = ifelse(is.null(input$situacion_habitacional_modificar), NA, input$situacion_habitacional_modificar),
@@ -791,16 +820,13 @@ server <- function(input, output, session) {
       Referencia_APS = ifelse(is.null(input$referencia_aps_modificar), NA, input$referencia_aps_modificar),
       Derivado_de = ifelse(is.null(input$derivado_de_modificar), NA, input$derivado_de_modificar),
       Policonsumo = ifelse(is.null(input$policonsumo_modificar), NA, input$policonsumo_modificar),
-      Sustancia_actual = ifelse(is.null(input$sustancia_modificar), NA, input$sustancia_modificar),
+      Sustancia_actual = ifelse(is.null(input$consumo_modificar), NA, input$consumo_modificar),
       Edad_de_inicio = ifelse(is.na(input$edad_inicio_modificar), NA, input$edad_inicio_modificar),
       Sustancia_de_inicio = ifelse(is.null(input$sustancia_modificar), NA, input$sustancia_modificar),
       Tratamientos_previos = ifelse(is.null(input$trat_prev_modificar), NA, input$trat_prev_modificar),
       Observaciones = ifelse(is.null(input$obs_modificar), NA, input$obs_modificar),
       stringsAsFactors = FALSE
     )
-    
-    # Encontrar el índice de la fila a actualizar
-    idx <- which(data$DNI == input$buscar_dni)
     
     # Reemplazar el registro en la posición correcta
     if (length(idx) > 0) {
@@ -895,24 +921,11 @@ server <- function(input, output, session) {
       write_xlsx(data, file)
     }
   )
-  # Filtrar datos según los filtros seleccionados
-  datos_filtrados <- reactive({
-    datos_filtrados <- data
-    if (input$filtro_anio != "Todos") {
-      datos_filtrados <- datos_filtrados %>% filter(Año == input$filtro_anio)
-    }
-    if (input$filtro_genero != "Todos") {
-      datos_filtrados <- datos_filtrados %>% filter(Genero == input$filtro_genero)
-    }
-    if (input$filtro_provincia != "Todas") {
-      datos_filtrados <- datos_filtrados %>% filter(Provincia == input$filtro_provincia)
-    }
-    datos_filtrados
-  })
+  
   # GRAFICOS
   # Grafico de barras sustancia de inicio
   conteo_sustancias <- reactive({
-    data <- ADMISIÓN  
+    data <- read_data()  
     conteo <- table(data$Sustancia_de_inicio)
     conteo_df <- as.data.frame(conteo)
     names(conteo_df) <- c("Sustancia", "Cantidad")
@@ -929,13 +942,15 @@ server <- function(input, output, session) {
       scale_fill_manual(values = c("Cocaína" = "#e9c46a", "Pegamento" = "#f4d35e",
                                    "Marihuana" = "#e5a845", "Alcohol" = "#5e503f",
                                    "Psicofármacos" = "#b08a61", "Otras" = "#FDC500"))
-    })
+  })
   
   # Grafico de barra policonsumo
-  frecuencia_policonsumo <- as.data.frame(table(data$Policonsumo))
-  names(frecuencia_policonsumo) <- c("Policonsumo", "Cantidad")
-  
   output$grafico_policonsumo <- renderPlot({
+    
+    data <- read_data()
+    frecuencia_policonsumo <- as.data.frame(table(data$Policonsumo))
+    names(frecuencia_policonsumo) <- c("Policonsumo", "Cantidad")
+    
     ggplot(frecuencia_policonsumo, aes(x = "", y = Cantidad, fill = Policonsumo)) +
       geom_bar(stat = "identity") +
       labs(title = "Distribución de Policonsumo", fill = "Policonsumo", y = "Cantidad de jóvenes",
@@ -945,10 +960,13 @@ server <- function(input, output, session) {
       theme_minimal() +
       scale_fill_manual(values = c("Si" = "#e9c46a", "No" = "#5e503f"))
   })
+  
   # Gráfico Tratamiento vs edad de inicio
-  conteo_tratamiento_edad <- as.data.frame(table(data$Tratamiento, data$Edad_de_inicio))
-  names(conteo_tratamiento_edad) <- c("Tratamiento", "Edad_de_inicio", "Cantidad")
   output$grafico_edad_inicio <- renderPlot({
+    
+    data <- read_data()
+    conteo_tratamiento_edad <- as.data.frame(table(data$Tratamiento, data$Edad_de_inicio))
+    names(conteo_tratamiento_edad) <- c("Tratamiento", "Edad_de_inicio", "Cantidad")
     ggplot(conteo_tratamiento_edad, aes(x = Tratamiento, y = Cantidad, fill = Edad_de_inicio)) +
       geom_bar(stat = "identity", position = "stack") +
       labs(title = "Relación entre Tratamiento y Edad de Inicio",
@@ -963,6 +981,97 @@ server <- function(input, output, session) {
       scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#e9c46a", 
                                    "Jóvenes de 18 a 29 años" = "#e5a845",
                                    "Niños/as de hasta 12 años" = "#b08a61"))
+  })
+  
+  # Alfon
+  output$continua <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Continúa en seguimiento",]), 
+      "Continúa en seguimiento",
+      icon = icon("laptop-medical"), color = "yellow", width = 2
+    )
+  })
+  
+  output$int_baigorria <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Internación Baigorria",]), 
+      "Internación Baigorria",
+      icon = icon("hospital-user"), color = "yellow", width = 2
+    )
+  })
+  
+  output$int_bp <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Internación Buen Pastor",]), 
+      "Internación Buen Pastor",
+      icon = icon("hospital-user"), color = "yellow", width = 2
+    )
+  })
+  
+  output$int_cristaleria <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Internación Cristalería",]), 
+      "Internación Cristalería",
+      icon = icon("hospital-user"), color = "yellow", width = 2
+    )
+  })
+  
+  output$cdd_zeballos <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Centro de día Zeballos",]), 
+      "Centro de día Zeballos",
+      icon = icon("warehouse"), color = "yellow", width = 2
+    )
+  })
+  
+  output$cdd_bp <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Centro de día Buen Pastor",]), 
+      "Centro de día Buen Pastor",
+      icon = icon("warehouse"), color = "yellow", width = 2
+    )
+  })
+  
+  output$cdd_baigorria <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Centro de día Baigorria",]), 
+      "Centro de día Baigorria",
+      icon = icon("warehouse"), color = "yellow", width = 2
+    )
+  })
+  
+  output$derivado <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Derivado",]), 
+      "Derivado",
+      icon = icon("hospital"), color = "yellow", width = 2
+    )
+  })
+  
+  output$no_finaliza <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "No finaliza",]), 
+      "No finaliza",
+      icon = icon("hand-holding"), color = "yellow", width = 2
+    )
+  })
+  
+  output$rechaza_tto <- renderValueBox({
+    data <- read_data()
+    valueBox(
+      nrow(data[data$Tratamiento == "Rechaza tratamiento",]), 
+      "Rechaza tratamiento",
+      icon = icon("handshake-slash"), color = "yellow", width = 2
+    )
   })
 }
 
