@@ -10,9 +10,17 @@ library(geoAr)
 library(dplyr)
 library(ggplot2)
 library(DT)
+library(shinymanager)
 
 # Definir la ruta del archivo Excel donde se guardarán los datos
 file_path <- "ADMISIÓN.xlsx"
+
+credentials <- data.frame(
+  user = c("abadin", "vsalvarezza", "csebastiani","usuario"), # mandatory
+  password = c("bio2024"), # mandatory
+  admin = c(TRUE, TRUE, FALSE, TRUE),
+  stringsAsFactors = FALSE
+)
 
 # Función para leer los datos del archivo Excel
 read_data <- function() {
@@ -73,8 +81,6 @@ read_data <- function() {
   }
 }
 
-
-
 provincias <- show_arg_codes()[2:25, 5]
 provincias[[1]][1] <- "CABA"
 
@@ -88,7 +94,14 @@ write_data <- function(data) {
 }
 
 # Definir la interfaz de usuario (UI) de la aplicación Shiny
-ui <- fluidPage(
+ui <- secure_app(
+  theme = shinythemes::shinytheme("superhero"),
+  language = "es",
+  ### EDIT: Add an image ### 
+  tag_img = tags$img(
+    src = "logo.png", width = 100
+  ),
+  fluidPage(
   dashboardPage(skin = "black",
                 dashboardHeader(title = tags$div(
                   tags$img(src = "logo.png", height = "51px", style = "margin-right: 10px;"),
@@ -301,7 +314,7 @@ ui <- fluidPage(
                                                          choices = c("Sin causas Judiciales", 
                                                                      "Con causa abierta", 
                                                                      "Con causa cerrada", 
-                                                                     "Desconoce"))),
+                                                                     "Desconoce")))
                                  ),
                                  fluidRow(column(12,textInput("obs", "Observaciones")))
                                ),
@@ -578,7 +591,7 @@ ui <- fluidPage(
                                                          choices = c("Sin causas Judiciales", 
                                                                      "Con causa abierta", 
                                                                      "Con causa cerrada", 
-                                                                     "Desconoce"))),
+                                                                     "Desconoce")))
                                  ),
                                  fluidRow(column(12,textInput("obs_modificar", "Observaciones")))
                                ),
@@ -630,64 +643,50 @@ ui <- fluidPage(
                                box(
                                  status = "warning",
                                  solidHeader = TRUE,
-                                 width = 2,
+                                 width = 12,
                                  fluidRow(
-                                   column(12, actionButton("actualizar", "Actualizar Registro"))
-                                 )
+                                   column(12, 
+                                          actionButton("actualizar", "Actualizar Registro"),
+                                          actionButton("eliminar", "Eliminar Registro"))
+                                   )
                                )
                              )
                     ),
                     # Pestaña "Visualización" ----------------------------------------------------------------------------------------------------------
-                    tabPanel("Visualización",
+                    tabPanel("Visualización de datos",
                              fluidRow(
-                               box(
-                                 title = "Gráficos y Tablas",
-                                 status = "warning",
-                                 solidHeader = TRUE,
-                                 width = 12,
-                                 tabsetPanel(
-                                   tabPanel("Gráficos",
-                                            fluidRow(
-                                              column(3, plotOutput("grafico_barras_sustancias")),
-                                              column(3, plotOutput("grafico_policonsumo")),
-                                              column(6, plotOutput("grafico_edad_inicio"))
-                                            )
-                                            
-                                   ),
-                                   tabPanel("Tablas",
-                                            dataTableOutput("tabla_resumen")
-                                            
-                                   )
-                                 )
-                               )
+                               valueBoxOutput("int_cristaleria", width = 2),
+                               valueBoxOutput("int_baigorria", width = 2),
+                               valueBoxOutput("int_bp", width = 2),
+                               valueBoxOutput("cdd_zeballos", width = 2),
+                               valueBoxOutput("cdd_bp", width = 2),
+                               valueBoxOutput("cdd_baigorria", width = 2)
+                               ),
+                             fluidRow(
+                               column(12, plotOutput("barras_por_fecha")),
+                               column(6, plotOutput("barras_porcentuales_sustancia")),
+                               column(6, plotOutput("barras_redes_apoyo")),
+                               column(6, plotOutput("barras_policonsumo")),
+                               column(6, plotOutput("barras_edad_inicio_trat")),
+                               dataTableOutput("tabla_resumen")
                              )
-                    ),
-                    tabPanel("Visualizaciones Alfon",
-                             fluidRow(
-                               column(5, valueBoxOutput("continua"),
-                                      valueBoxOutput("rechaza_tto"),
-                                      valueBoxOutput("no_finaliza"))
-                               ),
-                             fluidRow(
-                               column(5, 
-                                      valueBoxOutput("int_cristaleria"),
-                                      valueBoxOutput("int_baigorria"),
-                                      valueBoxOutput("int_bp"))
-                               ),
-                             fluidRow(
-                               column(5, 
-                                      valueBoxOutput("cdd_zeballos"),
-                                      valueBoxOutput("cdd_bp"),
-                                      valueBoxOutput("cdd_baigorria"))
-                               )
                     )
                   )
                 )
   )
 )
+)
 
 # Definir la lógica del servidor de la aplicación Shiny
 server <- function(input, output, session) {
+  
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
+  )
+  
+  output$auth_output <- renderPrint({
+    reactiveValuesToList(res_auth)
+  })
   
   # Validación del campo DNI (tiene que estar sí o sí)
   iv <- InputValidator$new()
@@ -834,6 +833,37 @@ server <- function(input, output, session) {
     }
   })
   
+  
+  # Acción al presionar el botón "Actualizar Registro"
+  observeEvent(input$eliminar, {
+    # Leer los datos actuales
+    data <- read_data()
+    # Encontrar el índice de la fila a actualizar
+    idx <- which(data$DNI == input$buscar_dni)
+    
+    if (length(idx) > 0) {
+      data <- data[-last(idx), ]
+      
+      # Escribir los datos actualizados en el archivo Excel
+      write_data(data)
+      
+      # Mostrar un mensaje de confirmación
+      showModal(modalDialog(
+        title = "Registro Eliminado",
+        "El registro ha sido eliminado exitosamente.",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+    } else {
+      showModal(modalDialog(
+        title = "Error",
+        "No se pudo encontrar el registro para eliminar",
+        easyClose = TRUE,
+        footer = NULL
+      ))
+    }
+  })
+  
   # Acción al presionar el botón "Guardar Registro"
   observeEvent(input$guardar, {
     # Leer los datos actuales
@@ -903,68 +933,6 @@ server <- function(input, output, session) {
     }
   )
   
-  # GRAFICOS
-  # Grafico de barras sustancia de inicio
-  conteo_sustancias <- reactive({
-    data <- read_data()  
-    conteo <- table(data$Sustancia_de_inicio)
-    conteo_df <- as.data.frame(conteo)
-    names(conteo_df) <- c("Sustancia", "Cantidad")
-    return(conteo_df)
-  })
-  
-  output$grafico_barras_sustancias <- renderPlot({
-    datos <- conteo_sustancias()
-    ggplot(datos, aes(x = Sustancia, y = Cantidad, fill = Sustancia)) +
-      geom_bar(stat = "identity") +
-      labs(x = "", y = "Cantidad", title = "Consumo según sustancia de inicio", fill = "Sustancia de inicio") +
-      theme_minimal() +
-      theme(axis.text.x = element_blank())+
-      scale_fill_manual(values = c("Cocaína" = "#993F00", "Pegamento" = "#CC5800",
-                                   "Marihuana" = "#FFB053", "Alcohol" = "#993D00",
-                                   "Psicofármacos" = "#FFCA99", "Otras" = "#FFD17A"))
-  })
-  
-  # Grafico de barra policonsumo
-  output$grafico_policonsumo <- renderPlot({
-    
-    data <- read_data()
-    frecuencia_policonsumo <- as.data.frame(table(data$Policonsumo))
-    names(frecuencia_policonsumo) <- c("Policonsumo", "Cantidad")
-    
-    ggplot(frecuencia_policonsumo, aes(x = "", y = Cantidad, fill = Policonsumo)) +
-      geom_bar(stat = "identity") +
-      labs(title = "Distribución de Policonsumo", fill = "Policonsumo", y = "Cantidad de jóvenes",
-           x = NULL) +
-      geom_text(aes(label = Cantidad), position = position_stack(vjust = 0.5),
-                colour = "white") +
-      theme_minimal() +
-      scale_fill_manual(values = c("Si" = "#993F00", "No" = "#CC5800"))
-  })
-  
-  # Gráfico Tratamiento vs edad de inicio
-  output$grafico_edad_inicio <- renderPlot({
-    
-    data <- read_data()
-    conteo_tratamiento_edad <- as.data.frame(table(data$Tratamiento, data$Edad_de_inicio))
-    names(conteo_tratamiento_edad) <- c("Tratamiento", "Edad_de_inicio", "Cantidad")
-    ggplot(conteo_tratamiento_edad, aes(x = Tratamiento, y = Cantidad, fill = Edad_de_inicio)) +
-      geom_bar(stat = "identity", position = "stack") +
-      labs(title = "Relación entre Tratamiento y Edad de Inicio",
-           x = "Tratamiento",
-           y = "",
-           fill = "Edad de Inicio") +
-      theme_minimal()+
-      geom_text(aes(label=Cantidad),
-                position=position_stack(vjust=0.5),
-                colour = "white")+
-      coord_flip()+
-      scale_fill_manual(values = c("Adolescentes entre 13 a 17 años" = "#993D00", 
-                                   "Jóvenes de 18 a 29 años" = "#FF8E32",
-                                   "Niños/as de hasta 12 años" = "#993F00"))
-  })
-  
-  
   # Tabla resumen de datos
   output$tabla_resumen <- renderDT({
     data <- read_data()      
@@ -981,7 +949,7 @@ server <- function(input, output, session) {
         columnDefs = list(list(width = '150px', targets = c(1:31))),
         initComplete = JS(
           "function(settings, json) {",
-          "$(this.api().table().header()).css({'background-color': '#D97F11', 'color': 'white'});",
+          "$(this.api().table().header()).css({'background-color': '#EF8D16', 'color': 'white'});",
           "}"
         ),
         language = list(
@@ -990,9 +958,9 @@ server <- function(input, output, session) {
         )
       ),
       style = "bootstrap",
-      colnames = c('Apellido, Nombre', 'DNI', 'Fecha Entrevista Psico', 
-                   'Asistencia Entrevista Psico', 'Fecha Entrevista Psiqui',
-                   "Asistencia Entrevista Psiqui", "Fecha Entrevista TS",
+      colnames = c('Apellido, Nombre', 'DNI', 'Fecha Entrevista Psicológica', 
+                   'Asistencia Entrevista Psicológica', 'Fecha Entrevista Psiquiátrica',
+                   "Asistencia Entrevista Psiquiátrica", "Fecha Entrevista TS",
                    "Asistencia Entrevista TS", "Tratamiento", 
                    "Contacto", "Fecha de Nacimiento", "Edad", 
                    "Sexo", "Nivel Educativo", "Situación Habitacional", 
@@ -1006,15 +974,6 @@ server <- function(input, output, session) {
   })
   
   # Alfon
-  output$continua <- renderValueBox({
-    data <- read_data()
-    valueBox(
-      nrow(data[data$Tratamiento == "Continúa en seguimiento",]), 
-      "Continúa en seguimiento",
-      icon = icon("laptop-medical"), color = "yellow", width = 2
-    )
-  })
-  
   output$int_baigorria <- renderValueBox({
     data <- read_data()
     valueBox(
@@ -1027,7 +986,7 @@ server <- function(input, output, session) {
   output$int_bp <- renderValueBox({
     data <- read_data()
     valueBox(
-      nrow(data[data$Tratamiento == "Internación Buen Pastor",]), 
+      nrow(data[data$Tratamiento == "Internación Buen Pastor",])+nrow(data[data$Tratamiento == "Internación B.P",]), 
       "Internación Buen Pastor",
       icon = icon("hospital-user"), color = "yellow", width = 2
     )
@@ -1069,31 +1028,192 @@ server <- function(input, output, session) {
     )
   })
   
-  output$derivado <- renderValueBox({
+  output$barras_por_fecha <- renderPlot({
     data <- read_data()
-    valueBox(
-      nrow(data[data$Tratamiento == "Derivado",]), 
-      "Derivado",
-      icon = icon("hospital"), color = "yellow", width = 2
+    # Grafico fechas y tto ---------------------------------------------------------
+    primera_entrevista <- numeric()
+    for(i in 1:nrow(data)) {
+      fechas <- t(data[i,c(3,5,7)])
+      fechas <- subset(fechas,!is.na(fechas))
+      primera_entrevista[i] <- ifelse(nrow(fechas)==0,NA,format(as.Date(fechas),"%d/%m/%Y"))
+    }
+    primera_entrevista <- data.frame(
+      mes = format(as.Date(primera_entrevista,"%d/%m/%Y"),"%m"),
+      anio = format(as.Date(primera_entrevista,"%d/%m/%Y"),"%Y"),
+      mes_anio = format(as.Date(primera_entrevista,"%d/%m/%Y"),"%m/%Y"),
+      Tratamiento = factor(ifelse(grepl("Internación",data$Tratamiento),"Internación",
+                                  ifelse(grepl("Centro de día", data$Tratamiento), "Centro de día",
+                                         ifelse(grepl("No finalizó el proceso", data$Tratamiento), "Abandona",
+                                                ifelse(grepl("Rechaza", data$Tratamiento), "Rechaza",
+                                                       ifelse(grepl("Derivado",data$Tratamiento), "Derivado",NA))))),
+                           levels = c("Abandona","Rechaza","Internación","Centro de día","Derivado"),
+                           ordered = TRUE)
     )
+    
+    primera_entrevista <- primera_entrevista %>%
+      filter(!is.na(mes_anio)) %>%
+      filter(anio!="2022") %>%
+      filter(anio!="2021") %>%
+      filter(!is.na(Tratamiento)) %>%
+      ungroup() %>%
+      group_by(anio,mes,Tratamiento) %>%
+      summarize(frecuencia = n(),
+                x = sum(frecuencia)) %>%
+      ungroup() %>%
+      arrange(anio,mes,desc(Tratamiento)) %>%
+      group_by(anio,mes) %>%
+      mutate(label = cumsum(frecuencia))
+    
+    ggplot(primera_entrevista) +
+      geom_bar(aes(x = mes, y = frecuencia, fill = Tratamiento), 
+               stat = "identity") +
+      geom_text(aes(x = mes, y = label, label = frecuencia), 
+                color = "white", size = 5, vjust = 1.2) +
+      labs(title = "Cantidad de casos y sus derivaciones según fecha de la primera entrevista",
+           x = "Mes de la primera entrevista", y = "Frecuencia",
+           fill = " ") +
+      facet_wrap(~anio) +
+      scale_fill_manual(values = c("#C57412","#EF8D16","#FBC91C","#BCBF1A","#5C8001")) +
+      theme_minimal() +
+      theme(strip.background =element_rect(fill="#EC7E14", color = "white"),
+            strip.text = element_text(colour = 'white', size = 15, face="bold"),
+            legend.position = "top",
+            legend.text = element_text(size = 15),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 10),
+            title = element_text(size = 15, hjust = 0.5))
   })
   
-  output$no_finaliza <- renderValueBox({
+  output$barras_porcentuales_sustancia <- renderPlot({
     data <- read_data()
-    valueBox(
-      nrow(data[data$Tratamiento == "No finaliza",]), 
-      "No finaliza",
-      icon = icon("hand-holding"), color = "yellow", width = 2
-    )
+    data_limpia <- data %>%
+      filter(!is.na(Tratamiento) & !is.na(Sustancia_de_inicio))
+    data_pje <- data_limpia %>%
+      group_by(Tratamiento, Sustancia_de_inicio) %>%
+      summarise(count = n()) %>%
+      mutate(porcentaje = count / sum(count)) %>%
+      ungroup()
+    
+    data_pje$Tratamiento <- ifelse(data_pje$Tratamiento=="Internación B.P", "Internación Buen Pastor",data_pje$Tratamiento)
+    data_pje$Tratamiento <- factor(data_pje$Tratamiento,
+                                   levels = c("Centro de día Baigorria",
+                                              "Centro de día Buen Pastor",
+                                              "Centro de día Zeballos",
+                                              "Internación Buen Pastor",
+                                              "Internación Baigorria",
+                                              "Internación Cristalería",
+                                              "No finalizó el proceso",
+                                              "Rechaza tratamiento",
+                                              "Derivado"
+                                              ),
+                                   ordered = TRUE)
+    
+    ggplot(data_pje, aes(x = Tratamiento, y = porcentaje, fill = Sustancia_de_inicio)) +
+      geom_bar(stat = "identity", position = "fill") +
+      labs(title = "Distribución de Tratamiento por Sustancia actual",
+           x = "Tratamiento",
+           y = "Porcentaje",
+           fill = "Sustancia actual") +
+      theme_minimal() +
+      coord_flip() +
+      scale_fill_manual(values = c("#C57412","#EF8D16","#FBC91C","#BCBF1A","#5C8001")) +
+      scale_y_continuous(labels = scales::percent_format()) +
+      geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+                position = position_fill(vjust = 0.5), size = 4, color = "white") +
+      theme(legend.text = element_text(size = 15),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 15),
+            title = element_text(size = 15, hjust = 0.5))
   })
   
-  output$rechaza_tto <- renderValueBox({
+  output$barras_redes_apoyo <- renderPlot({
     data <- read_data()
-    valueBox(
-      nrow(data[data$Tratamiento == "Rechaza tratamiento",]), 
-      "Rechaza tratamiento",
-      icon = icon("handshake-slash"), color = "yellow", width = 2
-    )
+    data_limpia <- data %>%
+      filter(!is.na(Redes_de_apoyo) & !is.na(Edad_de_inicio))
+    data_pje <- data_limpia %>%
+      group_by(Redes_de_apoyo, Edad_de_inicio) %>%
+      summarise(count = n()) %>%
+      mutate(porcentaje = count / sum(count)) %>%
+      ungroup()
+    
+    ggplot(data_pje, aes(x = Redes_de_apoyo, y = porcentaje, fill = Edad_de_inicio)) +
+      geom_bar(stat = "identity", position = "fill") +
+      scale_fill_brewer(palette = "Accent") +
+      labs(title = "Edad de inicio de consumo según red de apoyo",
+           x = "Redes de apoyo",
+           y = "Porcentaje",
+           fill = "Edad de inicio") +
+      theme_minimal() +
+      coord_flip() +
+      scale_y_continuous(labels = scales::percent_format()) +
+      geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+                position = position_fill(vjust = 0.5), color="white") +
+      scale_fill_manual(values = c("#EF8D16","#FBC91C","#BCBF1A")) +
+      theme(legend.text = element_text(size = 15),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 15),
+            title = element_text(size = 15, hjust = 0.5))
+    
+  })
+  
+  output$barras_policonsumo <- renderPlot({
+    # Sustancia de inicio y policonsumo
+    data <- read_data()
+    data_limpia <- data %>%
+      filter(!is.na(Policonsumo) & !is.na(Sustancia_de_inicio))
+    data_pje <- data_limpia %>%
+      group_by(Sustancia_de_inicio, Policonsumo) %>%
+      summarise(count = n()) %>%
+      mutate(porcentaje = count / sum(count)) %>%
+      ungroup()
+    
+    ggplot(data_pje, aes(x = Sustancia_de_inicio, y = porcentaje, fill = Policonsumo)) +
+      geom_bar(stat = "identity", position = "fill") +
+      scale_fill_brewer(palette = "Accent") +
+      labs(title = "Porcentaje de personas en policoncumo para cada sutancia de inicio",
+           x = "Sustancia de inicio",
+           y = "Porcentaje",
+           fill = "Policonsumo") +
+      theme_minimal() +
+      coord_flip() +
+      scale_y_continuous(labels = scales::percent_format()) +
+      scale_fill_manual(values = c("#EF8D16","#FBC91C")) +
+      geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+                position = position_fill(vjust = 0.5),color="white") +
+      theme(legend.text = element_text(size = 15),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 15),
+            title = element_text(size = 15, hjust = 0.5))
+  })
+  
+  output$barras_edad_inicio_trat <- renderPlot({
+    data <- read_data()
+    # Edad y tratamiento
+    data_limpia <- data %>%
+      filter(!is.na(Tratamiento) & !is.na(Edad_de_inicio))
+    data_pje <- data_limpia %>%
+      group_by(Tratamiento, Edad_de_inicio) %>%
+      summarise(count = n()) %>%
+      mutate(porcentaje = count / sum(count)) %>%
+      ungroup()
+    
+    ggplot(data_pje, aes(x = Tratamiento, y = porcentaje, fill = Edad_de_inicio)) +
+      geom_bar(stat = "identity", position = "fill") +
+      scale_fill_brewer(palette = "Accent") +
+      labs(title = "Distribución de Tratamiento por edad de inicio",
+           x = "Tratamiento",
+           y = "Porcentaje",
+           fill = "Edad de inicio") +
+      theme_minimal() +
+      coord_flip() +
+      scale_y_continuous(labels = scales::percent_format()) +
+      scale_fill_manual(values = c("#EF8D16","#FBC91C","#BCBF1A")) +
+      geom_text(aes(label = scales::percent(porcentaje, accuracy = 1)),
+                position = position_fill(vjust = 0.5), size = 3) +
+      theme(legend.text = element_text(size = 15),
+            axis.title = element_text(size = 15),
+            axis.text = element_text(size = 15),
+            title = element_text(size = 15, hjust = 0.5))
   })
 }
 

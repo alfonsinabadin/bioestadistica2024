@@ -1,0 +1,34 @@
+body {
+    font-family: Arial, sans-serif !important;
+    background-color: white !important;
+}
+
+.panel {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.panel-heading {
+    color: black !important;
+    background-color: white !important;
+    border-bottom: none !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    text-align: center !important;
+}
+
+.form-control {
+    font-family: Arial, sans-serif !important;
+}
+
+.btn-primary {
+    background-color: orange !important;
+    border-color: orange !important;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background-color: darkorange !important;
+    border-color: darkorange !important;
+    color: white !important;
+}
