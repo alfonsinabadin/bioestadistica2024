@@ -54,35 +54,30 @@ ui <- page_navbar(
     
     # Layout con un fluidRow y columnas
     fluidRow(
-      fluidRow(
         column(
-          width = 12,  # Ajustar el ancho para que ocupe toda la fila
+          width = 2,  # Ajustar el ancho para que ocupe toda la fila
           wellPanel(  # Simular el estilo de un 'box' usando wellPanel
             
-            h4("Datos del Registro", style = "font-size: 16px; font-weight: bold;"),
+            h4("Datos del Registro", style = "font-size: 16px; font-weight: bold;"), 
             
+            # Campo ID de registro (readonly)
             fluidRow(
-              
-              # Campo ID de registro (readonly)
-              column(
-                width = 1,
-                div(
-                  tags$label(
-                    tags$span("ID de registro", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
+              div(
+                tags$label(
+                  tags$span("ID de registro", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
                   ),
-                  tags$input(
-                    id = "id_registro",
-                    type = "text",
-                    value = "",  # Este valor será actualizado desde el servidor
-                    readonly = TRUE,  # Hacer el campo no editable
-                    class = "form-control"
+                tags$input(
+                  id = "id_registro",
+                  type = "text",
+                  value = "",  # Este valor será actualizado desde el servidor
+                  readonly = TRUE,  # Hacer el campo no editable
+                  class = "form-control"
                   )
                 )
               ),
               
               # Campo Fecha de registro
-              column(
-                width = 2,  # Ajustar el ancho de cada columna para que ocupen una parte de la fila
+              fluidRow(
                 dateInput(
                   "fecha_registro",
                   tags$span(
@@ -91,121 +86,134 @@ ui <- page_navbar(
                       tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
                     )
                   ),
-                  value = Sys.Date(),
+                  value = format(Sys.Date(),"%d/%m/%Y"),
                   format = "dd/mm/yyyy"  # Corregir el formato de la fecha
                 )
               )
-            ),
+            )
+          ),
+        
+        column(
+          width = 8,  # Ajustar ancho
+          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+            
+            style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
+            
+            h4("Datos de la persona", style = "font-size: 16px; font-weight: bold;"),
             
             fluidRow(
               
-              # Campo ID de la persona (readonly)
+              # Campo recuerda DNI
               column(
-                width = 1,
+                width = 2,
+                selectInput(
+                  inputId = "recuerda_dni",
+                  tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
+                  choices = c("Sí", "No", "No tiene" = "S/D"),  # Definir las opciones
+                  selected = "S/D"
+                  )
+                ),
+              
+              # Campo DNI
+              column(
+                width = 2,
+                numericInput(
+                  "dni",
+                  tags$span("DNI", style = "font-size: 12px;"),
+                  value = NULL
+                  )
+                ),
+              
+              # Apellido y Nombre
+              column(
+                width = 4,
                 div(
-                  tags$label(
-                    tags$span("ID de la persona", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
-                  ),
-                  tags$input(
-                    id = "id_persona",
-                    type = "text",
-                    value = "",  # Este valor será actualizado dinámicamente
-                    readonly = TRUE,  # Campo no editable
-                    class = "form-control"
+                  textInput(
+                    inputId = "apellido_nombre",
+                    label = tags$span("Apellido, Nombre (Apodo)", style = "font-size: 12px;"),
+                    placeholder = "Ejemplo: Perez, Juan (Juanchi)"
                   )
                 )
               ),
               
-              # Campo Fecha de primer registro
+              # Fecha de nacimiento
               column(
-                width = 2,  # Ajustar el ancho de cada columna para que ocupen una parte de la fila
-                dateInput(
-                  "fecha_primer_registro",
-                  tags$span(
-                    tagList(
-                      tags$span("Fecha del primer registro", style = "font-size: 12px;"),
-                      tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
+                width = 4,
+                div(
+                  dateInput(
+                    inputId = "fecha_nacimiento",
+                    label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
+                    value = format(Sys.Date(),"%d/%m/%Y"),
+                    format = "dd/mm/yyyy"  # Corregir formato de la fecha
                     )
-                  ),
-                  value = Sys.Date(),
-                  format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                  )
                 )
-                ),
-                
-              # Campo Edad de primer registro
+              ),
+            
+            fluidRow(
+              
+              # Campo sexo biológico
               column(
                 width = 2,
-                numericInput(
-                  "edad_primer_registro",
-                  tags$span(
-                    tagList(
-                      tags$span("Edad del primer registro", style = "font-size: 12px;"),
-                      tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
-                    )
-                  ),
-                  value = ""
+                selectInput(
+                  "sexo_biologico",
+                  label = tags$span("Sexo biológico", style = "font-size: 12px;"),
+                  choices = c("Femenino", "Masculino", "No contesta"),  # Definir las opciones
+                  selected = "No contesta"
                 )
-              )
-            )
-          )
-        )
-      )
-      ,
-      
-      column(
-        width = 6,  # Ajustar ancho
-        wellPanel(  # Simular el estilo de un 'box' usando wellPanel
-          
-          style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
-          
-          h4("Datos de la persona", style = "font-size: 16px; font-weight: bold;"),
-          fluidRow(
-            column(
-              width = 3,
-              
-              # Campo recuerda DNI
-              selectInput(
-                inputId = "recuerda_dni",
-                tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
-                choices = c("Sí", "No", "No tiene" = "S/D"),  # Definir las opciones
-                selected = "S/D"
               ),
               
-              # Campo DNI
-              numericInput(
-                "dni",
-                tags$span("DNI", style = "font-size: 12px;"),
-                value = NULL
-              )
-            ),
+              # Campo género
+              column(
+                width = 2,
+                selectInput(
+                  "genero",
+                  label = tags$span("Género", style = "font-size: 12px;"),
+                  choices = c("Hombre", "Hombre trans", 
+                              "Mujer", "Mujer trans",
+                              "No binario", "Otro"),  # Definir las opciones
+                )
+              ),
+              
+            )
+            )
+          ),
+        
+        column(
+          width = 2,  # Ajustar el ancho para que ocupe toda la fila
+          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
             
-            column(
-              width = 5,
-              
-              # Apellido y Nombre
-              div(
-                textInput(
-                  inputId = "apellido_nombre",
-                  label = tags$span("Apellido, Nombre (Apodo)", style = "font-size: 12px;"),
-                  placeholder = "Perez, Juan (Juanchi)"
+            h4("Historial de Registro", style = "font-size: 16px; font-weight: bold;"), 
+            
+            # Campo ID de persona (readonly)
+            div(
+                tags$label(
+                  tags$span("ID de la persona", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
+                ),
+                tags$input(
+                  id = "id_persona",
+                  type = "text",
+                  value = "",  # Este valor será actualizado desde el servidor
+                  readonly = TRUE,  # Hacer el campo no editable
+                  class = "form-control"
                 )
               ),
-              
-              # Fecha de nacimiento
-              div(
-                dateInput(
-                  inputId = "fecha_nacimiento",
-                  label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
-                  value = "",
-                  format = "dd/mm/yyyy"  # Corregir formato de la fecha
-                )
+            
+            # Campo Fecha del primer registro
+            dateInput(
+                "fecha_primer_registro",
+                tags$span(
+                  tagList(
+                    tags$span("Fecha del primer registro", style = "font-size: 12px;")
+                  )
+                ),
+                value = format(Sys.Date(),"%d/%m/%Y"),
+                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
               )
             )
           )
         )
-      )
-    )
-  ),
+    ),
   
   nav_panel(
     tags$span("Consulta y modificación de registros", style = "font-size: 14px;"),
@@ -222,12 +230,11 @@ ui <- page_navbar(
   )
 )
 
-
 server <- function(input, output, session) {
   
   # ACTUALIZACIÓN DEL ID REGISTRO EN TIEMPO REAL ---------------------------------------------------------------------
   
-  # Cargar la base de datoS
+  # Cargar la base de datos
   data <- base()
   
   # Reglas ID registro
@@ -260,9 +267,11 @@ server <- function(input, output, session) {
   observeEvent(input$recuerda_dni, {
     # Si la opción es No o S/D, deshabilitar el campo y eliminar la validación
     if (input$recuerda_dni %in% c("No", "S/D")) {
-      updateNumericInput(session, "dni", value = NULL)
+      updateNumericInput(session, "dni", value = "")
       shinyjs::disable("dni")  # Deshabilitar el campo
       iv_dni$disable()  # Desactivar la regla de obligatoriedad
+      
+      
     } else {
       # Si selecciona Sí, habilitar el campo y agregar la validación
       shinyjs::enable("dni")  # Habilitar el campo
@@ -275,14 +284,6 @@ server <- function(input, output, session) {
     # Si el campo "recuerda_dni" es "No" o "S/D", asignamos el nuevo ID con max() + 1
     if (input$recuerda_dni %in% c("No", "S/D")) {
       id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
-      observeEvent(input$fecha_primer_registro, {
-        observeEvent(input$fecha_nacimiento, {
-          edad_primer_registro <- input$fecha_primer_registro - input$fecha_nacimiento
-          updateNumericInput(session, "edad_primer_registro", value = edad_primer_registro)
-        })
-      })
-      
-       
     } else {
       req(input$dni)  # Asegurarse de que el DNI no esté vacío
       
@@ -300,15 +301,9 @@ server <- function(input, output, session) {
         updateDateInput(session, "fecha_primer_registro", value = fecha_primer_registro)
         edad_primer_registro <- first(dni_existente$`Edad del primer registro`)
         updateNumericInput(session, "edad_primer_registro", value = edad_primer_registro)
-      } else {
+        } else {
         # Si el DNI no está en la base, asignar un nuevo ID de persona (máximo + 1)
         id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
-        observeEvent(input$fecha_primer_registro, {
-          observeEvent(input$fecha_nacimiento, {
-            edad_primer_registro <- input$fecha_primer_registro - input$fecha_nacimiento
-            updateNumericInput(session, "edad_primer_registro", value = edad_primer_registro)
-          })
-        })
       }
     }
     
