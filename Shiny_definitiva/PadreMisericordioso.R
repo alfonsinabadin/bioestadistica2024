@@ -32,6 +32,24 @@ ui <- page_navbar(
     base_font = font_google("Montserrat")
   ),
   
+  tags$head(
+    tags$style(HTML("
+    input::placeholder {
+      font-size: 11px;
+    }
+    .form-control {
+      font-size: 11px;
+    }
+    .selectize-input {
+      font-size: 11px;
+    }
+    .selectize-dropdown {
+      font-size: 11px;
+    }
+  "))
+  )
+  ,
+  
   lang = "en",
   
   title = tags$span(
@@ -86,15 +104,43 @@ ui <- page_navbar(
                       tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
                     )
                   ),
-                  value = format(Sys.Date(),"%d/%m/%Y"),
+                  value = Sys.Date(),
                   format = "dd/mm/yyyy"  # Corregir el formato de la fecha
                 )
+              ),
+            
+            h4("Historial de Registro", style = "font-size: 16px; font-weight: bold;"), 
+            
+            # Campo ID de persona (readonly)
+            div(
+              tags$label(
+                tags$span("ID de la persona", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
+              ),
+              tags$input(
+                id = "id_persona",
+                type = "text",
+                value = "",  # Este valor será actualizado desde el servidor
+                readonly = TRUE,  # Hacer el campo no editable
+                class = "form-control"
               )
+            ),
+            
+            # Campo Fecha del primer registro
+            dateInput(
+              "fecha_primer_registro",
+              tags$span(
+                tagList(
+                  tags$span("Fecha del primer registro", style = "font-size: 12px;")
+                )
+              ),
+              value = Sys.Date(),
+              format = "dd/mm/yyyy"  # Corregir el formato de la fecha
             )
+          )
           ),
         
         column(
-          width = 8,  # Ajustar ancho
+          width = 10,  # Ajustar ancho
           wellPanel(  # Simular el estilo de un 'box' usando wellPanel
             
             style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
@@ -126,7 +172,7 @@ ui <- page_navbar(
               
               # Apellido y Nombre
               column(
-                width = 4,
+                width = 3,
                 div(
                   textInput(
                     inputId = "apellido_nombre",
@@ -138,12 +184,12 @@ ui <- page_navbar(
               
               # Fecha de nacimiento
               column(
-                width = 4,
+                width = 2,
                 div(
                   dateInput(
                     inputId = "fecha_nacimiento",
                     label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
-                    value = format(Sys.Date(),"%d/%m/%Y"),
+                    value = Sys.Date(),
                     format = "dd/mm/yyyy"  # Corregir formato de la fecha
                     )
                   )
@@ -176,40 +222,6 @@ ui <- page_navbar(
               ),
               
             )
-            )
-          ),
-        
-        column(
-          width = 2,  # Ajustar el ancho para que ocupe toda la fila
-          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
-            
-            h4("Historial de Registro", style = "font-size: 16px; font-weight: bold;"), 
-            
-            # Campo ID de persona (readonly)
-            div(
-                tags$label(
-                  tags$span("ID de la persona", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
-                ),
-                tags$input(
-                  id = "id_persona",
-                  type = "text",
-                  value = "",  # Este valor será actualizado desde el servidor
-                  readonly = TRUE,  # Hacer el campo no editable
-                  class = "form-control"
-                )
-              ),
-            
-            # Campo Fecha del primer registro
-            dateInput(
-                "fecha_primer_registro",
-                tags$span(
-                  tagList(
-                    tags$span("Fecha del primer registro", style = "font-size: 12px;")
-                  )
-                ),
-                value = format(Sys.Date(),"%d/%m/%Y"),
-                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
-              )
             )
           )
         )
