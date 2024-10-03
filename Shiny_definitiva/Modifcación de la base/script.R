@@ -29,7 +29,7 @@ data$`Edad del primer registro` <- round(data$`Edad del primer registro`, 0)
 
 data$`Sexo biológico` <- "Masculino"
 
-data$Género <- "Masculino"
+data$Género <- "Hombre"
 
 # Guardar la base actualizada en un nuevo archivo Excel
 write_xlsx(data, "Base completa.xlsx")

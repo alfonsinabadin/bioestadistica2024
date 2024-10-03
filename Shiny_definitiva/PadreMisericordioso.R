@@ -8,6 +8,7 @@ library(rlang)
 library(readxl)
 library(shinyjs)
 library(shinyvalidate)
+library(geoAr)
 
 # Data prep
 # Importar base
@@ -16,6 +17,11 @@ base <- function(){
 }
 
 data <- base()
+
+# Base de provincias y localidades
+provincias <- show_arg_codes()[2:25, 5]
+provincias[[1]][1] <- "CABA"
+localidades_por_provincia <- readRDS("localidades.rds")
 
 ## Layout formulario
 
@@ -130,7 +136,8 @@ ui <- page_navbar(
               "fecha_primer_registro",
               tags$span(
                 tagList(
-                  tags$span("Fecha del primer registro", style = "font-size: 12px;")
+                  tags$span("Fecha del primer registro", style = "font-size: 12px;"),
+                  tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
                 )
               ),
               value = Sys.Date(),
@@ -190,7 +197,9 @@ ui <- page_navbar(
                     inputId = "fecha_nacimiento",
                     label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
                     value = Sys.Date(),
-                    format = "dd/mm/yyyy"  # Corregir formato de la fecha
+                    format = "dd/mm/yyyy",  # Corregir formato de la fecha
+                    min = Sys.Date() - years(110),  # Limitar a 110 años atrás
+                    max = Sys.Date()  # Limitar a la fecha de hoy
                     )
                   )
                 )
@@ -221,6 +230,30 @@ ui <- page_navbar(
                 )
               ),
               
+              # Campo Provincia
+              column(
+                width = 3,
+                selectInput(
+                  "provincia",
+                  label = tags$span("Provincia", style = "font-size: 12px;"),
+                  choices = provincias,
+                  selected = "Santa Fe")
+              ),
+              
+              # Campo localidad
+              column(
+                width = 2,
+                uiOutput("localidad_ui")
+              ),
+              
+              # Campo barrio
+              column(
+                width = 2,
+                textInput(
+                  "barrio",
+                  label = tags$span("Barrio", style = "font-size: 12px;")
+                )
+              )
             )
             )
           )
@@ -262,9 +295,16 @@ server <- function(input, output, session) {
   # Reglas Fecha de registro
   
   ## Obligatorio
-  iv <- InputValidator$new()
-  iv$add_rule("fecha_registro", sv_required("Campo obligatorio"))
-  iv$enable()
+  iv_fecha_registro <- InputValidator$new()
+  iv_fecha_registro$add_rule("fecha_registro", sv_required("Campo obligatorio"))
+  iv_fecha_registro$enable()
+  
+  # Reglas Fecha primer registro
+  
+  ## Obligatorio
+  iv_fecha_primer_registro <- InputValidator$new()
+  iv_fecha_primer_registro$add_rule("fecha_primer_registro", sv_required("Campo obligatorio"))
+  iv_fecha_primer_registro$enable()
   
   # Nota: como "Requiere DNI" está en un desplegable, no puede estar vacío así que evitamos esa regla 
   
@@ -305,14 +345,23 @@ server <- function(input, output, session) {
       # Si el DNI ya existe, traer el ID de la persona de la última fila que tiene ese DNI
       if (nrow(dni_existente) > 0) {
         id_persona <- last(dni_existente$`ID de la persona`)
-        apellido_nombre <- last(dni_existente$`Apellido y Nombre`)  # Obtener el último apellido y nombre para ese DNI
-        updateTextInput(session, "apellido_nombre", value = apellido_nombre)  # Actualizar con el valor de la base
-        fecha_nacimiento <- last(dni_existente$`Fecha de Nacimiento`)
-        updateDateInput(session, "fecha_nacimiento", value = fecha_nacimiento)
+        
         fecha_primer_registro <- first(dni_existente$`Fecha de registro`)
         updateDateInput(session, "fecha_primer_registro", value = fecha_primer_registro)
-        edad_primer_registro <- first(dni_existente$`Edad del primer registro`)
-        updateNumericInput(session, "edad_primer_registro", value = edad_primer_registro)
+        
+        apellido_nombre <- last(dni_existente$`Apellido y Nombre`)  # Obtener el último apellido y nombre para ese DNI
+        updateTextInput(session, "apellido_nombre", value = apellido_nombre)  # Actualizar con el valor de la base
+        
+        fecha_nacimiento <- last(dni_existente$`Fecha de Nacimiento`)
+        updateDateInput(session, "fecha_nacimiento", value = fecha_nacimiento)
+        
+        sexo_biologico <- last(dni_existente$`Sexo biológico`)
+        updateSelectInput(session, "sexo_biologico", selected = sexo_biologico)
+
+        genero <- last(dni_existente$Género)
+        updateSelectInput(session, "genero", selected = genero)
+        
+        
         } else {
         # Si el DNI no está en la base, asignar un nuevo ID de persona (máximo + 1)
         id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
@@ -328,6 +377,20 @@ server <- function(input, output, session) {
   iv_apellido_nombre <- InputValidator$new()
   iv_apellido_nombre$add_rule("apellido_nombre", sv_required("Campo obligatorio"))
   iv_apellido_nombre$enable()
+  
+  # Crear el uiOutput para las localidades
+  output$localidad_ui <- renderUI({
+    selectInput("localidad",
+                label = tags$span("Localidad", style = "font-size: 12px;"), 
+                choices = "Rosario")
+  })
+  
+  # Actualizar las localidades en función de la provincia seleccionada
+  observeEvent(input$provincia, {
+    localidades <- sort(localidades_por_provincia[[input$provincia]])
+    updateSelectInput(session, "localidad", choices = c(localidades,NULL), selected = NULL)
+  })
+  
   
 }
 
