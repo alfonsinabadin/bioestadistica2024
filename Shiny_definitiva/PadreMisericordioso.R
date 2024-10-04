@@ -87,21 +87,24 @@ ui <- page_navbar(
             # Campo ID de registro (readonly)
             fluidRow(
               div(
+                style = "margin-bottom: 20px;",  # Agregar espacio inferior
                 tags$label(
                   tags$span("ID de registro", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
-                  ),
+                ),
                 tags$input(
                   id = "id_registro",
                   type = "text",
                   value = "",  # Este valor será actualizado desde el servidor
                   readonly = TRUE,  # Hacer el campo no editable
                   class = "form-control"
-                  )
                 )
-              ),
-              
-              # Campo Fecha de registro
-              fluidRow(
+              )
+            ),
+            
+            # Campo Fecha de registro
+            fluidRow(
+              div(
+                style = "width: 100%;margin-bottom: 20px;",  # Asegurar que el campo ocupe el 100% del contenedor
                 dateInput(
                   "fecha_registro",
                   tags$span(
@@ -111,9 +114,13 @@ ui <- page_navbar(
                     )
                   ),
                   value = Sys.Date(),
-                  format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                  format = "dd/mm/yyyy",  # Corregir el formato de la fecha
+                  min = Sys.Date() - years(1),  # Limitar a 110 años atrás
+                  max = Sys.Date()  # Limitar a la fecha de hoy
                 )
-              ),
+              )
+            )
+            ,
             
             h4("Historial de Registro", style = "font-size: 16px; font-weight: bold;"), 
             
@@ -147,7 +154,7 @@ ui <- page_navbar(
           ),
         
         column(
-          width = 10,  # Ajustar ancho
+          width = 6,  # Ajustar ancho
           wellPanel(  # Simular el estilo de un 'box' usando wellPanel
             
             style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
@@ -158,7 +165,7 @@ ui <- page_navbar(
               
               # Campo recuerda DNI
               column(
-                width = 2,
+                width = 3,
                 selectInput(
                   inputId = "recuerda_dni",
                   tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
@@ -169,17 +176,22 @@ ui <- page_navbar(
               
               # Campo DNI
               column(
-                width = 2,
+                width = 3,
                 numericInput(
                   "dni",
                   tags$span("DNI", style = "font-size: 12px;"),
                   value = NULL
-                  )
+                  ),
+                # Mensaje sobre el DNI
+                div(
+                  textOutput("dni_message"),
+                  style = "color: green; font-size: 12px; margin-top: 5px;"
+                )
                 ),
               
               # Apellido y Nombre
               column(
-                width = 3,
+                width = 5,
                 div(
                   textInput(
                     inputId = "apellido_nombre",
@@ -187,29 +199,14 @@ ui <- page_navbar(
                     placeholder = "Ejemplo: Perez, Juan (Juanchi)"
                   )
                 )
-              ),
-              
-              # Fecha de nacimiento
-              column(
-                width = 2,
-                div(
-                  dateInput(
-                    inputId = "fecha_nacimiento",
-                    label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
-                    value = Sys.Date(),
-                    format = "dd/mm/yyyy",  # Corregir formato de la fecha
-                    min = Sys.Date() - years(110),  # Limitar a 110 años atrás
-                    max = Sys.Date()  # Limitar a la fecha de hoy
-                    )
-                  )
-                )
+              )
               ),
             
             fluidRow(
               
               # Campo sexo biológico
               column(
-                width = 2,
+                width = 3,
                 selectInput(
                   "sexo_biologico",
                   label = tags$span("Sexo biológico", style = "font-size: 12px;"),
@@ -220,7 +217,7 @@ ui <- page_navbar(
               
               # Campo género
               column(
-                width = 2,
+                width = 3,
                 selectInput(
                   "genero",
                   label = tags$span("Género", style = "font-size: 12px;"),
@@ -230,31 +227,172 @@ ui <- page_navbar(
                 )
               ),
               
+              # Fecha de nacimiento
+              column(
+                width = 5,
+                div(
+                  dateInput(
+                    inputId = "fecha_nacimiento",
+                    label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
+                    value = Sys.Date(),
+                    format = "dd/mm/yyyy",  # Corregir formato de la fecha
+                    min = Sys.Date() - years(100),  # Limitar a 110 años atrás
+                    max = Sys.Date()  # Limitar a la fecha de hoy
+                    )
+                  )
+                )
+              ),
+            
+            fluidRow(
+              
               # Campo Provincia
               column(
                 width = 3,
-                selectInput(
-                  "provincia",
-                  label = tags$span("Provincia", style = "font-size: 12px;"),
-                  choices = provincias,
-                  selected = "Santa Fe")
+                div(
+                  #style = "height: 38px;",  # Aplicar estilo de altura
+                  selectInput(
+                    "provincia",
+                    label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
+                    choices = provincias,
+                    selected = "Santa Fe"
+                  )
+                )
               ),
               
               # Campo localidad
               column(
-                width = 2,
-                uiOutput("localidad_ui")
+                width = 3,
+                div(
+                  #style = "height: 38px;",  # Aplicar estilo de altura
+                  uiOutput("localidad_ui")
+                )
               ),
               
               # Campo barrio
               column(
-                width = 2,
-                textInput(
-                  "barrio",
-                  label = tags$span("Barrio", style = "font-size: 12px;")
+                width = 5,
+                div(
+                  #style = "height: 38px;",  # Aplicar estilo de altura
+                  textInput(
+                    "barrio",
+                    label = tags$span("Barrio", style = "font-size: 12px;")
+                  )
                 )
               )
             )
+            )
+          ),
+        
+        column(
+          width = 4,  # Ajustar ancho
+          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+            
+            style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
+            
+            h4("Contacto 1", style = "font-size: 16px; font-weight: bold;"),
+            
+            fluidRow(
+            
+              # Campo teléfono de contacto 1
+              column(
+                width = 4,
+                textInput(
+                  "telefono_contacto_1",  # inputId debe coincidir con el servidor
+                  label = tags$span("Teléfono", style = "font-size: 12px;"),
+                  value = ""
+                )
+              ),
+              
+              # Campo tipo de vinculo 1
+              column(
+                width = 4,
+                textInput(
+                  "tipo_vinculo_contacto_1",  # inputId para el campo
+                  label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
+                  value = ""
+                )
+              ),
+              
+              # Campo nombre del contacto 1
+              column(
+                width = 4,
+                textInput(
+                  "nombre_contacto_1",  # inputId para el campo
+                  label = tags$span("Nombre", style = "font-size: 12px;"),
+                  value = ""
+                  )
+                )
+            ),
+            
+            h4("Contacto 2", style = "font-size: 16px; font-weight: bold;"),
+            
+            fluidRow(
+              
+              # Campo telefono de contacto 2
+              column(
+                width = 4,
+                textInput(
+                  "telefono_contacto_2",  # inputId debe coincidir con el servidor
+                  label = tags$span("Teléfono", style = "font-size: 12px;"),
+                  value = ""
+                  )
+                ),
+              
+              # Campo tipo de vínculo 2
+              column(
+                width = 4,
+                textInput(
+                  "tipo_vinculo_contacto_2",  # inputId para el campo
+                  label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
+                  value = ""
+                  )
+              ),
+              
+              # Campo nombre del contacto 2
+              column(
+                width = 4,
+                textInput(
+                  "nombre_contacto_2",  # inputId para el campo
+                  label = tags$span("Nombre", style = "font-size: 12px;"),
+                  value = ""
+                  )
+                )
+              ),
+            
+            h4("Contacto 3", style = "font-size: 16px; font-weight: bold;"),
+            
+            fluidRow(
+              
+              # Campo telefono de contacto 3
+              column(
+                width = 4,
+                textInput(
+                  "telefono_contacto_3",  # inputId debe coincidir con el servidor
+                  label = tags$span("Teléfono", style = "font-size: 12px;"),
+                  value = ""
+                )
+              ),
+              
+              # Campo tipo de vínculo 3
+              column(
+                width = 4,
+                textInput(
+                  "tipo_vinculo_contacto_3",  # inputId para el campo
+                  label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
+                  value = ""
+                  )
+                ),
+              
+              # Campo nombre del contacto 3
+              column(
+                width = 4,
+                textInput(
+                  "nombre_contacto_3",  # inputId para el campo
+                  label = tags$span("Nombre", style = "font-size: 12px;"),
+                  value = ""
+                  )
+                )
+              )
             )
           )
         )
@@ -312,8 +450,52 @@ server <- function(input, output, session) {
   
   ## Obligatorio
   iv_dni <- InputValidator$new()
-  iv_dni$add_rule("dni", sv_required("Campo obligatorio"))
+  iv_dni$add_rule("dni", sv_required("Campo obligatorio. Sin puntos ni espacios."))
+  iv_dni$add_rule("dni", function(value) {
+    if (nchar(as.character(value)) != 8) {
+      return("El DNI no puede contener caracteres especiales y debe tener 8 dígitos.")
+    }
+  })
   iv_dni$enable()
+  
+  # APELLIDO Y NOMBRE 
+  # Inicializamos otra validación para el DNI
+  iv_apellido_nombre <- InputValidator$new()
+  iv_apellido_nombre$add_rule("apellido_nombre", sv_required("Campo obligatorio"))
+  iv_apellido_nombre$add_rule("apellido_nombre", function(value) {
+    if(grepl("[^a-zA-ZáéíóúÁÉÍÓÚñÑ,() ]", value)) {
+      return("No se admiten caracteres especiales.")
+    }
+  })
+  iv_apellido_nombre$add_rule("apellido_nombre", function(value) {
+    if(nchar(as.character(value)) <= 4) {
+      return("El campo debe tener más de 4 caracteres.")
+    }
+  })
+  iv_apellido_nombre$enable()
+  
+  # Barrio 
+  # Inicializamos otra validación para el Barrio
+  iv_barrio <- InputValidator$new()
+  iv_barrio$add_rule("barrio", function(value) {
+    if(grepl("[^a-zA-ZáéíóúÁÉÍÓÚñÑ,() ]", value)) {
+      return("No se admiten caracteres especiales.")
+    }
+  })
+  iv_barrio$add_rule("barrio", function(value) {
+    if(nchar(as.character(value)) <= 2) {
+      return("El campo debe tener más de 2 caracteres.")
+    }
+    if(nchar(as.character(value)) > 100) {
+      return("El campo debe tener menos de 100 caracteres.")
+    }
+  })
+  iv_barrio$enable()
+  
+  # Reglas para Fecha de nacimiento
+  iv_fecha_nacimiento <- InputValidator$new()
+  iv_fecha_nacimiento$add_rule("fecha_nacimiento", sv_required("Campo Obligatorio"))
+  iv_fecha_nacimiento$enable()
   
   ## Manejar el campo DNI según la selección de "recuerda_dni"
   observeEvent(input$recuerda_dni, {
@@ -344,6 +526,8 @@ server <- function(input, output, session) {
       
       # Si el DNI ya existe, traer el ID de la persona de la última fila que tiene ese DNI
       if (nrow(dni_existente) > 0) {
+        iv_dni$disable()
+        
         id_persona <- last(dni_existente$`ID de la persona`)
         
         fecha_primer_registro <- first(dni_existente$`Fecha de registro`)
@@ -361,10 +545,50 @@ server <- function(input, output, session) {
         genero <- last(dni_existente$Género)
         updateSelectInput(session, "genero", selected = genero)
         
+        provincia <- last(dni_existente$`Provincia`)
+        localidad <- last(dni_existente$`Localidad`)
+        
+        # Si la provincia no está en las opciones del selectInput, la añadimos temporalmente
+        if (!is.na(provincia) && !(provincia %in% provincias)) {
+          provincias <- c(provincias, provincia)
+        }
+        
+        # Actualizamos el campo de provincias con la provincia del DNI
+        updateSelectInput(session, "provincia", choices = provincias, selected = provincia)
+        
+        # Actualizamos las localidades dependiendo de la provincia seleccionada
+        localidades <- localidades_por_provincia[[provincia]]
+        
+        # Si la localidad no está en las opciones, la añadimos temporalmente
+        if (!is.na(localidad) && !(localidad %in% localidades)) {
+          localidades <- c(localidades, localidad)
+        }
+        
+        # Actualizamos el campo de localidades
+        updateSelectInput(session, "localidad", choices = localidades, selected = localidad)
+        
+        # Mostrar mensaje en verde
+        output$dni_message <- renderText({
+          "El DNI ya figura en la base, los campos han sido completados"
+        })
         
         } else {
+          
+        iv_dni$enable()
         # Si el DNI no está en la base, asignar un nuevo ID de persona (máximo + 1)
         id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
+        
+        # Eliminar el mensaje si no se encuentra el DNI
+        output$dni_message <- renderText({ "" })
+        
+        # Restablecer los campos a sus valores iniciales si el DNI no está en la base
+        updateTextInput(session, "apellido_nombre", value = "")
+        updateDateInput(session, "fecha_nacimiento", value = Sys.Date())  # O puedes usar `NULL` si deseas que el campo quede vacío
+        updateSelectInput(session, "sexo_biologico", selected = "Masculino")  # Seleccionar una opción predeterminada
+        updateSelectInput(session, "genero", selected = "Hombre")  # Seleccionar una opción predeterminada
+        updateSelectInput(session, "provincia", selected = NULL)  # Dejar la provincia en blanco
+        updateSelectInput(session, "localidad", choices = NULL, selected = NULL)  # Dejar la localidad en blanco
+        updateTextInput(session, "barrio", value = "")
       }
     }
     
@@ -372,16 +596,10 @@ server <- function(input, output, session) {
     updateTextInput(session, "id_persona", value = as.numeric(id_persona))
   })
   
-  # APELLIDO Y NOMBRE OBLIGATORIO
-  # Inicializamos otra validación para el DNI
-  iv_apellido_nombre <- InputValidator$new()
-  iv_apellido_nombre$add_rule("apellido_nombre", sv_required("Campo obligatorio"))
-  iv_apellido_nombre$enable()
-  
   # Crear el uiOutput para las localidades
   output$localidad_ui <- renderUI({
     selectInput("localidad",
-                label = tags$span("Localidad", style = "font-size: 12px;"), 
+                label = tags$span("Localidad de residencia", style = "font-size: 12px;"), 
                 choices = "Rosario")
   })
   
@@ -391,6 +609,158 @@ server <- function(input, output, session) {
     updateSelectInput(session, "localidad", choices = c(localidades,NULL), selected = NULL)
   })
   
+  # Reglas datos de contacto 
+  
+  # Validación para asegurar que solo se ingresen números en el campo de teléfono
+  iv_telefono_1 <- InputValidator$new()
+  iv_telefono_1$add_rule("telefono_contacto_1", sv_required("Campo obligatorio."))
+  iv_telefono_1$add_rule("telefono_contacto_1", function(value) {
+    if (nchar(value) < 7) {
+      return("El teléfono debe tener al menos 7 dígitos.")
+    }
+    if (nchar(value) > 10) {
+      return("El teléfono no puede tener más de 10 dígitos.")
+    }
+    if (!grepl("^[0-9]+$", value)) {
+      return("Solo se admiten números.")
+    }
+    return(NULL)
+  })
+  iv_telefono_1$enable()
+  
+  # Repetir para los otros campos de teléfono
+  iv_telefono_2 <- InputValidator$new()
+  iv_telefono_2$add_rule("telefono_contacto_2", function(value) {
+    if (value != "") {
+      if (nchar(value) < 7) {
+        return("El teléfono debe tener al menos 7 dígitos.")
+      }
+      if (nchar(value) > 10) {
+        return("El teléfono no puede tener más de 10 dígitos.")
+      }
+      if (!grepl("^[0-9]+$", value)) {
+      return("Solo se admiten números.")
+      }
+    }
+    return(NULL)
+  })
+  iv_telefono_2$enable()
+  
+  iv_telefono_3 <- InputValidator$new()
+  iv_telefono_3$add_rule("telefono_contacto_3", function(value) {
+    if (value != "") {
+      if (nchar(value) < 7) {
+        return("El teléfono debe tener al menos 7 dígitos.")
+      }
+      if (nchar(value) > 10) {
+        return("El teléfono no puede tener más de 10 dígitos.")
+      }
+      if (!grepl("^[0-9]+$", value)) {
+        return("Solo se admiten números.")
+      }
+    }
+    return(NULL)
+  })
+  iv_telefono_3$enable()
+  
+  # Vinculo
+  iv_vinculo_1 <- InputValidator$new()
+  iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", sv_required("Campo obligatorio."))
+  iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+        return("El campo solo puede contener letras y espacios.")
+      }
+    }
+    return(NULL)
+  })
+  iv_vinculo_1$enable()
+  
+  # Repitiendo para los otros campos
+  iv_vinculo_2 <- InputValidator$new()
+  iv_vinculo_2$add_rule("tipo_vinculo_contacto_2", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return("El campo solo puede contener letras y espacios.")
+      }
+    }
+    return(NULL)
+  })
+  iv_vinculo_2$enable()
+  
+  iv_vinculo_3 <- InputValidator$new()
+  iv_vinculo_3$add_rule("tipo_vinculo_contacto_3", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return("El campo solo puede contener letras y espacios.")
+      }
+    }
+    return(NULL)
+  })
+  iv_vinculo_3$enable()
+  
+  # Nombre
+  iv_nombre_1 <- InputValidator$new()
+  iv_nombre_1$add_rule("nombre_contacto_1", sv_required("El campo es obligatorio."))
+  iv_nombre_1$add_rule("nombre_contacto_1", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return("El campo solo puede contener letras y espacios.")
+      }
+      if (grepl("[0-9]", value)) {
+        return("El campo no puede contener números.")
+      }
+    }
+    return(NULL)
+  })
+  iv_nombre_1$enable()
+  
+  # Repetir para los otros campos de nombre
+  iv_nombre_2 <- InputValidator$new()
+  iv_nombre_2$add_rule("nombre_contacto_2", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return("El campo solo puede contener letras y espacios.")
+      }
+      if (grepl("[0-9]", value)) {
+        return("El campo no puede contener números.")
+      }
+    }
+    return(NULL)
+  })
+  iv_nombre_2$enable()
+  
+  iv_nombre_3 <- InputValidator$new()
+  iv_nombre_3$add_rule("nombre_contacto_3", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return("El campo solo puede contener letras y espacios.")
+      }
+      if (grepl("[0-9]", value)) {
+        return("El campo no puede contener números.")
+      }
+    }
+    return(NULL)
+  })
+  iv_nombre_3$enable()
   
 }
 
