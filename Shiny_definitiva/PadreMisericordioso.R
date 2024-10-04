@@ -1,4 +1,4 @@
-# Librerías
+# Librerías --------------------------------------------------------------------
 library(shiny)
 library(bslib)
 library(dplyr)
@@ -10,12 +10,10 @@ library(shinyjs)
 library(shinyvalidate)
 library(geoAr)
 
-# Data prep
 # Importar base
 base <- function(){
   data <- read_excel("Base completa.xlsx")
 }
-
 data <- base()
 
 # Base de provincias y localidades
@@ -23,12 +21,12 @@ provincias <- show_arg_codes()[2:25, 5]
 provincias[[1]][1] <- "CABA"
 localidades_por_provincia <- readRDS("localidades.rds")
 
-## Layout formulario
-
+## User Interface --------------------------------------------------------------
 ui <- page_navbar(
   
   useShinyjs(),
   
+  # Tema con función bs_theme()
   theme = bs_theme(
     bg = "#e1e1e1",
     fg = "black",
@@ -38,6 +36,7 @@ ui <- page_navbar(
     base_font = font_google("Montserrat")
   ),
   
+  # Dejo seteados los tamaños de las tipografías de los títulos de cada campo
   tags$head(
     tags$style(HTML("
     input::placeholder {
@@ -58,6 +57,7 @@ ui <- page_navbar(
   
   lang = "en",
   
+  # Título de la shiny (encabezado)
   title = tags$span(
     style = "align-items: center;",
     tags$img(
@@ -69,28 +69,28 @@ ui <- page_navbar(
     tags$span("Gestión de registros - Padre misericodioso", style = "font-size: 18px;color:#ec7e14;")
   ),
   
+  # Espacio en la barra de arriba (en el encabezado)
   nav_spacer(),
   
+  # Pestaña nuevo registro 
   nav_panel(
     tags$span("Nuevo registro", style = "font-size: 14px;"),
     class = "bslib-page-dashboard",
     icon = icon("user"),
     
-    # Layout con un fluidRow y columnas
     fluidRow(
+      # Datos e historial de registro ------------------------------------------
         column(
-          width = 2,  # Ajustar el ancho para que ocupe toda la fila
-          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+          width = 2,
+          wellPanel(
             
             h4("Datos del Registro", style = "font-size: 16px; font-weight: bold;"), 
             
             # Campo ID de registro (readonly)
             fluidRow(
               div(
-                style = "margin-bottom: 20px;",  # Agregar espacio inferior
-                tags$label(
-                  tags$span("ID de registro", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
-                ),
+                style = "margin-bottom: 8px;", 
+                tags$label(tags$span("ID de registro", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")),
                 tags$input(
                   id = "id_registro",
                   type = "text",
@@ -104,7 +104,7 @@ ui <- page_navbar(
             # Campo Fecha de registro
             fluidRow(
               div(
-                style = "width: 100%;margin-bottom: 20px;",  # Asegurar que el campo ocupe el 100% del contenedor
+                style = "width: 100%;margin-bottom: 8px;",
                 dateInput(
                   "fecha_registro",
                   tags$span(
@@ -114,18 +114,18 @@ ui <- page_navbar(
                     )
                   ),
                   value = Sys.Date(),
-                  format = "dd/mm/yyyy",  # Corregir el formato de la fecha
-                  min = Sys.Date() - years(1),  # Limitar a 110 años atrás
-                  max = Sys.Date()  # Limitar a la fecha de hoy
+                  format = "dd/mm/yyyy",
+                  min = Sys.Date() - years(1),
+                  max = Sys.Date()
                 )
               )
-            )
-            ,
+            ),
             
             h4("Historial de Registro", style = "font-size: 16px; font-weight: bold;"), 
             
             # Campo ID de persona (readonly)
             div(
+              style = "width: 100%;margin-bottom: 8px;", 
               tags$label(
                 tags$span("ID de la persona", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
               ),
@@ -139,23 +139,27 @@ ui <- page_navbar(
             ),
             
             # Campo Fecha del primer registro
-            dateInput(
-              "fecha_primer_registro",
-              tags$span(
-                tagList(
-                  tags$span("Fecha del primer registro", style = "font-size: 12px;"),
-                  tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
-                )
-              ),
+            div(
+              style = "width: 100%;margin-bottom: 20px;",
+              dateInput(
+                "fecha_primer_registro",
+                tags$span(
+                  tagList(
+                    tags$span("Fecha del primer registro", style = "font-size: 12px;"),
+                    tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
+                    )
+                  ),
               value = Sys.Date(),
               format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+            )
             )
           )
           ),
         
+      # Datos personales -------------------------------------------------------
         column(
-          width = 6,  # Ajustar ancho
-          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+          width = 6,
+          wellPanel(
             
             style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
             
@@ -191,7 +195,7 @@ ui <- page_navbar(
               
               # Apellido y Nombre
               column(
-                width = 5,
+                width = 6,
                 div(
                   textInput(
                     inputId = "apellido_nombre",
@@ -206,7 +210,7 @@ ui <- page_navbar(
               
               # Campo sexo biológico
               column(
-                width = 3,
+                width = 4,
                 selectInput(
                   "sexo_biologico",
                   label = tags$span("Sexo biológico", style = "font-size: 12px;"),
@@ -217,7 +221,7 @@ ui <- page_navbar(
               
               # Campo género
               column(
-                width = 3,
+                width = 4,
                 selectInput(
                   "genero",
                   label = tags$span("Género", style = "font-size: 12px;"),
@@ -229,7 +233,7 @@ ui <- page_navbar(
               
               # Fecha de nacimiento
               column(
-                width = 5,
+                width = 4,
                 div(
                   dateInput(
                     inputId = "fecha_nacimiento",
@@ -247,7 +251,7 @@ ui <- page_navbar(
               
               # Campo Provincia
               column(
-                width = 3,
+                width = 4,
                 div(
                   #style = "height: 38px;",  # Aplicar estilo de altura
                   selectInput(
@@ -261,7 +265,7 @@ ui <- page_navbar(
               
               # Campo localidad
               column(
-                width = 3,
+                width = 4,
                 div(
                   #style = "height: 38px;",  # Aplicar estilo de altura
                   uiOutput("localidad_ui")
@@ -270,7 +274,7 @@ ui <- page_navbar(
               
               # Campo barrio
               column(
-                width = 5,
+                width = 4,
                 div(
                   #style = "height: 38px;",  # Aplicar estilo de altura
                   textInput(
@@ -483,7 +487,7 @@ server <- function(input, output, session) {
     }
   })
   iv_barrio$add_rule("barrio", function(value) {
-    if(nchar(as.character(value)) <= 2) {
+    if(nchar(as.character(value)) <= 2 & nchar(as.character(value)) >0) {
       return("El campo debe tener más de 2 caracteres.")
     }
     if(nchar(as.character(value)) > 100) {
@@ -572,6 +576,33 @@ server <- function(input, output, session) {
           "El DNI ya figura en la base, los campos han sido completados"
         })
         
+        telefono_contacto_1 <- last(dni_existente$`Teléfono de Contacto 1`)
+        updateSelectInput(session, "telefono_contacto_1", selected = telefono_contacto_1)
+        
+        telefono_contacto_2 <- last(dni_existente$`Teléfono de Contacto 2`)
+        updateSelectInput(session, "telefono_contacto_2", selected = telefono_contacto_2)
+        
+        telefono_contacto_3 <- last(dni_existente$`Teléfono de Contacto 3`)
+        updateSelectInput(session, "telefono_contacto_3", selected = telefono_contacto_3)
+        
+        tipo_vinculo_contacto_1 <- last(dni_existente$`Tipo de Vínculo con el Contacto 1`)
+        updateSelectInput(session, "tipo_vinculo_contacto_1", selected = tipo_vinculo_contacto_1)
+        
+        tipo_vinculo_contacto_2 <- last(dni_existente$`Tipo de Vínculo con el Contacto 2`)
+        updateSelectInput(session, "tipo_vinculo_contacto_2", selected = tipo_vinculo_contacto_2)
+        
+        tipo_vinculo_contacto_3 <- last(dni_existente$`Tipo de Vínculo con el Contacto 3`)
+        updateSelectInput(session, "tipo_vinculo_contacto_3", selected = tipo_vinculo_contacto_3)
+        
+        nombre_contacto_1 <- last(dni_existente$`Nombre del Contacto 1`)
+        updateSelectInput(session, "nombre_contacto_1", selected = nombre_contacto_1)
+        
+        nombre_contacto_2 <- last(dni_existente$`Nombre del Contacto 2`)
+        updateSelectInput(session, "nombre_contacto_2", selected = nombre_contacto_2)
+        
+        nombre_contacto_3 <- last(dni_existente$`Nombre del Contacto 3`)
+        updateSelectInput(session, "nombre_contacto_3", selected = nombre_contacto_3)
+
         } else {
           
         iv_dni$enable()
@@ -589,6 +620,15 @@ server <- function(input, output, session) {
         updateSelectInput(session, "provincia", selected = NULL)  # Dejar la provincia en blanco
         updateSelectInput(session, "localidad", choices = NULL, selected = NULL)  # Dejar la localidad en blanco
         updateTextInput(session, "barrio", value = "")
+        updateTextInput(session, "telefono_contacto_1", value = "")
+        updateTextInput(session, "telefono_contacto_2", value = "")
+        updateTextInput(session, "telefono_contacto_3", value = "")
+        updateTextInput(session, "tipo_vinculo_contacto_1", value = "")
+        updateTextInput(session, "tipo_vinculo_contacto_2", value = "")
+        updateTextInput(session, "tipo_vinculo_contacto_3", value = "")
+        updateTextInput(session, "nombre_contacto_1", value = "")
+        updateTextInput(session, "nombre_contacto_2", value = "")
+        updateTextInput(session, "nombre_contacto_3", value = "")
       }
     }
     
