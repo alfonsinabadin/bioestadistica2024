@@ -93,6 +93,8 @@ ui <- page_navbar(
           width = 2,
           wellPanel(
             
+            style = "min-height: 410px;",
+            
             h4("Datos del Registro", style = "font-size: 15px; font-weight: bold;"), 
             
             # Campo ID de registro (readonly)
@@ -153,7 +155,7 @@ ui <- page_navbar(
                 "fecha_primer_registro",
                 tags$span("Fecha del primer registro", style = "font-size: 12px;"),
                 value = Sys.Date(),
-                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                format = "dd/mm/yyyy"
                 )
               )
             )
@@ -164,7 +166,7 @@ ui <- page_navbar(
           width = 6,
           wellPanel(
             
-            style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
+            style = "min-height: 410px;", 
             
             h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
             
@@ -176,7 +178,7 @@ ui <- page_navbar(
                 selectInput(
                   inputId = "recuerda_dni",
                   tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
-                  choices = c("","Si", "No", "No tiene" = "S/D"),  # Definir las opciones
+                  choices = c("","Si", "No", "No tiene" = "S/D"),
                   selected = ""
                   )
                 ),
@@ -189,11 +191,13 @@ ui <- page_navbar(
                   tags$span("DNI", style = "font-size: 12px;"),
                   value = NULL
                   ),
+                
                 # Mensaje sobre el DNI
                 div(
                   textOutput("dni_message"),
                   style = "color: green; font-size: 12px; margin-top: 5px;"
-                )
+                  )
+                
                 ),
               
               # Apellido y Nombre
@@ -211,13 +215,28 @@ ui <- page_navbar(
             
             fluidRow(
               
+              # Fecha de nacimiento
+              column(
+                width = 4,
+                div(
+                  dateInput(
+                    inputId = "fecha_nacimiento",
+                    label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
+                    value = "",
+                    format = "dd/mm/yyyy",  
+                    min = Sys.Date() - years(100),  # Limitar a 110 años atrás
+                    max = Sys.Date()  # Limitar a la fecha de hoy
+                  )
+                )
+              ),
+              
               # Campo sexo biológico
               column(
                 width = 4,
                 selectInput(
                   "sexo_biologico",
                   label = tags$span("Sexo biológico", style = "font-size: 12px;"),
-                  choices = c("Femenino", "Masculino", "No informado",""),  # Definir las opciones
+                  choices = c("Femenino", "Masculino", "No informado",""), 
                   selected = ""
                 )
               ),
@@ -230,25 +249,10 @@ ui <- page_navbar(
                   label = tags$span("Género", style = "font-size: 12px;"),
                   choices = c("Hombre", "Hombre trans", 
                               "Mujer", "Mujer trans",
-                              "No binario", "Otro",""),  # Definir las opciones
+                              "No binario", "Otro",""),  
                   selected = ""
                 )
-              ),
-              
-              # Fecha de nacimiento
-              column(
-                width = 4,
-                div(
-                  dateInput(
-                    inputId = "fecha_nacimiento",
-                    label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
-                    value = "",
-                    format = "dd/mm/yyyy",  # Corregir formato de la fecha
-                    min = Sys.Date() - years(100),  # Limitar a 110 años atrás
-                    max = Sys.Date()  # Limitar a la fecha de hoy
-                    )
-                  )
-                )
+              )
               ),
             
             fluidRow(
@@ -257,7 +261,7 @@ ui <- page_navbar(
               column(
                 width = 4,
                 div(
-                  #style = "height: 38px;",  # Aplicar estilo de altura
+                  style = "height: 38px;",
                   selectInput(
                     "provincia",
                     label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
@@ -271,7 +275,7 @@ ui <- page_navbar(
               column(
                 width = 4,
                 div(
-                  #style = "height: 38px;",  # Aplicar estilo de altura
+                  style = "height: 38px;",
                   uiOutput("localidad_ui")
                 )
               ),
@@ -280,7 +284,7 @@ ui <- page_navbar(
               column(
                 width = 4,
                 div(
-                  #style = "height: 38px;",  # Aplicar estilo de altura
+                  style = "height: 38px;",
                   textInput(
                     "barrio",
                     label = tags$span("Barrio", style = "font-size: 12px;")
@@ -291,21 +295,22 @@ ui <- page_navbar(
             )
           ),
         
+      # Datos de contacto ------------------------------------------------------
         column(
-          width = 4,  # Ajustar ancho
-          wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+          width = 4, 
+          wellPanel( 
             
-            style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
+            style = "min-height: 410px;",
             
-            h4("Contacto 1", style = "font-size: 16px; font-weight: bold;"),
+            h4("Contacto 1", style = "font-size: 15px; font-weight: bold;"),
             
             fluidRow(
             
               # Campo teléfono de contacto 1
               column(
                 width = 4,
-                textInput(
-                  "telefono_contacto_1",  # inputId debe coincidir con el servidor
+                numericInput(
+                  "telefono_contacto_1", 
                   label = tags$span("Teléfono", style = "font-size: 12px;"),
                   value = ""
                 )
@@ -314,11 +319,13 @@ ui <- page_navbar(
               # Campo tipo de vinculo 1
               column(
                 width = 4,
-                textInput(
-                  "tipo_vinculo_contacto_1",  # inputId para el campo
+                selectizeInput(
+                  "tipo_vinculo_contacto_1",
                   label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
-                  value = ""
-                )
+                  choices = c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a"),
+                  multiple = FALSE,
+                  options = list(create = TRUE),
+                  )
               ),
               
               # Campo nombre del contacto 1
@@ -332,14 +339,14 @@ ui <- page_navbar(
                 )
             ),
             
-            h4("Contacto 2", style = "font-size: 16px; font-weight: bold;"),
+            h4("Contacto 2", style = "font-size: 15px; font-weight: bold;"),
             
             fluidRow(
               
               # Campo telefono de contacto 2
               column(
                 width = 4,
-                textInput(
+                numericInput(
                   "telefono_contacto_2",  # inputId debe coincidir con el servidor
                   label = tags$span("Teléfono", style = "font-size: 12px;"),
                   value = ""
@@ -349,11 +356,13 @@ ui <- page_navbar(
               # Campo tipo de vínculo 2
               column(
                 width = 4,
-                textInput(
-                  "tipo_vinculo_contacto_2",  # inputId para el campo
+                selectizeInput(
+                  "tipo_vinculo_contacto_2",
                   label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
-                  value = ""
-                  )
+                  choices = c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a"),
+                  multiple = FALSE,
+                  options = list(create = TRUE),
+                )
               ),
               
               # Campo nombre del contacto 2
@@ -367,14 +376,14 @@ ui <- page_navbar(
                 )
               ),
             
-            h4("Contacto 3", style = "font-size: 16px; font-weight: bold;"),
+            h4("Contacto 3", style = "font-size: 15px; font-weight: bold;"),
             
             fluidRow(
               
               # Campo telefono de contacto 3
               column(
                 width = 4,
-                textInput(
+                numericInput(
                   "telefono_contacto_3",  # inputId debe coincidir con el servidor
                   label = tags$span("Teléfono", style = "font-size: 12px;"),
                   value = ""
@@ -384,12 +393,14 @@ ui <- page_navbar(
               # Campo tipo de vínculo 3
               column(
                 width = 4,
-                textInput(
-                  "tipo_vinculo_contacto_3",  # inputId para el campo
+                selectizeInput(
+                  "tipo_vinculo_contacto_3",
                   label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
-                  value = ""
-                  )
-                ),
+                  choices = c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a"),
+                  multiple = FALSE,
+                  options = list(create = TRUE),
+                )
+              ),
               
               # Campo nombre del contacto 3
               column(
@@ -443,7 +454,7 @@ server <- function(input, output, session) {
   ## Campo obligatorio
   iv_fecha_registro$add_rule("fecha_registro", 
                              sv_required(
-                               tags$span("Campo obligatorio", style = "font-size: 10px;")
+                               tags$span("Campo obligatorio.", style = "font-size: 10px;")
                                )
                              )
   
@@ -456,7 +467,7 @@ server <- function(input, output, session) {
   ## Campo obligatorio
   iv_fecha_primer_registro$add_rule("fecha_primer_registro",
                                     sv_required(
-                                      tags$span("Campo obligatorio", style = "font-size: 10px;")
+                                      tags$span("Campo obligatorio.", style = "font-size: 10px;")
                                       )
                                     )
   
@@ -469,7 +480,7 @@ server <- function(input, output, session) {
   ## Campo obligatorio
   iv_recuerda_dni$add_rule("recuerda_dni",
                            sv_required(
-                             tags$span("Campo obligatorio", style = "font-size: 10px;")
+                             tags$span("Campo obligatorio.", style = "font-size: 10px;")
                              )
                            )
   
@@ -493,7 +504,11 @@ server <- function(input, output, session) {
   iv_dni <- InputValidator$new()
   
   # Agregar la regla de campo obligatorio
-  iv_dni$add_rule("dni", sv_required("Campo obligatorio"))
+  iv_dni$add_rule("dni", sv_required(
+    tags$span("Campo obligatorio.",
+              style = "font-size: 10px;")
+    )
+  )
   
   # Agregar la regla para que solo contenga números (sin puntos, espacios, etc.)
   iv_dni$add_rule("dni", function(value) {
@@ -514,17 +529,12 @@ server <- function(input, output, session) {
   # Habilitar el validador
   iv_dni$enable()
   
-
-# Habilitar el validador
-iv_dni$enable()
-
-  
   # Apellido, Nombre (apodo) ---------------------------------------------------
   iv_apellido_nombre <- InputValidator$new()
   
   ## Obligatorio
   iv_apellido_nombre$add_rule("apellido_nombre", 
-                              sv_required(tags$span("Campo obligatorio", 
+                              sv_required(tags$span("Campo obligatorio.", 
                                                     style = "font-size: 10px;")
                                           )
                               )
@@ -549,13 +559,15 @@ iv_dni$enable()
   
   iv_apellido_nombre$enable()
   
+  # Fecha de nacimiento --------------------------------------------------------
+  
   # Sexo biológico -------------------------------------------------------------
   
   iv_sexo_biologico <- InputValidator$new()
   
   ## Obligatorio
   iv_sexo_biologico$add_rule("sexo_biologico",
-                             sv_required(tags$span("Campo obligatorio",
+                             sv_required(tags$span("Campo obligatorio.",
                                                    style = "font-size: 10px;")
                                          )
                              )
@@ -568,14 +580,12 @@ iv_dni$enable()
   
   ## Obligatorio
   iv_genero$add_rule("genero",
-                     sv_required(tags$span("Campo obligatorio",
+                     sv_required(tags$span("Campo obligatorio.",
                                            style = "font-size: 10px;")
                                  )
                      )
   
   iv_genero$enable()
-  
-  # Fecha de nacimiento --------------------------------------------------------
   
   # Provincia ------------------------------------------------------------------
   
@@ -584,7 +594,7 @@ iv_dni$enable()
   ## Obligatorio
   iv_provincia$add_rule("provincia", function(value) {
     if(value == provincias[[1]][1]) {
-      return(tags$span("Campo obligatorio",
+      return(tags$span("Campo obligatorio.",
                        style = "font-size: 10px;"))
     }
   })
@@ -629,10 +639,215 @@ iv_dni$enable()
   
   iv_barrio$enable()
   
-  # Actualizaciones con el dni
-  observeEvent(input$dni, {
+  # Contacto 1 - Teléfono ------------------------------------------------------
+  
+  iv_telefono_1 <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_telefono_1$add_rule("telefono_contacto_1",
+                         sv_required(tags$span("Campo obligatorio.",
+                                               style = "font-size: 10px;")
+                                     )
+                         )
+  
+  ## Entre 7 y 10 caracteres
+  iv_telefono_1$add_rule("telefono_contacto_1", function(value) {
+    if (nchar(as.character(value)) < 7) {
+      return(tags$span("El teléfono debe tener al menos 7 dígitos.", style = "font-size: 10px;"))
+    }
+    if (nchar(as.character(value)) > 10) {
+      return(tags$span("El teléfono debe tener menor de 10 dígitos.", style = "font-size: 10px;"))
+    }
+    if (!grepl("^[0-9]+$", as.character(value))) {
+      return(return(tags$span("Sólo se admiten números.", style = "font-size: 10px;")))
+    }
+    return(NULL)
+  })
+  
+  iv_telefono_1$enable()
+  
+  # Función auxiliar para verificar si el valor no es NULL o NA
+  validar_telefono <- function(value) {
+    if (is.null(value) || is.na(value)) {
+      return(NULL)  # Si es NULL o NA, no hay error
+    }
     
-    # ID Persona ---------------------------------------------------------------
+    # Convertimos a cadena de texto por si el valor no lo es
+    value <- as.character(value)
+    
+    if (nchar(value) < 7) {
+      return(tags$span("El teléfono debe tener al menos 7 dígitos.", style = "font-size: 10px;"))
+    }
+    if (nchar(value) > 10) {
+      return(tags$span("El teléfono debe tener menos de 10 dígitos.", style = "font-size: 10px;"))
+    }
+    if (!grepl("^[0-9]+$", value)) {
+      return(tags$span("Solo se admiten números.", style = "font-size: 10px;"))
+    }
+    
+    return(NULL)  # Si todo es correcto, no hay error
+  }
+  
+  # Contacto 2 - Teléfono ------------------------------------------------------
+  iv_telefono_2 <- InputValidator$new()
+  
+  # Añadimos la regla utilizando la función auxiliar
+  iv_telefono_2$add_rule("telefono_contacto_2", function(value) {
+    validar_telefono(value)
+  })
+  
+  iv_telefono_2$enable()
+  
+  # Contacto 3 - Teléfono ------------------------------------------------------
+  iv_telefono_3 <- InputValidator$new()
+  
+  # Añadimos la regla utilizando la función auxiliar
+  iv_telefono_3$add_rule("telefono_contacto_3", function(value) {
+    validar_telefono(value)
+  })
+  
+  iv_telefono_3$enable()
+  
+  # Contacto 1 - Vinculo -------------------------------------------------------
+  
+  iv_vinculo_1 <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_vinculo_1$add_rule("tipo_vinculo_contacto_1",
+                        sv_required(tags$span("Campo obligatorio.",
+                                              style = "font-size: 10px;")
+                                    )
+                        )
+  
+  ## Más de 2 caracteres y sin caracteres especiales
+  iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+        return("No se admiten caracteres especiales.")
+      }
+    }
+    return(NULL)
+  })
+  
+  iv_vinculo_1$enable()
+  
+  # Contacto 2 - Vinculo -------------------------------------------------------
+  
+  iv_vinculo_2 <- InputValidator$new()
+  
+  ## Más de 2 caracteres y sin caracteres especiales
+  iv_vinculo_2$add_rule("tipo_vinculo_contacto_2", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+        return("No se admiten caracteres especiales.")
+      }
+    }
+    return(NULL)
+  })
+  
+  iv_vinculo_2$enable()
+  
+  # Contacto 3 - Vinculo -------------------------------------------------------
+  
+  iv_vinculo_3 <- InputValidator$new()
+  
+  ## Más de 2 caracteres y sin caracteres especiales
+  iv_vinculo_3$add_rule("tipo_vinculo_contacto_3", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+        return("No se admiten caracteres especiales.")
+      }
+    }
+    return(NULL)
+  })
+  
+  iv_vinculo_3$enable()
+  
+  # Contacto 1 - Nombre --------------------------------------------------------
+  
+  iv_nombre_1 <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_nombre_1$add_rule("nombre_contacto_1", function(value) {
+    if (input$tipo_vinculo_contacto_1 != "Propio") {
+      if (value == "") {
+        return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+      }
+    }
+    return(NULL)
+  })
+
+  ## Al menos 2 caracteres, sin caracteres especiales
+  
+  iv_nombre_1$add_rule("nombre_contacto_1", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size: 10px;"))
+      }
+    }
+    return(NULL)
+  })
+  
+  iv_nombre_1$add_rule("nombre_contacto_1",function(value) {
+    esta <- input$tipo_vinculo_contacto_1 %in% c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
+    if (!esta) {
+      if(!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ /]+$", value)) {  # Incluye el símbolo '/'
+        return(tags$span("No se admiten caracteres especiales excepto '/', letras y espacios.", style = "font-size: 10px;"))
+      }
+    }
+  })
+  
+  
+  iv_nombre_1$enable()
+  
+  # Contacto 2 - Nombre --------------------------------------------------------
+  
+  iv_nombre_2 <- InputValidator$new()
+  
+  ## Al menos 2 caracteres, sin caracteres especiales
+  iv_nombre_2$add_rule("nombre_contacto_2", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size: 10px;"))
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return(tags$span("No se admiten caracteres especiales.", style = "font-size: 10px;"))
+      }
+    }
+    return(NULL)
+  })
+  iv_nombre_2$enable()
+  
+  # Contacto 3 - Nombre --------------------------------------------------------
+  
+  iv_nombre_3 <- InputValidator$new()
+  
+  ## Al menos 2 caracteres, sin caracteres especiales
+  iv_nombre_3$add_rule("nombre_contacto_3", function(value) {
+    if (value != "") {
+      if (nchar(value) < 2) {
+        return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size: 10px;"))
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
+        return(tags$span("No se admiten caracteres especiales.", style = "font-size: 10px;"))
+      }
+    }
+    return(NULL)
+  })
+  iv_nombre_3$enable()
+  
+  # Actualizaciones con el dni -------------------------------------------------
+  
+  observeEvent(input$dni, {
     
     # Si el campo "recuerda_dni" es Vacío, "No" o "S/D", asignamos el nuevo ID con max() + 1
     if (input$recuerda_dni %in% c("","No", "S/D")) {
@@ -697,22 +912,22 @@ iv_dni$enable()
         updateSelectInput(session, "barrio", selected = barrio)
         
         telefono_contacto_1 <- last(dni_existente$`Teléfono de Contacto 1`)
-        updateSelectInput(session, "telefono_contacto_1", selected = telefono_contacto_1)
+        updateNumericInput(session, "telefono_contacto_1", value = telefono_contacto_1)
         
         telefono_contacto_2 <- last(dni_existente$`Teléfono de Contacto 2`)
-        updateSelectInput(session, "telefono_contacto_2", selected = telefono_contacto_2)
+        updateNumericInput(session, "telefono_contacto_2", value = telefono_contacto_2)
         
         telefono_contacto_3 <- last(dni_existente$`Teléfono de Contacto 3`)
-        updateSelectInput(session, "telefono_contacto_3", selected = telefono_contacto_3)
+        updateNumericInput(session, "telefono_contacto_3", value = telefono_contacto_3)
         
         tipo_vinculo_contacto_1 <- last(dni_existente$`Tipo de Vínculo con el Contacto 1`)
-        updateSelectInput(session, "tipo_vinculo_contacto_1", selected = tipo_vinculo_contacto_1)
+        updateSelectizeInput(session, "tipo_vinculo_contacto_1", selected = tipo_vinculo_contacto_1)
         
         tipo_vinculo_contacto_2 <- last(dni_existente$`Tipo de Vínculo con el Contacto 2`)
-        updateSelectInput(session, "tipo_vinculo_contacto_2", selected = tipo_vinculo_contacto_2)
+        updateSelectizeInput(session, "tipo_vinculo_contacto_2", selected = tipo_vinculo_contacto_2)
         
         tipo_vinculo_contacto_3 <- last(dni_existente$`Tipo de Vínculo con el Contacto 3`)
-        updateSelectInput(session, "tipo_vinculo_contacto_3", selected = tipo_vinculo_contacto_3)
+        updateSelectizeInput(session, "tipo_vinculo_contacto_3", selected = tipo_vinculo_contacto_3)
         
         nombre_contacto_1 <- last(dni_existente$`Nombre del Contacto 1`)
         updateSelectInput(session, "nombre_contacto_1", selected = nombre_contacto_1)
@@ -742,12 +957,12 @@ iv_dni$enable()
         updateSelectInput(session, "provincia", selected = "")
         updateSelectInput(session, "localidad", choices = NULL, selected = NULL)
         updateTextInput(session, "barrio", value = "")
-        updateTextInput(session, "telefono_contacto_1", value = "")
-        updateTextInput(session, "telefono_contacto_2", value = "")
-        updateTextInput(session, "telefono_contacto_3", value = "")
-        updateTextInput(session, "tipo_vinculo_contacto_1", value = "")
-        updateTextInput(session, "tipo_vinculo_contacto_2", value = "")
-        updateTextInput(session, "tipo_vinculo_contacto_3", value = "")
+        updateNumericInput(session, "telefono_contacto_1", value = "")
+        updateNumericInput(session, "telefono_contacto_2", value = "")
+        updateNumericInput(session, "telefono_contacto_3", value = "")
+        updateSelectizeInput(session, "tipo_vinculo_contacto_1", selected = "")
+        updateSelectizeInput(session, "tipo_vinculo_contacto_2", selected = "")
+        updateSelectizeInput(session, "tipo_vinculo_contacto_3", selected = "")
         updateTextInput(session, "nombre_contacto_1", value = "")
         updateTextInput(session, "nombre_contacto_2", value = "")
         updateTextInput(session, "nombre_contacto_3", value = "")
@@ -757,159 +972,6 @@ iv_dni$enable()
     # Actualizar el campo ID de la persona
     updateTextInput(session, "id_persona", value = as.numeric(id_persona))
   })
-
-  # Reglas datos de contacto 
-  
-  # Validación para asegurar que solo se ingresen números en el campo de teléfono
-  iv_telefono_1 <- InputValidator$new()
-  iv_telefono_1$add_rule("telefono_contacto_1", sv_required("Campo obligatorio."))
-  iv_telefono_1$add_rule("telefono_contacto_1", function(value) {
-    if (nchar(value) < 7) {
-      return("El teléfono debe tener al menos 7 dígitos.")
-    }
-    if (nchar(value) > 10) {
-      return("El teléfono no puede tener más de 10 dígitos.")
-    }
-    if (!grepl("^[0-9]+$", value)) {
-      return("Solo se admiten números.")
-    }
-    return(NULL)
-  })
-  iv_telefono_1$enable()
-  
-  # Repetir para los otros campos de teléfono
-  iv_telefono_2 <- InputValidator$new()
-  iv_telefono_2$add_rule("telefono_contacto_2", function(value) {
-    if (value != "") {
-      if (nchar(value) < 7) {
-        return("El teléfono debe tener al menos 7 dígitos.")
-      }
-      if (nchar(value) > 10) {
-        return("El teléfono no puede tener más de 10 dígitos.")
-      }
-      if (!grepl("^[0-9]+$", value)) {
-      return("Solo se admiten números.")
-      }
-    }
-    return(NULL)
-  })
-  iv_telefono_2$enable()
-  
-  iv_telefono_3 <- InputValidator$new()
-  iv_telefono_3$add_rule("telefono_contacto_3", function(value) {
-    if (value != "") {
-      if (nchar(value) < 7) {
-        return("El teléfono debe tener al menos 7 dígitos.")
-      }
-      if (nchar(value) > 10) {
-        return("El teléfono no puede tener más de 10 dígitos.")
-      }
-      if (!grepl("^[0-9]+$", value)) {
-        return("Solo se admiten números.")
-      }
-    }
-    return(NULL)
-  })
-  iv_telefono_3$enable()
-  
-  # Vinculo
-  iv_vinculo_1 <- InputValidator$new()
-  iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", sv_required("Campo obligatorio."))
-  iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", function(value) {
-    if (value != "") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
-      }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
-        return("El campo solo puede contener letras y espacios.")
-      }
-    }
-    return(NULL)
-  })
-  iv_vinculo_1$enable()
-  
-  # Repitiendo para los otros campos
-  iv_vinculo_2 <- InputValidator$new()
-  iv_vinculo_2$add_rule("tipo_vinculo_contacto_2", function(value) {
-    if (value != "") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
-      }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
-        return("El campo solo puede contener letras y espacios.")
-      }
-    }
-    return(NULL)
-  })
-  iv_vinculo_2$enable()
-  
-  iv_vinculo_3 <- InputValidator$new()
-  iv_vinculo_3$add_rule("tipo_vinculo_contacto_3", function(value) {
-    if (value != "") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
-      }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
-        return("El campo solo puede contener letras y espacios.")
-      }
-    }
-    return(NULL)
-  })
-  iv_vinculo_3$enable()
-  
-  # Nombre
-  iv_nombre_1 <- InputValidator$new()
-  iv_nombre_1$add_rule("nombre_contacto_1", sv_required("El campo es obligatorio."))
-  iv_nombre_1$add_rule("nombre_contacto_1", function(value) {
-    if (value != "") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
-      }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
-        return("El campo solo puede contener letras y espacios.")
-      }
-      if (grepl("[0-9]", value)) {
-        return("El campo no puede contener números.")
-      }
-    }
-    return(NULL)
-  })
-  iv_nombre_1$enable()
-  
-  # Repetir para los otros campos de nombre
-  iv_nombre_2 <- InputValidator$new()
-  iv_nombre_2$add_rule("nombre_contacto_2", function(value) {
-    if (value != "") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
-      }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
-        return("El campo solo puede contener letras y espacios.")
-      }
-      if (grepl("[0-9]", value)) {
-        return("El campo no puede contener números.")
-      }
-    }
-    return(NULL)
-  })
-  iv_nombre_2$enable()
-  
-  iv_nombre_3 <- InputValidator$new()
-  iv_nombre_3$add_rule("nombre_contacto_3", function(value) {
-    if (value != "") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
-      }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Expresión corregida
-        return("El campo solo puede contener letras y espacios.")
-      }
-      if (grepl("[0-9]", value)) {
-        return("El campo no puede contener números.")
-      }
-    }
-    return(NULL)
-  })
-  iv_nombre_3$enable()
   
 }
 
