@@ -405,11 +405,10 @@ ui <- page_navbar(
       # Entrevistas -------------------------------------------------------
       
       column(
-        width = 4,  # Ajustar ancho
+        width = 3,  # Ajustar ancho
         wellPanel(  # Simular el estilo de un 'box' usando wellPanel
           
-          style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
-          
+          style = "min-height: 320px; margin-top: 20px;",  # Aplicar la misma altura mínima y margen superior          
           h4("Entrevista con Psicólogo", style = "font-size: 16px; font-weight: bold;"),
           
           fluidRow(
@@ -421,27 +420,28 @@ ui <- page_navbar(
               inputId = "estado_psicologo",
               tags$span("Estado", style = "font-size: 12px;"),
                           choices = list(
-                            "Presente" = "Presente",
-                            "Ausente" = "Ausente",
-                            "Pendiente" = "Pendiente",
-                            "No necesaria" = "No necesaria",
-                            "No asignada" = "No asignada"
+                            "Presente",
+                            "Ausente",
+                            "Pendiente",
+                            "No necesaria",
+                            "No asignada",
+                            ""
                           ),
-                          selected = NULL)
+                          selected = "")
               ),  # Ninguna opción seleccionada por defecto
 
             # Campo fecha - entrevista Psicolgo
             column(
               width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;")
+              ),
               dateInput(
-                "fecha_entrevista_psicologo",
-                tags$span(
-                  tagList(
-                    tags$span("Fecha de la entrevista", style = "font-size: 12px;"),
-                  )
-                ),
+                inputId = "fecha_entrevista_psicologo",
+                label = NULL,  # Sin etiqueta adicional
                 value = Sys.Date(),
-                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                format = "dd/mm/yyyy"  # Formato de la fecha
               )
             )
           ),
@@ -457,29 +457,30 @@ ui <- page_navbar(
                 inputId = "estado_psiquiatra",
                 tags$span("Estado", style = "font-size: 12px;"),
                 choices = list(
-                  "Presente" = "Presente",
-                  "Ausente" = "Ausente",
-                  "Pendiente" = "Pendiente",
-                  "No necesaria" = "No necesaria",
-                  "No asignada" = "No asignada"
+                  "Presente",
+                  "Ausente",
+                  "Pendiente",
+                  "No necesaria",
+                  "No asignada",
+                  ""
                 ),
-                selected = NULL)
+                selected = "")
             ),  # Ninguna opción seleccionada por defecto
             
-            # Campo fecha - entrevista Psicolgo
+            # Campo fecha - entrevista Psiquiatra
             column(
               width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;")
+              ),
               dateInput(
-                "fecha_entrevista_psiquiatra",
-                tags$span(
-                  tagList(
-                    tags$span("Fecha de la entrevista", style = "font-size: 12px;"),
-                  )
-                ),
+                inputId = "fecha_entrevista_psiquiatra",
+                label = NULL,  # Sin etiqueta adicional
                 value = Sys.Date(),
-                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                format = "dd/mm/yyyy"  # Formato de la fecha
               )
-        )
+            )
       ),
           
           h4("Entrevista con Trabajador Social", style = "font-size: 16px; font-weight: bold;"),
@@ -493,27 +494,28 @@ ui <- page_navbar(
                 inputId = "estado_ts",
                 tags$span("Estado", style = "font-size: 12px;"),
                 choices = list(
-                  "Presente" = "Presente",
-                  "Ausente" = "Ausente",
-                  "Pendiente" = "Pendiente",
-                  "No necesaria" = "No necesaria",
-                  "No asignada" = "No asignada"
+                  "Presente",
+                  "Ausente",
+                  "Pendiente",
+                  "No necesaria",
+                  "No asignada",
+                  ""
                 ),
-                selected = NULL)
+                selected = "")
             ),  # Ninguna opción seleccionada por defecto
             
             # Campo fecha - entrevista trabajador social
             column(
               width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;")
+              ),
               dateInput(
-                "fecha_entrevista_ts",
-                tags$span(
-                  tagList(
-                    tags$span("Fecha de la entrevista", style = "font-size: 12px;"),
-                  )
-                ),
+                inputId = "fecha_entrevista_ts",
+                label = NULL,  # Sin etiqueta adicional
                 value = Sys.Date(),
-                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                format = "dd/mm/yyyy"  # Formato de la fecha
               )
             )
           )
@@ -523,10 +525,10 @@ ui <- page_navbar(
       # Información del Consumo y Tratamiento -------------------------------------------------------
       
       column(
-        width = 4,  # Ajustar ancho
+        width = 5,  # Ajustar ancho
         wellPanel(  # Simular el estilo de un 'box' usando wellPanel
           
-          style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
+          style = "min-height: 320px; margin-top: 20px;",  # Aplicar la misma altura mínima y margen superior
           
           h4("Información del Consumo", style = "font-size: 16px; font-weight: bold;"),
           
@@ -545,9 +547,13 @@ ui <- page_navbar(
             # Campo sustancia de inicio
             column(
               width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px; white-space: nowrap;")
+              ),
               selectInput(
                 inputId = "sustancia_inicio_consumo",
-                label = tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px;"),
+                label = NULL,
                 choices = c("Alcohol", 
                             "Crack", 
                             "Cocaína", 
@@ -555,8 +561,9 @@ ui <- page_navbar(
                             "Nafta aspirada", 
                             "Pegamento", 
                             "Psicofármacos", 
-                            "Otra"),
-                selected = NULL  # No selecciona ninguna opción por defecto
+                            "Otra",
+                            ""),
+                selected = ""  # No selecciona ninguna opción por defecto
               ),
               
               # Campo emergente de texto para "Otra" opción
@@ -568,39 +575,46 @@ ui <- page_navbar(
                   value = ""
                 )
               )
+            )
+          ),
+          
+          # Campo de selección múltiple de sustancias
+          column(
+            width = 4,
+            tags$div(
+              style = "margin-bottom: 10px;",  # Espaciado inferior
+              tags$span("Sustancia/s de Consumo Actual", style = "font-size: 12px; white-space: nowrap;")
             ),
-            column(
-              width = 4,
-              
-              # Campo de selección múltiple de sustancias
+            # Aplicamos CSS personalizado solo para las opciones
+            tags$div(
+              style = "column-count: 3; column-gap: 160px; margin-top: 10px;",  # Espacio entre columnas y margen superior
               checkboxGroupInput(
                 inputId = "sustancias_consumo_actual",
-                label = tags$span("Sustancia/s de Consumo Actual", style = "font-size: 12px;"),
+                label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
                 choices = c("Alcohol", 
                             "Crack", 
                             "Cocaína", 
                             "Marihuana", 
-                            "Nafta aspirada", 
+                            "Nafta", 
                             "Pegamento", 
                             "Psicofármacos", 
                             "Otra"),
-                selected = NULL,
-                inline = TRUE  # Opciones en línea
-              ),
-              
-              # Campo emergente de texto para "Otra" opción
-              conditionalPanel(
-                condition = "input.sustancias_consumo_actual.includes('Otra')",
-                textInput(
-                  inputId = "otra_sustancia_actual",
-                  label = "Especifique la sustancia",
-                  value = ""
-                )
+                selected = NULL
+              )
+            ),
+            
+            # Campo emergente de texto para "Otra" opción
+            conditionalPanel(
+              condition = "input.sustancias_consumo_actual.includes('Otra')",
+              textInput(
+                inputId = "otra_sustancia_actual",
+                label = "Especifique la sustancia",
+                value = ""
               )
             )
           ),
           
-          h4("Información del Tratamiento", style = "font-size: 16px; font-weight: bold;"),
+          h4("Información del Tratamiento", style = "font-size: 16px; font-weight: bold; margin-top: 20px;"),
           
           fluidRow(
             
@@ -612,13 +626,14 @@ ui <- page_navbar(
                 inputId = "derivacion",
                 label = tags$span("Derivación", style = "font-size: 12px;"),
                 choices = c("Si", "No", "No informado"),
-                selected = character(0)  # Ninguna opción seleccionada por defecto
+                selected = character (0)# Ninguna opción seleccionada por defecto
               )
             ),
             
             # Campo derivado de
             column(
               width = 4,
+              style = "margin-left: -1px;",  # Ajuste negativo para acercar las columnas              
               textInput(
                 inputId = "derivado_de",
                 label = tags$span("Derivado de", style = "font-size: 12px;"),
@@ -630,9 +645,14 @@ ui <- page_navbar(
             # Campo número de tratamientos previos
             column(
               width = 4,
+              style = "margin-left: -1px;",  # Ajuste negativo para acercar las columnas              
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Nº de Tratamientos Previos", style = "font-size: 12px; white-space: nowrap;")
+              ),
               numericInput(
                 inputId = "num_tratamientos_previos",
-                label = tags$span("Número de Tratamientos previos", style = "font-size: 12px;"),
+                label = NULL,
                 value = NA,
                 min = 0,
                 max = 99
@@ -642,15 +662,21 @@ ui <- page_navbar(
             # Campo lugar del último tratamiento
             column(
               width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Lugar de Último Tratamiento", style = "font-size: 12px; white-space: nowrap;")
+              ),
               textInput(
                 inputId = "lugar_ultimo_tratamiento",
-                label = tags$span("Lugar del Último Tratamiento", style = "font-size: 12px;"),
-                value = ""  )
+                label = NULL,
+                value = ""
+              )
             ),
             
             # Campo tratamiento elegido
             column(
               width = 4,
+              style = "margin-left: 10px;",  # Aumentar el margen izquierdo para separar más las columnas
               selectInput(
                 inputId = "tratamiento_elegido",
                 label = tags$span("Tratamiento Elegido", style = "font-size: 12px;"),
@@ -664,9 +690,10 @@ ui <- page_navbar(
                   "Internación Cristalería",
                   "No finalizó admisión",
                   "Rechaza tratamiento",
-                  "Seguimiento"
+                  "Seguimiento",
+                  ""
                 ),
-                selected = NULL  # Sin selección por defecto
+                selected = ""  # Sin selección por defecto
               )
             )
           )
@@ -1189,7 +1216,6 @@ server <- function(input, output, session) {
   
   # Edad de inicio de consumo
   iv_edad_inicio <- InputValidator$new()
-  
   iv_edad_inicio <- InputValidator$new()
   iv_edad_inicio$add_rule("edad_inicio_consumo", function(value) {
     if (value != "") {
@@ -1211,7 +1237,7 @@ server <- function(input, output, session) {
   iv_sustancia_inicio <- InputValidator$new()
   iv_sustancia_inicio$add_rule("sustancia_inicio_consumo", function(value) {
     if (is.null(value) || value == "") {
-      return("Debe seleccionar una categoría.")
+      return("Campo obligatorio.")
     }
     return(NULL)
   })
@@ -1229,7 +1255,10 @@ server <- function(input, output, session) {
   iv_sustancias_actual <- InputValidator$new()
   iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
     if (is.null(value) || length(value) == 0) {
-      return("Debe seleccionar al menos una sustancia.")
+      return(tags$div(
+        style = "white-space: nowrap;",
+        "Campo obligatorio."
+      ))  # El mensaje se mostrará en una sola línea
     }
     return(NULL)
   })
@@ -1264,13 +1293,6 @@ server <- function(input, output, session) {
       if (grepl("[^a-zA-Z0-9 ]", value)) {
         return("El campo no puede contener caracteres especiales.")
       }
-    }
-    return(NULL)
-  })
-  
-  iv_derivado_de$add_rule("derivado_de", function(value) {
-    if (!is.null(input$derivacion) && input$derivacion == "Si" && nchar(trimws(value)) == 0) {
-      return("El campo es obligatorio cuando se selecciona 'Si' en Derivación.")
     }
     return(NULL)
   })
@@ -1321,7 +1343,7 @@ server <- function(input, output, session) {
   iv_apellido_nombre$add_rule("tratamiento_elegido", sv_required("Campo obligatorio"))
   iv_tratamiento_elegido$add_rule("tratamiento_elegido", function(value) {
     if (is.null(value) || value == "") {
-      return("Debe seleccionar un tratamiento.")
+      return("Campo obligatorio.")
     }
     return(NULL)  # Sin errores
   })

@@ -413,9 +413,307 @@ ui <- page_navbar(
                 )
               )
             )
+          ),
+      
+      # Entrevistas -------------------------------------------------------
+      
+      column(
+        width = 3,  # Ajustar ancho
+        wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+          
+          style = "min-height: 320px; margin-top: 20px;",  # Aplicar la misma altura mínima y margen superior          
+          h4("Entrevista con Psicólogo", style = "font-size: 16px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo estado - entrevista Psicologo
+            column(
+              width = 4,
+              selectInput(
+                inputId = "estado_psicologo",
+                tags$span("Estado", style = "font-size: 12px;"),
+                choices = list(
+                  "Presente",
+                  "Ausente",
+                  "Pendiente",
+                  "No necesaria",
+                  "No asignada",
+                  ""
+                ),
+                selected = "")
+            ),  # Ninguna opción seleccionada por defecto
+            
+            # Campo fecha - entrevista Psicolgo
+            column(
+              width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;")
+              ),
+              dateInput(
+                inputId = "fecha_entrevista_psicologo",
+                label = NULL,  # Sin etiqueta adicional
+                value = Sys.Date(),
+                format = "dd/mm/yyyy"  # Formato de la fecha
+              )
+            )
+          ),
+          
+          h4("Entrevista con Psiquiatra", style = "font-size: 16px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo estado - entrevista psiquiatra
+            column(
+              width = 4,
+              selectInput(
+                inputId = "estado_psiquiatra",
+                tags$span("Estado", style = "font-size: 12px;"),
+                choices = list(
+                  "Presente",
+                  "Ausente",
+                  "Pendiente",
+                  "No necesaria",
+                  "No asignada",
+                  ""
+                ),
+                selected = "")
+            ),  # Ninguna opción seleccionada por defecto
+            
+            # Campo fecha - entrevista Psiquiatra
+            column(
+              width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;")
+              ),
+              dateInput(
+                inputId = "fecha_entrevista_psiquiatra",
+                label = NULL,  # Sin etiqueta adicional
+                value = Sys.Date(),
+                format = "dd/mm/yyyy"  # Formato de la fecha
+              )
+            )
+          ),
+          
+          h4("Entrevista con Trabajador Social", style = "font-size: 16px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo estado - entrevista trabajador social
+            column(
+              width = 4,
+              selectInput(
+                inputId = "estado_ts",
+                tags$span("Estado", style = "font-size: 12px;"),
+                choices = list(
+                  "Presente",
+                  "Ausente",
+                  "Pendiente",
+                  "No necesaria",
+                  "No asignada",
+                  ""
+                ),
+                selected = "")
+            ),  # Ninguna opción seleccionada por defecto
+            
+            # Campo fecha - entrevista trabajador social
+            column(
+              width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;")
+              ),
+              dateInput(
+                inputId = "fecha_entrevista_ts",
+                label = NULL,  # Sin etiqueta adicional
+                value = Sys.Date(),
+                format = "dd/mm/yyyy"  # Formato de la fecha
+              )
+            )
           )
         )
-    ),
+      ),
+      
+      # Información del Consumo y Tratamiento -------------------------------------------------------
+      
+      column(
+        width = 5,  # Ajustar ancho
+        wellPanel(  # Simular el estilo de un 'box' usando wellPanel
+          
+          style = "min-height: 320px; margin-top: 20px;",  # Aplicar la misma altura mínima y margen superior
+          
+          h4("Información del Consumo", style = "font-size: 16px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo edad de inicio de consumo
+            column(
+              width = 4,
+              textInput(
+                "edad_inicio_consumo",  # inputId debe coincidir con el servidor
+                label = tags$span("Edad de inicio de consumo", style = "font-size: 12px;"),
+                value = ""
+              )
+            ),
+            
+            # Campo sustancia de inicio
+            column(
+              width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px; white-space: nowrap;")
+              ),
+              selectInput(
+                inputId = "sustancia_inicio_consumo",
+                label = NULL,
+                choices = c("Alcohol", 
+                            "Crack", 
+                            "Cocaína", 
+                            "Marihuana", 
+                            "Nafta aspirada", 
+                            "Pegamento", 
+                            "Psicofármacos", 
+                            "Otra",
+                            ""),
+                selected = ""  # No selecciona ninguna opción por defecto
+              ),
+              
+              # Campo emergente de texto para "Otra" opción
+              conditionalPanel(
+                condition = "input.sustancia_inicio_consumo == 'Otra'",
+                textInput(
+                  inputId = "otra_sustancia",
+                  label = "Especifique la sustancia",
+                  value = ""
+                )
+              )
+            )
+          ),
+          
+          # Campo de selección múltiple de sustancias
+          column(
+            width = 4,
+            tags$div(
+              style = "margin-bottom: 10px;",  # Espaciado inferior
+              tags$span("Sustancia/s de Consumo Actual", style = "font-size: 12px; white-space: nowrap;")
+            ),
+            # Aplicamos CSS personalizado solo para las opciones
+            tags$div(
+              style = "column-count: 3; column-gap: 160px; margin-top: 10px;",  # Espacio entre columnas y margen superior
+              checkboxGroupInput(
+                inputId = "sustancias_consumo_actual",
+                label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
+                choices = c("Alcohol", 
+                            "Crack", 
+                            "Cocaína", 
+                            "Marihuana", 
+                            "Nafta", 
+                            "Pegamento", 
+                            "Psicofármacos", 
+                            "Otra"),
+                selected = NULL
+              )
+            ),
+            
+            # Campo emergente de texto para "Otra" opción
+            conditionalPanel(
+              condition = "input.sustancias_consumo_actual.includes('Otra')",
+              textInput(
+                inputId = "otra_sustancia_actual",
+                label = "Especifique la sustancia",
+                value = ""
+              )
+            )
+          ),
+          
+          h4("Información del Tratamiento", style = "font-size: 16px; font-weight: bold; margin-top: 20px;"),
+          
+          fluidRow(
+            
+            # Campo derivación
+            column(
+              width = 4,
+              # Radio buttons para seleccionar derivación
+              radioButtons(
+                inputId = "derivacion",
+                label = tags$span("Derivación", style = "font-size: 12px;"),
+                choices = c("Si", "No", "No informado"),
+                selected = character (0)# Ninguna opción seleccionada por defecto
+              )
+            ),
+            
+            # Campo derivado de
+            column(
+              width = 4,
+              style = "margin-left: -1px;",  # Ajuste negativo para acercar las columnas              
+              textInput(
+                inputId = "derivado_de",
+                label = tags$span("Derivado de", style = "font-size: 12px;"),
+                placeholder = "Nombre de la institución",
+                value = ""
+              )
+            ),
+            
+            # Campo número de tratamientos previos
+            column(
+              width = 4,
+              style = "margin-left: -1px;",  # Ajuste negativo para acercar las columnas              
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Nº de Tratamientos Previos", style = "font-size: 12px; white-space: nowrap;")
+              ),
+              numericInput(
+                inputId = "num_tratamientos_previos",
+                label = NULL,
+                value = NA,
+                min = 0,
+                max = 99
+              )
+            ),
+            
+            # Campo lugar del último tratamiento
+            column(
+              width = 4,
+              tags$div(
+                style = "margin-bottom: 10px;",  # Espaciado inferior
+                tags$span("Lugar de Último Tratamiento", style = "font-size: 12px; white-space: nowrap;")
+              ),
+              textInput(
+                inputId = "lugar_ultimo_tratamiento",
+                label = NULL,
+                value = ""
+              )
+            ),
+            
+            # Campo tratamiento elegido
+            column(
+              width = 4,
+              style = "margin-left: 10px;",  # Aumentar el margen izquierdo para separar más las columnas
+              selectInput(
+                inputId = "tratamiento_elegido",
+                label = tags$span("Tratamiento Elegido", style = "font-size: 12px;"),
+                choices = c(
+                  "Cdd Baigorria",
+                  "Cdd Buen Pastor",
+                  "Centro de día Zeballos",
+                  "Derivado",
+                  "Internación B.P.",
+                  "Internación Baig.",
+                  "Internación Cristalería",
+                  "No finalizó admisión",
+                  "Rechaza tratamiento",
+                  "Seguimiento",
+                  ""
+                ),
+                selected = ""  # Sin selección por defecto
+              )
+            )
+          )
+        )
+      )
+    )
+  ),
   
   nav_panel(
     tags$span("Consulta y modificación de registros", style = "font-size: 14px;"),
@@ -721,14 +1019,25 @@ server <- function(input, output, session) {
   
   ## Más de 2 caracteres y sin caracteres especiales
   iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", function(value) {
+    # Opciones predefinidas
+    opciones_validas <- c("", "Propio", "Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
+    
+    # Si el valor está en las opciones válidas, no se necesita validación adicional
+    if (value %in% opciones_validas) {
+      return(NULL)
+    }
+    
+    # Si no está vacío y se intenta crear una nueva opción
     if (value != "") {
       if (nchar(value) < 2) {
         return("El campo debe tener al menos 2 caracteres.")
       }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+      # Expresión regular para permitir solo letras y espacios
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
         return("No se admiten caracteres especiales.")
       }
     }
+    
     return(NULL)
   })
   
@@ -740,14 +1049,25 @@ server <- function(input, output, session) {
   
   ## Más de 2 caracteres y sin caracteres especiales
   iv_vinculo_2$add_rule("tipo_vinculo_contacto_2", function(value) {
+    # Opciones predefinidas
+    opciones_validas <- c("", "Propio", "Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
+    
+    # Si el valor está en las opciones válidas, no se necesita validación adicional
+    if (value %in% opciones_validas) {
+      return(NULL)
+    }
+    
+    # Si no está vacío y se intenta crear una nueva opción
     if (value != "") {
       if (nchar(value) < 2) {
         return("El campo debe tener al menos 2 caracteres.")
       }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+      # Expresión regular para permitir solo letras y espacios
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
         return("No se admiten caracteres especiales.")
       }
     }
+    
     return(NULL)
   })
   
@@ -759,14 +1079,25 @@ server <- function(input, output, session) {
   
   ## Más de 2 caracteres y sin caracteres especiales
   iv_vinculo_3$add_rule("tipo_vinculo_contacto_3", function(value) {
+    # Opciones predefinidas
+    opciones_validas <- c("", "Propio", "Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
+    
+    # Si el valor está en las opciones válidas, no se necesita validación adicional
+    if (value %in% opciones_validas) {
+      return(NULL)
+    }
+    
+    # Si no está vacío y se intenta crear una nueva opción
     if (value != "") {
       if (nchar(value) < 2) {
         return("El campo debe tener al menos 2 caracteres.")
       }
-      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {  # Esta expresión regular es correcta
+      # Expresión regular para permitir solo letras y espacios
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
         return("No se admiten caracteres especiales.")
       }
     }
+    
     return(NULL)
   })
   
@@ -844,6 +1175,263 @@ server <- function(input, output, session) {
     return(NULL)
   })
   iv_nombre_3$enable()
+  
+  # Entrevista psicologo - Estado --------------------------------------------------------
+  
+  iv_estado_psicologo <- InputValidator$new()
+  iv_estado_psicologo$add_rule("estado_psicologo", sv_required(message = "Campo obligatorio"))
+  iv_estado_psicologo$add_rule("estado_psicologo", function(value) {
+    categorias_validas <- c("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada")
+    if (!value %in% categorias_validas) {
+      return("Debe seleccionar una de las categorías predefinidas.")
+    }
+    return(NULL)
+  })
+  iv_estado_psicologo$enable()
+  
+  # Entrevista psiquiatra - Estado --------------------------------------------------------
+
+    iv_estado_psiquiatra <- InputValidator$new()
+  iv_estado_psiquiatra$add_rule("estado_psiquiatra", sv_required(message = "Campo obligatorio"))
+  iv_estado_psiquiatra$add_rule("estado_psiquiatra", function(value) {
+    categorias_validas <- c("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada")
+    if (!value %in% categorias_validas) {
+      return("Debe seleccionar una de las categorías predefinidas.")
+    }
+    return(NULL)
+  })
+  iv_estado_psiquiatra$enable()
+  
+  # Entrevista ts - Estado --------------------------------------------------------
+  
+  iv_estado_ts <- InputValidator$new()
+  iv_estado_ts$add_rule("estado_ts", sv_required(message = "Campo obligatorio"))
+  iv_estado_ts$add_rule("estado_ts", function(value) {
+    categorias_validas <- c("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada")
+    if (!value %in% categorias_validas) {
+      return("Debe seleccionar una de las categorías predefinidas.")
+    }
+    return(NULL)
+  })
+  iv_estado_ts$enable()
+  
+  # Entrevista psicologo - Fecha --------------------------------------------------------
+  iv_fecha_psicologo <- InputValidator$new()
+  iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
+    estado <- input$estado_psicologo  # Tomar el valor del campo estado
+    if (estado %in% c("Presente", "Ausente", "Pendiente")) {
+      if (is.null(value)) {
+        return("La fecha es obligatoria.")
+      }
+      fecha_seleccionada <- as.Date(value)
+      if (estado %in% c("Presente", "Ausente") && fecha_seleccionada > Sys.Date()) {
+        return("La fecha no puede ser futura.")
+      }
+      if (estado == "Pendiente" && fecha_seleccionada <= Sys.Date()) {
+        return("La fecha debe ser futura.")
+      }
+    }
+    if (estado %in% c("No necesaria", "No asignada") && !is.null(value)) {
+      return("El campo de fecha debe estar vacío.")
+    }
+    return(NULL)  # No hay error
+  })
+  
+  iv_fecha_psicologo$enable()
+  
+  # Entrevista psiquiatra - Fecha --------------------------------------------------------
+
+    iv_fecha_psiquiatra <- InputValidator$new()
+  iv_fecha_psiquiatra$add_rule("fecha_entrevista_psiquiatra", function(value) {
+    estado <- input$estado_psiquiatra  # Tomar el valor del campo estado
+    if (estado %in% c("Presente", "Ausente", "Pendiente")) {
+      if (is.null(value)) {
+        return("La fecha es obligatoria.")
+      }
+      fecha_seleccionada <- as.Date(value)
+      if (estado %in% c("Presente", "Ausente") && fecha_seleccionada > Sys.Date()) {
+        return("La fecha no puede ser futura.")
+      }
+      if (estado == "Pendiente" && fecha_seleccionada <= Sys.Date()) {
+        return("La fecha debe ser futura.")
+      }
+    }
+    if (estado %in% c("No necesaria", "No asignada") && !is.null(value)) {
+      return("El campo de fecha debe estar vacío.")
+    }
+    return(NULL)  # No hay error
+  })
+  
+  iv_fecha_psiquiatra$enable()
+  
+  # Entrevista ts - Fecha --------------------------------------------------------
+  
+  iv_fecha_ts <- InputValidator$new()
+  iv_fecha_ts$add_rule("fecha_entrevista_ts", function(value) {
+    estado <- input$estado_ts  # Tomar el valor del campo estado
+    if (estado %in% c("Presente", "Ausente", "Pendiente")) {
+      if (is.null(value)) {
+        return("La fecha es obligatoria.")
+      }
+      fecha_seleccionada <- as.Date(value)
+      if (estado %in% c("Presente", "Ausente") && fecha_seleccionada > Sys.Date()) {
+        return("La fecha no puede ser futura.")
+      }
+      if (estado == "Pendiente" && fecha_seleccionada <= Sys.Date()) {
+        return("La fecha debe ser futura.")
+      }
+    }
+    if (estado %in% c("No necesaria", "No asignada") && !is.null(value)) {
+      return("El campo de fecha debe estar vacío.")
+    }
+    return(NULL)  # No hay error
+  })
+  
+  iv_fecha_ts$enable()
+  
+  # Información consumo - Edad de inicio --------------------------------------------------------
+  
+  iv_edad_inicio <- InputValidator$new()
+  iv_edad_inicio <- InputValidator$new()
+  iv_edad_inicio$add_rule("edad_inicio_consumo", function(value) {
+    if (value != "") {
+      if (nchar(value) > 2) {
+        return("La edad no puede tener más de 2 dígitos.")
+      }
+      if (!grepl("^[0-9]+$", value)) {
+        return("Solo se admiten números.")
+      }
+      # if (value > edad_primer_contacto) {
+      #   return("La edad de inicio de consumo no puede ser mayor a la Edad de Primer Contacto.")
+      # }
+    }
+    return(NULL)
+  })
+  iv_edad_inicio$enable()
+  
+  # Información consumo - Sustancia de inicio --------------------------------------------------------
+
+    iv_sustancia_inicio <- InputValidator$new()
+  iv_sustancia_inicio$add_rule("sustancia_inicio_consumo", function(value) {
+    if (is.null(value) || value == "") {
+      return("Campo obligatorio.")
+    }
+    return(NULL)
+  })
+  
+  iv_sustancia_inicio$add_rule("otra_sustancia", function(value) {
+    if (input$sustancia_inicio_consumo == "Otra" && (is.null(value) || value == "")) {
+      return("Debe completar el campo si selecciona 'Otra'.")
+    }
+    return(NULL)
+  })
+  
+  iv_sustancia_inicio$enable()
+  
+  # Información consumo - Sustancia de consumo actual --------------------------------------------------------
+
+    iv_sustancias_actual <- InputValidator$new()
+  iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
+    if (is.null(value) || length(value) == 0) {
+      return(tags$div(
+        style = "white-space: nowrap;",
+        "Campo obligatorio."
+      ))  # El mensaje se mostrará en una sola línea
+    }
+    return(NULL)
+  })
+  
+  iv_sustancias_actual$add_rule("otra_sustancia_actual", function(value) {
+    if ("Otra" %in% input$sustancias_consumo_actual && (is.null(value) || value == "")) {
+      return("Debe completar el campo si selecciona 'Otra'.")
+    }
+    return(NULL)
+  })
+  
+  iv_sustancias_actual$enable()
+  
+  # Información tratamiento - Derivación --------------------------------------------------------
+  
+  iv_derivacion <- InputValidator$new()
+  iv_derivacion$add_rule("derivacion", function(value) {
+    if (is.null(value) || value == "") {
+      return("Campo obligatorio.")
+    }
+    return(NULL)
+  })
+  
+  iv_derivacion$enable()
+  
+  # Información tratamiento - Derivado de --------------------------------------------------------
+  
+  iv_derivado_de <- InputValidator$new()
+  iv_derivado_de$add_rule("derivado_de", function(value) {
+    if (!is.null(input$derivacion) && input$derivacion == "Si") {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (grepl("[^a-zA-Z0-9 ]", value)) {
+        return("El campo no puede contener caracteres especiales.")
+      }
+    }
+    return(NULL)
+  })
+  
+  iv_derivado_de$enable()
+  
+  observe({
+    if (!is.null(input$derivacion) && input$derivacion %in% c("No", "No informado")) {
+      updateTextInput(session, "derivado_de", value = "")
+    }
+  })
+  
+  # Información tratamiento - Nº de tratameintos previos --------------------------------------------------------
+
+    iv_tratamientos_previos <- InputValidator$new()
+  iv_tratamientos_previos$add_rule("num_tratamientos_previos", function(value) {
+    if (is.null(value) || !is.numeric(value)) {
+      return("Si nunca recibió un tratamiento, completar con 0.")
+    }
+    
+    if (value < 0 || value > 99) {
+      return("El número debe ser un entero positivo entre 0 y 99.")
+    }
+    
+    return(NULL)
+  })
+  
+  iv_tratamientos_previos$enable()
+  
+  # Información tratamiento - Lugar de último tratameinto --------------------------------------------------------
+
+    iv_lugar_ultimo_tratamiento <- InputValidator$new()
+  iv_lugar_ultimo_tratamiento$add_rule("lugar_ultimo_tratamiento", function(value) {
+    # Validar solo si "Número de Tratamientos previos" tiene un valor y es mayor que 0
+    if (!is.null(input$num_tratamientos_previos) && !is.na(input$num_tratamientos_previos) && input$num_tratamientos_previos > 0) {
+      if (nchar(value) < 2) {
+        return("El campo debe tener al menos 2 caracteres.")
+      }
+      if (grepl("[^a-zA-Z0-9 ]", value)) {
+        return("El campo no puede contener caracteres especiales.")
+      }
+    }
+    return(NULL)  # Sin errores
+  })
+  
+  iv_lugar_ultimo_tratamiento$enable()
+  
+  # Información tratamiento - Tratameinto elegido --------------------------------------------------------
+  
+  iv_tratamiento_elegido <- InputValidator$new()
+  iv_apellido_nombre$add_rule("tratamiento_elegido", sv_required("Campo obligatorio"))
+  iv_tratamiento_elegido$add_rule("tratamiento_elegido", function(value) {
+    if (is.null(value) || value == "") {
+      return("Campo obligatorio.")
+    }
+    return(NULL)  # Sin errores
+  })
+  
+  iv_tratamiento_elegido$enable()
   
   # Actualizaciones con el dni -------------------------------------------------
   
