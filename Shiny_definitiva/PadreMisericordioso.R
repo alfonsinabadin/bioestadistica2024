@@ -9,6 +9,7 @@ library(readxl)
 library(shinyjs)
 library(shinyvalidate)
 library(geoAr)
+library(tibble)
 
 # Importar base
 base <- function(){
@@ -19,7 +20,14 @@ data <- base()
 # Base de provincias y localidades
 provincias <- show_arg_codes()[2:25, 5]
 provincias[[1]][1] <- "CABA"
+provincia_vacia <- tibble(name_iso = " ")
+provincias <- bind_rows(provincia_vacia, provincias)
+colnames(provincias) <- "Provincias"
+
 localidades_por_provincia <- readRDS("localidades.rds")
+for (provincia in names(localidades_por_provincia)) {
+  localidades_por_provincia[[provincia]] <- c("", localidades_por_provincia[[provincia]])
+}
 
 ## User Interface --------------------------------------------------------------
 ui <- page_navbar(
@@ -40,16 +48,16 @@ ui <- page_navbar(
   tags$head(
     tags$style(HTML("
     input::placeholder {
-      font-size: 11px;
+      font-size: 12px;
     }
     .form-control {
-      font-size: 11px;
+      font-size: 12px;
     }
     .selectize-input {
-      font-size: 11px;
+      font-size: 12px;
     }
     .selectize-dropdown {
-      font-size: 11px;
+      font-size: 12px;
     }
   "))
   )
@@ -79,18 +87,22 @@ ui <- page_navbar(
     icon = icon("user"),
     
     fluidRow(
+      
       # Datos e historial de registro ------------------------------------------
         column(
           width = 2,
           wellPanel(
             
-            h4("Datos del Registro", style = "font-size: 16px; font-weight: bold;"), 
+            h4("Datos del Registro", style = "font-size: 15px; font-weight: bold;"), 
             
             # Campo ID de registro (readonly)
             fluidRow(
               div(
                 style = "margin-bottom: 8px;", 
-                tags$label(tags$span("ID de registro", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")),
+                tags$label(
+                  tags$span(
+                    "ID de registro", 
+                    style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")),
                 tags$input(
                   id = "id_registro",
                   type = "text",
@@ -107,12 +119,7 @@ ui <- page_navbar(
                 style = "width: 100%;margin-bottom: 8px;",
                 dateInput(
                   "fecha_registro",
-                  tags$span(
-                    tagList(
-                      tags$span("Fecha de registro", style = "font-size: 12px;"),
-                      tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
-                    )
-                  ),
+                  tags$span("Fecha de registro", style = "font-size: 12px;"),
                   value = Sys.Date(),
                   format = "dd/mm/yyyy",
                   min = Sys.Date() - years(1),
@@ -121,13 +128,14 @@ ui <- page_navbar(
               )
             ),
             
-            h4("Historial de Registro", style = "font-size: 16px; font-weight: bold;"), 
+            h4("Historial de Registro", style = "font-size: 15px; font-weight: bold;"), 
             
             # Campo ID de persona (readonly)
             div(
-              style = "width: 100%;margin-bottom: 8px;", 
+              style = "width: 100%; margin-bottom: 8px;", 
               tags$label(
-                tags$span("ID de la persona", style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
+                tags$span("ID de la persona", 
+                          style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
               ),
               tags$input(
                 id = "id_persona",
@@ -143,17 +151,12 @@ ui <- page_navbar(
               style = "width: 100%;margin-bottom: 20px;",
               dateInput(
                 "fecha_primer_registro",
-                tags$span(
-                  tagList(
-                    tags$span("Fecha del primer registro", style = "font-size: 12px;"),
-                    tags$span("*", style = "font-size: 12px;color:#ec7e14; font-weight:bold;")
-                    )
-                  ),
-              value = Sys.Date(),
-              format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                tags$span("Fecha del primer registro", style = "font-size: 12px;"),
+                value = Sys.Date(),
+                format = "dd/mm/yyyy"  # Corregir el formato de la fecha
+                )
+              )
             )
-            )
-          )
           ),
         
       # Datos personales -------------------------------------------------------
@@ -163,7 +166,7 @@ ui <- page_navbar(
             
             style = "min-height: 320px;",  # Aplicar la misma altura mínima aquí
             
-            h4("Datos de la persona", style = "font-size: 16px; font-weight: bold;"),
+            h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
             
             fluidRow(
               
@@ -173,8 +176,8 @@ ui <- page_navbar(
                 selectInput(
                   inputId = "recuerda_dni",
                   tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
-                  choices = c("Sí", "No", "No tiene" = "S/D"),  # Definir las opciones
-                  selected = "S/D"
+                  choices = c("","Si", "No", "No tiene" = "S/D"),  # Definir las opciones
+                  selected = ""
                   )
                 ),
               
@@ -214,8 +217,8 @@ ui <- page_navbar(
                 selectInput(
                   "sexo_biologico",
                   label = tags$span("Sexo biológico", style = "font-size: 12px;"),
-                  choices = c("Femenino", "Masculino", "No contesta"),  # Definir las opciones
-                  selected = "No contesta"
+                  choices = c("Femenino", "Masculino", "No informado",""),  # Definir las opciones
+                  selected = ""
                 )
               ),
               
@@ -227,7 +230,8 @@ ui <- page_navbar(
                   label = tags$span("Género", style = "font-size: 12px;"),
                   choices = c("Hombre", "Hombre trans", 
                               "Mujer", "Mujer trans",
-                              "No binario", "Otro"),  # Definir las opciones
+                              "No binario", "Otro",""),  # Definir las opciones
+                  selected = ""
                 )
               ),
               
@@ -238,7 +242,7 @@ ui <- page_navbar(
                   dateInput(
                     inputId = "fecha_nacimiento",
                     label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
-                    value = Sys.Date(),
+                    value = "",
                     format = "dd/mm/yyyy",  # Corregir formato de la fecha
                     min = Sys.Date() - years(100),  # Limitar a 110 años atrás
                     max = Sys.Date()  # Limitar a la fecha de hoy
@@ -258,7 +262,7 @@ ui <- page_navbar(
                     "provincia",
                     label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
                     choices = provincias,
-                    selected = "Santa Fe"
+                    selected = provincias[[1]][1]
                   )
                 )
               ),
@@ -419,12 +423,10 @@ ui <- page_navbar(
 
 server <- function(input, output, session) {
   
-  # ACTUALIZACIÓN DEL ID REGISTRO EN TIEMPO REAL ---------------------------------------------------------------------
-  
   # Cargar la base de datos
   data <- base()
   
-  # Reglas ID registro
+  # ID registro ----------------------------------------------------------------
   
   ## Obtener el ID máximo
   id_max <- reactiveVal(max(data$`ID de registro`, na.rm = TRUE))
@@ -434,58 +436,188 @@ server <- function(input, output, session) {
     updateTextInput(session, "id_registro", value = as.character(id_max() + 1))
   })
   
-  # Reglas Fecha de registro
+  # Fecha de registro ----------------------------------------------------------
   
-  ## Obligatorio
   iv_fecha_registro <- InputValidator$new()
-  iv_fecha_registro$add_rule("fecha_registro", sv_required("Campo obligatorio"))
+  
+  ## Campo obligatorio
+  iv_fecha_registro$add_rule("fecha_registro", 
+                             sv_required(
+                               tags$span("Campo obligatorio", style = "font-size: 10px;")
+                               )
+                             )
+  
   iv_fecha_registro$enable()
   
-  # Reglas Fecha primer registro
+  # Fecha primer registro ------------------------------------------------------
   
-  ## Obligatorio
   iv_fecha_primer_registro <- InputValidator$new()
-  iv_fecha_primer_registro$add_rule("fecha_primer_registro", sv_required("Campo obligatorio"))
+  
+  ## Campo obligatorio
+  iv_fecha_primer_registro$add_rule("fecha_primer_registro",
+                                    sv_required(
+                                      tags$span("Campo obligatorio", style = "font-size: 10px;")
+                                      )
+                                    )
+  
   iv_fecha_primer_registro$enable()
   
-  # Nota: como "Requiere DNI" está en un desplegable, no puede estar vacío así que evitamos esa regla 
+  # Recuerda DNI ---------------------------------------------------------------
   
-  # Reglas para DNI
+  iv_recuerda_dni <- InputValidator$new()
   
-  ## Obligatorio
-  iv_dni <- InputValidator$new()
-  iv_dni$add_rule("dni", sv_required("Campo obligatorio. Sin puntos ni espacios."))
-  iv_dni$add_rule("dni", function(value) {
-    if (nchar(as.character(value)) != 8) {
-      return("El DNI no puede contener caracteres especiales y debe tener 8 dígitos.")
+  ## Campo obligatorio
+  iv_recuerda_dni$add_rule("recuerda_dni",
+                           sv_required(
+                             tags$span("Campo obligatorio", style = "font-size: 10px;")
+                             )
+                           )
+  
+  iv_recuerda_dni$enable()
+  
+  ## Acciones según la selección de recuerda_dni
+  observeEvent(input$recuerda_dni, {
+    # Si la opción es "", No o S/D, deshabilitar el campo y eliminar la validación
+    if (input$recuerda_dni %in% c("","No", "S/D")) {
+      updateNumericInput(session, "dni", value = "")
+      shinyjs::disable("dni")
+      iv_dni$disable()
+      } else {
+      # Si selecciona Sí, habilitar el campo y agregar la validación
+      shinyjs::enable("dni")  # Habilitar el campo
+      iv_dni$enable()  # Activar la validación
     }
   })
+  
+  # Validación para DNI ---------------------------------------------------------
+  iv_dni <- InputValidator$new()
+  
+  # Agregar la regla de campo obligatorio
+  iv_dni$add_rule("dni", sv_required("Campo obligatorio"))
+  
+  # Agregar la regla para que solo contenga números (sin puntos, espacios, etc.)
+  iv_dni$add_rule("dni", function(value) {
+    if (!grepl("^[0-9]+$", value)) {
+      return("El DNI solo puede contener números, sin puntos ni caracteres especiales.")
+    }
+    return(NULL)  # Si pasa la validación, no devuelve errores
+  })
+  
+  # Agregar la regla para asegurarse de que tenga exactamente 8 dígitos
+  iv_dni$add_rule("dni", function(value) {
+    if (nchar(value) != 8) {
+      return("El DNI debe tener exactamente 8 dígitos.")
+    }
+    return(NULL)
+  })
+  
+  # Habilitar el validador
   iv_dni$enable()
   
-  # APELLIDO Y NOMBRE 
-  # Inicializamos otra validación para el DNI
+
+# Habilitar el validador
+iv_dni$enable()
+
+  
+  # Apellido, Nombre (apodo) ---------------------------------------------------
   iv_apellido_nombre <- InputValidator$new()
-  iv_apellido_nombre$add_rule("apellido_nombre", sv_required("Campo obligatorio"))
+  
+  ## Obligatorio
+  iv_apellido_nombre$add_rule("apellido_nombre", 
+                              sv_required(tags$span("Campo obligatorio", 
+                                                    style = "font-size: 10px;")
+                                          )
+                              )
+  
+  ## Caracteres especiales (excepto tildes, coma y paréntesis)
   iv_apellido_nombre$add_rule("apellido_nombre", function(value) {
     if(grepl("[^a-zA-ZáéíóúÁÉÍÓÚñÑ,() ]", value)) {
-      return("No se admiten caracteres especiales.")
+      return(tags$span("No se admiten caracteres especiales.",
+                       style = "font-size: 10px;")
+             )
     }
   })
+  
+  ## Más de 4 caracteres
   iv_apellido_nombre$add_rule("apellido_nombre", function(value) {
     if(nchar(as.character(value)) <= 4) {
-      return("El campo debe tener más de 4 caracteres.")
+      return(tags$span("El campo debe tener más de 4 caracteres.",
+                       style = "font-size: 10px;")
+      )
     }
   })
+  
   iv_apellido_nombre$enable()
   
-  # Barrio 
-  # Inicializamos otra validación para el Barrio
+  # Sexo biológico -------------------------------------------------------------
+  
+  iv_sexo_biologico <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_sexo_biologico$add_rule("sexo_biologico",
+                             sv_required(tags$span("Campo obligatorio",
+                                                   style = "font-size: 10px;")
+                                         )
+                             )
+  
+  iv_sexo_biologico$enable()
+  
+  # Género ---------------------------------------------------------------------
+  
+  iv_genero <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_genero$add_rule("genero",
+                     sv_required(tags$span("Campo obligatorio",
+                                           style = "font-size: 10px;")
+                                 )
+                     )
+  
+  iv_genero$enable()
+  
+  # Fecha de nacimiento --------------------------------------------------------
+  
+  # Provincia ------------------------------------------------------------------
+  
+  iv_provincia <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_provincia$add_rule("provincia", function(value) {
+    if(value == provincias[[1]][1]) {
+      return(tags$span("Campo obligatorio",
+                       style = "font-size: 10px;"))
+    }
+  })
+  
+  iv_provincia$enable()
+  
+  # Localidad ------------------------------------------------------------------
+  
+  # Crear el uiOutput para las localidades
+  output$localidad_ui <- renderUI({
+    selectInput("localidad",
+                label = tags$span("Localidad de residencia", style = "font-size: 12px;"), 
+                choices = " ")
+  })
+  
+  # Actualizar las localidades en función de la provincia seleccionada
+  observeEvent(input$provincia, {
+    localidades <- sort(localidades_por_provincia[[input$provincia]])
+    updateSelectInput(session, "localidad", choices = localidades, selected = NULL)
+  })
+  
+  # Barrio ---------------------------------------------------------------------
+  
   iv_barrio <- InputValidator$new()
+  
+  ## Nada de caracteres especiales
   iv_barrio$add_rule("barrio", function(value) {
     if(grepl("[^a-zA-ZáéíóúÁÉÍÓÚñÑ,() ]", value)) {
       return("No se admiten caracteres especiales.")
     }
   })
+  
+  ## El campo debe tener entre 2 y 100 caracteres
   iv_barrio$add_rule("barrio", function(value) {
     if(nchar(as.character(value)) <= 2 & nchar(as.character(value)) >0) {
       return("El campo debe tener más de 2 caracteres.")
@@ -494,45 +626,34 @@ server <- function(input, output, session) {
       return("El campo debe tener menos de 100 caracteres.")
     }
   })
+  
   iv_barrio$enable()
   
-  # Reglas para Fecha de nacimiento
-  iv_fecha_nacimiento <- InputValidator$new()
-  iv_fecha_nacimiento$add_rule("fecha_nacimiento", sv_required("Campo Obligatorio"))
-  iv_fecha_nacimiento$enable()
-  
-  ## Manejar el campo DNI según la selección de "recuerda_dni"
-  observeEvent(input$recuerda_dni, {
-    # Si la opción es No o S/D, deshabilitar el campo y eliminar la validación
-    if (input$recuerda_dni %in% c("No", "S/D")) {
-      updateNumericInput(session, "dni", value = "")
-      shinyjs::disable("dni")  # Deshabilitar el campo
-      iv_dni$disable()  # Desactivar la regla de obligatoriedad
-      
-      
-    } else {
-      # Si selecciona Sí, habilitar el campo y agregar la validación
-      shinyjs::enable("dni")  # Habilitar el campo
-      iv_dni$enable()  # Activar la validación
-    }
-  })
-  
-  # Reglas para ID Persona
+  # Actualizaciones con el dni
   observeEvent(input$dni, {
-    # Si el campo "recuerda_dni" es "No" o "S/D", asignamos el nuevo ID con max() + 1
-    if (input$recuerda_dni %in% c("No", "S/D")) {
+    
+    # ID Persona ---------------------------------------------------------------
+    
+    # Si el campo "recuerda_dni" es Vacío, "No" o "S/D", asignamos el nuevo ID con max() + 1
+    if (input$recuerda_dni %in% c("","No", "S/D")) {
       id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
     } else {
       req(input$dni)  # Asegurarse de que el DNI no esté vacío
       
       # Comprobar si el DNI ya existe en la base
       dni_existente <- data[which(data$DNI == input$dni), ]
+      iv_dni$enable()
       
-      # Si el DNI ya existe, traer el ID de la persona de la última fila que tiene ese DNI
+      # Si el DNI ya existe, traer la información de esa persona
       if (nrow(dni_existente) > 0) {
-        iv_dni$disable()
+        
+        # Mostrar mensaje en verde
+        output$dni_message <- renderText({
+          "El DNI ya figura en la base, los campos han sido completados"
+        })
         
         id_persona <- last(dni_existente$`ID de la persona`)
+        # no va update date input porque es de texto, no input
         
         fecha_primer_registro <- first(dni_existente$`Fecha de registro`)
         updateDateInput(session, "fecha_primer_registro", value = fecha_primer_registro)
@@ -540,19 +661,20 @@ server <- function(input, output, session) {
         apellido_nombre <- last(dni_existente$`Apellido y Nombre`)  # Obtener el último apellido y nombre para ese DNI
         updateTextInput(session, "apellido_nombre", value = apellido_nombre)  # Actualizar con el valor de la base
         
-        fecha_nacimiento <- last(dni_existente$`Fecha de Nacimiento`)
-        updateDateInput(session, "fecha_nacimiento", value = fecha_nacimiento)
-        
         sexo_biologico <- last(dni_existente$`Sexo biológico`)
         updateSelectInput(session, "sexo_biologico", selected = sexo_biologico)
 
         genero <- last(dni_existente$Género)
         updateSelectInput(session, "genero", selected = genero)
         
+        fecha_nacimiento <- last(dni_existente$`Fecha de Nacimiento`)
+        updateDateInput(session, "fecha_nacimiento", value = fecha_nacimiento)
+        
         provincia <- last(dni_existente$`Provincia`)
         localidad <- last(dni_existente$`Localidad`)
         
         # Si la provincia no está en las opciones del selectInput, la añadimos temporalmente
+        # (por ejemplo, un DNI tiene provincia vacío)
         if (!is.na(provincia) && !(provincia %in% provincias)) {
           provincias <- c(provincias, provincia)
         }
@@ -571,10 +693,8 @@ server <- function(input, output, session) {
         # Actualizamos el campo de localidades
         updateSelectInput(session, "localidad", choices = localidades, selected = localidad)
         
-        # Mostrar mensaje en verde
-        output$dni_message <- renderText({
-          "El DNI ya figura en la base, los campos han sido completados"
-        })
+        barrio <- last(dni_existente$Barrio)
+        updateSelectInput(session, "barrio", selected = barrio)
         
         telefono_contacto_1 <- last(dni_existente$`Teléfono de Contacto 1`)
         updateSelectInput(session, "telefono_contacto_1", selected = telefono_contacto_1)
@@ -604,8 +724,10 @@ server <- function(input, output, session) {
         updateSelectInput(session, "nombre_contacto_3", selected = nombre_contacto_3)
 
         } else {
+        
           
         iv_dni$enable()
+          
         # Si el DNI no está en la base, asignar un nuevo ID de persona (máximo + 1)
         id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
         
@@ -614,11 +736,11 @@ server <- function(input, output, session) {
         
         # Restablecer los campos a sus valores iniciales si el DNI no está en la base
         updateTextInput(session, "apellido_nombre", value = "")
-        updateDateInput(session, "fecha_nacimiento", value = Sys.Date())  # O puedes usar `NULL` si deseas que el campo quede vacío
-        updateSelectInput(session, "sexo_biologico", selected = "Masculino")  # Seleccionar una opción predeterminada
-        updateSelectInput(session, "genero", selected = "Hombre")  # Seleccionar una opción predeterminada
-        updateSelectInput(session, "provincia", selected = NULL)  # Dejar la provincia en blanco
-        updateSelectInput(session, "localidad", choices = NULL, selected = NULL)  # Dejar la localidad en blanco
+        updateSelectInput(session, "sexo_biologico", selected = "")
+        updateSelectInput(session, "genero", selected = "")
+        updateDateInput(session, "fecha_nacimiento", value = NULL)
+        updateSelectInput(session, "provincia", selected = "")
+        updateSelectInput(session, "localidad", choices = NULL, selected = NULL)
         updateTextInput(session, "barrio", value = "")
         updateTextInput(session, "telefono_contacto_1", value = "")
         updateTextInput(session, "telefono_contacto_2", value = "")
@@ -635,20 +757,7 @@ server <- function(input, output, session) {
     # Actualizar el campo ID de la persona
     updateTextInput(session, "id_persona", value = as.numeric(id_persona))
   })
-  
-  # Crear el uiOutput para las localidades
-  output$localidad_ui <- renderUI({
-    selectInput("localidad",
-                label = tags$span("Localidad de residencia", style = "font-size: 12px;"), 
-                choices = "Rosario")
-  })
-  
-  # Actualizar las localidades en función de la provincia seleccionada
-  observeEvent(input$provincia, {
-    localidades <- sort(localidades_por_provincia[[input$provincia]])
-    updateSelectInput(session, "localidad", choices = c(localidades,NULL), selected = NULL)
-  })
-  
+
   # Reglas datos de contacto 
   
   # Validación para asegurar que solo se ingresen números en el campo de teléfono
