@@ -101,7 +101,7 @@ ui <- page_navbar(
           width = 2,
           wellPanel(
             
-            style = "min-height: 410px;",
+            style = "min-height: 400px;",
             
             h4("Datos del Registro", style = "font-size: 15px; font-weight: bold;"), 
             
@@ -174,7 +174,7 @@ ui <- page_navbar(
           width = 6,
           wellPanel(
             
-            style = "min-height: 410px;", 
+            style = "min-height: 400px;", 
             
             h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
             
@@ -308,7 +308,7 @@ ui <- page_navbar(
           width = 4, 
           wellPanel( 
             
-            style = "min-height: 410px;",
+            style = "min-height: 400px;",
             
             h4("Contacto 1", style = "font-size: 15px; font-weight: bold;"),
             
@@ -429,7 +429,7 @@ ui <- page_navbar(
         width = 8, 
         wellPanel(  
           
-          style = "min-height: 600px; margin-top: 20px;", 
+          style = "min-height: 460px; margin-top: 20px;", 
           
           h4("Inicio del consumo", style = "font-size: 15px; font-weight: bold;"),
           
@@ -449,15 +449,11 @@ ui <- page_navbar(
             # Campo sustancia de inicio
             column(
               width = 4,
-              tags$div(
-                style = "margin-bottom: 10px;",  # Espaciado inferior
-                tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px; white-space: nowrap;")
-                ),
+              style = "margin-top:10px;",
               selectInput(
                 inputId = "sustancia_inicio_consumo",
-                label = NULL,
-                choices = c("Alcohol", "Crack", "Cocaína", "Marihuana", "Nafta aspirada", 
-                              "Pegamento", "Psicofármacos", "Otra", ""),
+                label = tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px; white-space: nowrap;"),
+                choices = c("Alcohol", "Crack", "Cocaína", "Marihuana", "Nafta aspirada","Pegamento", "Psicofármacos", "Otra", ""),
                 selected = ""  # No selecciona ninguna opción por defecto
                 )
               ),
@@ -488,7 +484,6 @@ ui <- page_navbar(
                 style = "margin-bottom: 10px;",
                 tags$span("Sustancia/s de Consumo Actual", style = "font-size: 12px; white-space: nowrap;")
                 ),
-              
               tags$div(
                 style = "column-count: 3; column-gap: 50px; margin-top: 10px;",  # Espacio entre columnas y margen superior
                 checkboxGroupInput(
@@ -521,9 +516,10 @@ ui <- page_navbar(
             
             # Campo derivación
             column(
+              
               width = 4,
               
-              radioButtons(
+              selectInput(
                 inputId = "derivacion",
                 label = tags$span("Derivación", style = "font-size: 12px;"),
                 choices = c("Si", "No", "No informado"),
@@ -534,7 +530,7 @@ ui <- page_navbar(
             # Campo derivado de
             column(
               width = 4,
-              style = "margin-left: -1px;",  # Ajuste negativo para acercar las columnas              
+              
               textInput(
                 inputId = "derivado_de",
                 label = tags$span("Derivado de", style = "font-size: 12px;"),
@@ -546,9 +542,8 @@ ui <- page_navbar(
             # Campo número de tratamientos previos
             column(
               width = 4,
-              style = "margin-left: -1px;",  # Ajuste negativo para acercar las columnas              
+              
               tags$div(
-                style = "margin-bottom: 10px;",  # Espaciado inferior
                 tags$span("Nº de Tratamientos Previos", style = "font-size: 12px; white-space: nowrap;")
               ),
               numericInput(
@@ -560,41 +555,43 @@ ui <- page_navbar(
               )
             ),
             
-            # Campo lugar del último tratamiento
+            # Campo emergente de texto para Número de trat > 0
             column(
               width = 4,
-              tags$div(
-                style = "margin-bottom: 10px;", 
-                tags$span("Lugar de Último Tratamiento", style = "font-size: 12px; white-space: nowrap;")
-              ),
-              textInput(
-                inputId = "lugar_ultimo_tratamiento",
-                label = NULL,
-                value = ""
+              style = "margin-bottom: 10px;", 
+              conditionalPanel(
+                condition = "input.num_tratamientos_previos > '0'",
+                textInput(
+                  inputId = "lugar_ultimo_tratamiento",
+                  label = tags$span("Lugar de Último Tratamiento", style="font-size: 12px;"),
+                  value = ""
+                )
               )
             ),
             
-            # Campo tratamiento elegido
             column(
               width = 4,
-              style = "margin-left: 10px;",  # Aumentar el margen izquierdo para separar más las columnas
-              selectInput(
-                inputId = "tratamiento_elegido",
-                label = tags$span("Tratamiento Elegido", style = "font-size: 12px;"),
-                choices = c(
-                  "Cdd Baigorria",
-                  "Cdd Buen Pastor",
-                  "Centro de día Zeballos",
-                  "Derivado",
-                  "Internación B.P.",
-                  "Internación Baig.",
-                  "Internación Cristalería",
-                  "No finalizó admisión",
-                  "Rechaza tratamiento",
-                  "Seguimiento",
-                  ""
-                ),
-                selected = ""  # Sin selección por defecto
+              style = "margin-bottom: 10px;", 
+              conditionalPanel(
+                condition = "input.num_tratamientos_previos > '0'",
+                selectInput(
+                  inputId = "tratamiento_elegido",
+                  label = tags$span("Tratamiento elegido", style="font-size: 12px;"),
+                  choices = c(
+                    "Cdd Baigorria",
+                    "Cdd Buen Pastor",
+                    "Centro de día Zeballos",
+                    "Derivado",
+                    "Internación B.P.",
+                    "Internación Baig.",
+                    "Internación Cristalería",
+                    "No finalizó admisión",
+                    "Rechaza tratamiento",
+                    "Seguimiento",
+                    ""
+                  ),
+                  selected = ""
+                )
               )
             )
           )
@@ -607,7 +604,7 @@ ui <- page_navbar(
         width = 4,
         wellPanel( 
           
-          style = "min-height: 600px; margin-top: 20px;",
+          style = "min-height: 460px; margin-top: 20px;",
           
           h4("Entrevista con Psicólogo", style = "font-size: 15px; font-weight: bold;"),
           
@@ -640,7 +637,7 @@ ui <- page_navbar(
               dateInput(
                 inputId = "fecha_entrevista_psicologo",
                 label = NULL,  # Sin etiqueta adicional
-                value = Sys.Date(),
+                value = "",
                 format = "dd/mm/yyyy"  # Formato de la fecha
               )
             )
@@ -677,7 +674,7 @@ ui <- page_navbar(
               dateInput(
                 inputId = "fecha_entrevista_psiquiatra",
                 label = NULL,  # Sin etiqueta adicional
-                value = Sys.Date(),
+                value = "",
                 format = "dd/mm/yyyy"  # Formato de la fecha
               )
             )
@@ -714,7 +711,7 @@ ui <- page_navbar(
               dateInput(
                 inputId = "fecha_entrevista_ts",
                 label = NULL,  # Sin etiqueta adicional
-                value = Sys.Date(),
+                value = "",
                 format = "dd/mm/yyyy"  # Formato de la fecha
               )
             )
@@ -807,17 +804,17 @@ server <- function(input, output, session) {
     }
   })
   
-  # Validación para DNI ---------------------------------------------------------
+  # DNI ------------------------------------------------------------------------
   iv_dni <- InputValidator$new()
   
-  # Agregar la regla de campo obligatorio
+  ## Campo obligatorio
   iv_dni$add_rule("dni", sv_required(
     tags$span("Campo obligatorio.",
               style = "font-size: 10px;")
     )
   )
   
-  # Agregar la regla para que solo contenga números (sin puntos, espacios, etc.)
+  ## Solo números (sin puntos, espacios, etc.)
   iv_dni$add_rule("dni", function(value) {
     if (!grepl("^[0-9]+$", value)) {
       return("El DNI solo puede contener números, sin puntos ni caracteres especiales.")
@@ -825,7 +822,7 @@ server <- function(input, output, session) {
     return(NULL)  # Si pasa la validación, no devuelve errores
   })
   
-  # Agregar la regla para asegurarse de que tenga exactamente 8 dígitos
+  ## 8 dígitos
   iv_dni$add_rule("dni", function(value) {
     if (nchar(value) != 8) {
       return("El DNI debe tener exactamente 8 dígitos.")
@@ -833,7 +830,6 @@ server <- function(input, output, session) {
     return(NULL)
   })
   
-  # Habilitar el validador
   iv_dni$enable()
   
   # Apellido, Nombre (apodo) ---------------------------------------------------
@@ -1188,62 +1184,61 @@ server <- function(input, output, session) {
   # Entrevista psicologo - Estado --------------------------------------------------------
   
   iv_estado_psicologo <- InputValidator$new()
+  
+  ## Obligatorio
   iv_estado_psicologo$add_rule("estado_psicologo", sv_required(message = "Campo obligatorio"))
-  iv_estado_psicologo$add_rule("estado_psicologo", function(value) {
-    categorias_validas <- c("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada")
-    if (!value %in% categorias_validas) {
-      return("Debe seleccionar una de las categorías predefinidas.")
-    }
-    return(NULL)
-  })
+  
   iv_estado_psicologo$enable()
   
   # Entrevista psiquiatra - Estado --------------------------------------------------------
 
-    iv_estado_psiquiatra <- InputValidator$new()
+  iv_estado_psiquiatra <- InputValidator$new()
+  
+  ## Obligatorio
   iv_estado_psiquiatra$add_rule("estado_psiquiatra", sv_required(message = "Campo obligatorio"))
-  iv_estado_psiquiatra$add_rule("estado_psiquiatra", function(value) {
-    categorias_validas <- c("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada")
-    if (!value %in% categorias_validas) {
-      return("Debe seleccionar una de las categorías predefinidas.")
-    }
-    return(NULL)
-  })
+  
   iv_estado_psiquiatra$enable()
   
   # Entrevista ts - Estado --------------------------------------------------------
   
   iv_estado_ts <- InputValidator$new()
+  
+  ## Obligatorio
   iv_estado_ts$add_rule("estado_ts", sv_required(message = "Campo obligatorio"))
-  iv_estado_ts$add_rule("estado_ts", function(value) {
-    categorias_validas <- c("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada")
-    if (!value %in% categorias_validas) {
-      return("Debe seleccionar una de las categorías predefinidas.")
-    }
-    return(NULL)
-  })
+  
   iv_estado_ts$enable()
   
   # Entrevista psicologo - Fecha --------------------------------------------------------
   iv_fecha_psicologo <- InputValidator$new()
+  
+  ## Presente o ausente
   iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
-    estado <- input$estado_psicologo  # Tomar el valor del campo estado
-    if (estado %in% c("Presente", "Ausente", "Pendiente")) {
-      if (is.null(value)) {
-        return("La fecha es obligatoria.")
-      }
-      fecha_seleccionada <- as.Date(value)
-      if (estado %in% c("Presente", "Ausente") && fecha_seleccionada > Sys.Date()) {
-        return("La fecha no puede ser futura.")
-      }
-      if (estado == "Pendiente" && fecha_seleccionada <= Sys.Date()) {
-        return("La fecha debe ser futura.")
+    estado <- input$estado_psicologo
+    if (estado %in% c("Presente", "Ausente")) {
+      if (is.null(value) || value == "" || value > Sys.Date()) {
+        return(tags$span("La fecha no puede ser futura seleccionando 'Presente' o 'Ausente'.", style = "font-size:10px;"))
       }
     }
-    if (estado %in% c("No necesaria", "No asignada") && !is.null(value)) {
-      return("El campo de fecha debe estar vacío.")
+  })
+  
+  ## Pendiente
+  iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
+    estado <- input$estado_psicologo
+    if (estado == "Pendiente") {
+      if (is.null(value) || value == "" || value <= Sys.Date()) {
+        return(tags$span("La fecha debe ser futura seleccionando 'Pendiente'.", style = "font-size:10px;"))
+      }
     }
-    return(NULL)  # No hay error
+  })
+  
+  ## No necesaria o No asignada
+  iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
+    estado <- input$estado_psicologo
+    if (estado %in% c("No necesaria", "No asignada")) {
+      if (!is.null(value) && value != "") {
+        return(tags$span("La fecha debe estar vacía.", style = "font-size:10px;"))
+      }
+    }
   })
   
   iv_fecha_psicologo$enable()
