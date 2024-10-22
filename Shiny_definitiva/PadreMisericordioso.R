@@ -522,8 +522,8 @@ ui <- page_navbar(
               selectInput(
                 inputId = "derivacion",
                 label = tags$span("Derivación", style = "font-size: 12px;"),
-                choices = c("Si", "No", "No informado"),
-                selected = character (0)
+                choices = c("","Si", "No", "No informado"),
+                selected = ""
               )
             ),
             
@@ -534,7 +534,7 @@ ui <- page_navbar(
               textInput(
                 inputId = "derivado_de",
                 label = tags$span("Derivado de", style = "font-size: 12px;"),
-                placeholder = "Nombre de la institución",
+                placeholder = "",
                 value = ""
               )
             ),
@@ -1181,119 +1181,220 @@ server <- function(input, output, session) {
   })
   iv_nombre_3$enable()
   
-  # Entrevista psicologo - Estado --------------------------------------------------------
-  
+  # Entrevista psicologo - Estado ----------------------------------------------
   iv_estado_psicologo <- InputValidator$new()
   
   ## Obligatorio
-  iv_estado_psicologo$add_rule("estado_psicologo", sv_required(message = "Campo obligatorio"))
+  iv_estado_psicologo$add_rule("estado_psicologo", sv_required(message = tags$span("Campo obligatorio", style = "font-size: 10px;")))
   
   iv_estado_psicologo$enable()
   
-  # Entrevista psiquiatra - Estado --------------------------------------------------------
+  # Entrevista psiquiatra - Estado ---------------------------------------------
 
   iv_estado_psiquiatra <- InputValidator$new()
   
   ## Obligatorio
-  iv_estado_psiquiatra$add_rule("estado_psiquiatra", sv_required(message = "Campo obligatorio"))
+  iv_estado_psiquiatra$add_rule("estado_psiquiatra", sv_required(message = tags$span("Campo obligatorio", style = "font-size: 10px;")))
   
   iv_estado_psiquiatra$enable()
   
-  # Entrevista ts - Estado --------------------------------------------------------
+  # Entrevista ts - Estado -----------------------------------------------------
   
   iv_estado_ts <- InputValidator$new()
   
   ## Obligatorio
-  iv_estado_ts$add_rule("estado_ts", sv_required(message = "Campo obligatorio"))
+  iv_estado_ts$add_rule("estado_ts", sv_required(message = tags$span("Campo obligatorio", style = "font-size: 10px;")))
   
   iv_estado_ts$enable()
   
-  # Entrevista psicologo - Fecha --------------------------------------------------------
+  # Entrevista psicologo - Fecha -----------------------------------------------
+  
+  # Validaciones dinámicas para el campo de fecha de la entrevista
   iv_fecha_psicologo <- InputValidator$new()
   
-  ## Presente o ausente
+  ## Regla para "Presente" o "Ausente" -> la fecha no puede ser futura
   iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
     estado <- input$estado_psicologo
+    
+    # Verificamos si el campo es obligatorio para este estado
     if (estado %in% c("Presente", "Ausente")) {
-      if (is.null(value) || value == "" || value > Sys.Date()) {
+      
+      # Convertimos el valor a Date si no es NULL o vacío
+      fecha <- as.Date(value, format = "%Y-%m-%d")
+      
+      if (length(fecha) == 0) {
+        return(tags$span("La fecha es obligatoria para 'Presente' o 'Ausente'.", style = "font-size:10px;"))
+      }
+      
+      # Validamos que la fecha no sea futura
+      if (!is.na(fecha) && fecha > Sys.Date()) {
         return(tags$span("La fecha no puede ser futura seleccionando 'Presente' o 'Ausente'.", style = "font-size:10px;"))
       }
     }
   })
   
-  ## Pendiente
+  ## Regla para "Pendiente" -> la fecha debe ser futura
   iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
     estado <- input$estado_psicologo
+    
+    # Si está pendiente, verificamos si la fecha es futura
     if (estado == "Pendiente") {
-      if (is.null(value) || value == "" || value <= Sys.Date()) {
+      
+      # Convertimos el valor a Date si no es NULL o vacío
+      fecha <- as.Date(value, format = "%Y-%m-%d")
+      
+      if (length(fecha) == 0) {
+        return(tags$span("La fecha es obligatoria para 'Pendiente'.", style = "font-size:10px;"))
+      }
+      
+      # Validamos que la fecha sea futura
+      if (!is.na(fecha) && fecha <= Sys.Date()) {
         return(tags$span("La fecha debe ser futura seleccionando 'Pendiente'.", style = "font-size:10px;"))
       }
     }
   })
   
-  ## No necesaria o No asignada
-  iv_fecha_psicologo$add_rule("fecha_entrevista_psicologo", function(value) {
-    estado <- input$estado_psicologo
-    if (estado %in% c("No necesaria", "No asignada")) {
-      if (!is.null(value) && value != "") {
-        return(tags$span("La fecha debe estar vacía.", style = "font-size:10px;"))
-      }
+  ## Regla para "No necesaria" o "No asignada" -> la fecha no es obligatoria
+  observeEvent(input$estado_psicologo, {
+    # Si la opción es "", No o S/D, deshabilitar el campo y eliminar la validación
+    if (input$estado_psicologo %in% c("","No asignada", "No necesaria")) {
+      updateDateInput(session, "fecha_entrevista_psicologo", value = NA)
+      shinyjs::disable("fecha_entrevista_psicologo")
+    } else {
+      shinyjs::enable("fecha_entrevista_psicologo")
     }
   })
   
+  # Activar validaciones
   iv_fecha_psicologo$enable()
   
-  # Entrevista psiquiatra - Fecha --------------------------------------------------------
+  # Entrevista psiquiatra - Fecha ----------------------------------------------
 
-    iv_fecha_psiquiatra <- InputValidator$new()
+  iv_fecha_psiquiatra <- InputValidator$new()
+  
+  # Validaciones dinámicas para el campo de fecha de la entrevista
+  iv_fecha_psiquiatra <- InputValidator$new()
+  
+  ## Regla para "Presente" o "Ausente" -> la fecha no puede ser futura
   iv_fecha_psiquiatra$add_rule("fecha_entrevista_psiquiatra", function(value) {
-    estado <- input$estado_psiquiatra  # Tomar el valor del campo estado
-    if (estado %in% c("Presente", "Ausente", "Pendiente")) {
-      if (is.null(value)) {
-        return("La fecha es obligatoria.")
+    estado <- input$estado_psiquiatra
+    
+    # Verificamos si el campo es obligatorio para este estado
+    if (estado %in% c("Presente", "Ausente")) {
+      
+      # Convertimos el valor a Date si no es NULL o vacío
+      fecha <- as.Date(value, format = "%Y-%m-%d")
+      
+      if (length(fecha) == 0) {
+        return(tags$span("La fecha es obligatoria para 'Presente' o 'Ausente'.", style = "font-size:10px;"))
       }
-      fecha_seleccionada <- as.Date(value)
-      if (estado %in% c("Presente", "Ausente") && fecha_seleccionada > Sys.Date()) {
-        return("La fecha no puede ser futura.")
-      }
-      if (estado == "Pendiente" && fecha_seleccionada <= Sys.Date()) {
-        return("La fecha debe ser futura.")
+      
+      # Validamos que la fecha no sea futura
+      if (!is.na(fecha) && fecha > Sys.Date()) {
+        return(tags$span("La fecha no puede ser futura seleccionando 'Presente' o 'Ausente'.", style = "font-size:10px;"))
       }
     }
-    if (estado %in% c("No necesaria", "No asignada") && !is.null(value)) {
-      return("El campo de fecha debe estar vacío.")
-    }
-    return(NULL)  # No hay error
   })
   
+  ## Regla para "Pendiente" -> la fecha debe ser futura
+  iv_fecha_psiquiatra$add_rule("fecha_entrevista_psiquiatra", function(value) {
+    estado <- input$estado_psiquiatra
+    
+    # Si está pendiente, verificamos si la fecha es futura
+    if (estado == "Pendiente") {
+      
+      # Convertimos el valor a Date si no es NULL o vacío
+      fecha <- as.Date(value, format = "%Y-%m-%d")
+      
+      if (length(fecha) == 0) {
+        return(tags$span("La fecha es obligatoria para 'Pendiente'.", style = "font-size:10px;"))
+      }
+      
+      # Validamos que la fecha sea futura
+      if (!is.na(fecha) && fecha <= Sys.Date()) {
+        return(tags$span("La fecha debe ser futura seleccionando 'Pendiente'.", style = "font-size:10px;"))
+      }
+    }
+  })
+  
+  ## Regla para "No necesaria" o "No asignada" -> la fecha no es obligatoria
+  observeEvent(input$estado_psiquiatra, {
+    # Si la opción es "", No o S/D, deshabilitar el campo y eliminar la validación
+    if (input$estado_psiquiatra %in% c("","No asignada", "No necesaria")) {
+      updateDateInput(session, "fecha_entrevista_psiquiatra", value = NA)
+      shinyjs::disable("fecha_entrevista_psiquiatra")
+    } else {
+      shinyjs::enable("fecha_entrevista_psiquiatra")
+    }
+  })
+  
+  # Activar validaciones
   iv_fecha_psiquiatra$enable()
   
-  # Entrevista ts - Fecha --------------------------------------------------------
+  # Entrevista ts - Fecha ------------------------------------------------------
   
   iv_fecha_ts <- InputValidator$new()
+  
+  # Validaciones dinámicas para el campo de fecha de la entrevista
+  iv_fecha_ts <- InputValidator$new()
+  
+  ## Regla para "Presente" o "Ausente" -> la fecha no puede ser futura
   iv_fecha_ts$add_rule("fecha_entrevista_ts", function(value) {
-    estado <- input$estado_ts  # Tomar el valor del campo estado
-    if (estado %in% c("Presente", "Ausente", "Pendiente")) {
-      if (is.null(value)) {
-        return("La fecha es obligatoria.")
+    estado <- input$estado_ts
+    
+    # Verificamos si el campo es obligatorio para este estado
+    if (estado %in% c("Presente", "Ausente")) {
+      
+      # Convertimos el valor a Date si no es NULL o vacío
+      fecha <- as.Date(value, format = "%Y-%m-%d")
+      
+      if (length(fecha) == 0) {
+        return(tags$span("La fecha es obligatoria para 'Presente' o 'Ausente'.", style = "font-size:10px;"))
       }
-      fecha_seleccionada <- as.Date(value)
-      if (estado %in% c("Presente", "Ausente") && fecha_seleccionada > Sys.Date()) {
-        return("La fecha no puede ser futura.")
-      }
-      if (estado == "Pendiente" && fecha_seleccionada <= Sys.Date()) {
-        return("La fecha debe ser futura.")
+      
+      # Validamos que la fecha no sea futura
+      if (!is.na(fecha) && fecha > Sys.Date()) {
+        return(tags$span("La fecha no puede ser futura seleccionando 'Presente' o 'Ausente'.", style = "font-size:10px;"))
       }
     }
-    if (estado %in% c("No necesaria", "No asignada") && !is.null(value)) {
-      return("El campo de fecha debe estar vacío.")
-    }
-    return(NULL)  # No hay error
   })
   
+  ## Regla para "Pendiente" -> la fecha debe ser futura
+  iv_fecha_ts$add_rule("fecha_entrevista_ts", function(value) {
+    estado <- input$estado_ts
+    
+    # Si está pendiente, verificamos si la fecha es futura
+    if (estado == "Pendiente") {
+      
+      # Convertimos el valor a Date si no es NULL o vacío
+      fecha <- as.Date(value, format = "%Y-%m-%d")
+      
+      if (length(fecha) == 0) {
+        return(tags$span("La fecha es obligatoria para 'Pendiente'.", style = "font-size:10px;"))
+      }
+      
+      # Validamos que la fecha sea futura
+      if (!is.na(fecha) && fecha <= Sys.Date()) {
+        return(tags$span("La fecha debe ser futura seleccionando 'Pendiente'.", style = "font-size:10px;"))
+      }
+    }
+  })
+  
+  ## Regla para "No necesaria" o "No asignada" -> la fecha no es obligatoria
+  observeEvent(input$estado_ts, {
+    # Si la opción es "", No o S/D, deshabilitar el campo y eliminar la validación
+    if (input$estado_ts %in% c("","No asignada", "No necesaria")) {
+      updateDateInput(session, "fecha_entrevista_ts", value = NA)
+      shinyjs::disable("fecha_entrevista_ts")
+    } else {
+      shinyjs::enable("fecha_entrevista_ts")
+    }
+  })
+  
+  # Activar validaciones
   iv_fecha_ts$enable()
   
-  # Información consumo - Edad de inicio --------------------------------------------------------
+  # Información consumo - Edad de inicio ---------------------------------------
   
   iv_edad_inicio <- InputValidator$new()
   iv_edad_inicio$add_rule("edad_inicio_consumo", function(value) {
@@ -1312,94 +1413,117 @@ server <- function(input, output, session) {
   })
   iv_edad_inicio$enable()
   
-  # Información consumo - Sustancia de inicio --------------------------------------------------------
+  # Información consumo - Sustancia de inicio ----------------------------------
 
   iv_sustancia_inicio <- InputValidator$new()
+  
   iv_sustancia_inicio$add_rule("sustancia_inicio_consumo", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
   
   iv_sustancia_inicio$add_rule("otra_sustancia", function(value) {
-    if (input$sustancia_inicio_consumo == "Otra" && (is.null(value) || value == "")) {
-      return(tags$span("Debe completar el campo si selecciona 'Otra'.",style = "font-size:10px;"))
+    # Verificar si 'Otra' está seleccionada en el selectInput
+    if ("Otra" %in% input$sustancia_inicio_consumo) {
+      
+      # Validar si el campo está vacío o contiene caracteres especiales
+      if (is.null(value) || value == "") {
+        return(tags$span("Debe completar el campo si selecciona 'Otra'.", style = "font-size:10px;"))
+      } else if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+        return(tags$span("No se admiten caracteres especiales.", style = "font-size:10px;"))
+      }
+      
+    } else {
+      # Si no está seleccionada la opción "Otra", no hacer ninguna validación
+      return(NULL)
     }
-    return(NULL)
   })
   
   iv_sustancia_inicio$enable()
   
-  # Información consumo - Sustancia de consumo actual --------------------------------------------------------
+  # Información consumo - Sustancia de consumo actual --------------------------
 
-    iv_sustancias_actual <- InputValidator$new()
-  iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
-    if (is.null(value) || length(value) == 0) {
-      return("Campo obligatorio.")
-    }
-    return(NULL)
-  })
+  iv_sustancias_actual <- InputValidator$new()
+  
+  ## Obligatorio
+  iv_sustancias_actual$add_rule("sustancias_consumo_actual", sv_required(tags$span("Campo obligatorio.", style = "font-size: 10px;")))
   
   iv_sustancias_actual$add_rule("otra_sustancia_actual", function(value) {
-    if ("Otra" %in% input$sustancias_consumo_actual && (is.null(value) || value == "")) {
-      return("Debe completar el campo si selecciona 'Otra'.")
+    # Verificar si 'Otra' está seleccionada en el selectInput
+    if ("Otra" %in% input$sustancias_consumo_actual) {
+      
+      # Validar si el campo está vacío o contiene caracteres especiales
+      if (is.null(value) || value == "") {
+        return(tags$span("Debe completar el campo si selecciona 'Otra'.", style = "font-size:10px;"))
+      } else if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+        return(tags$span("No se admiten caracteres especiales.", style = "font-size:10px;"))
+      }
+      
+    } else {
+      # Si no está seleccionada la opción "Otra", no hacer ninguna validación
+      return(NULL)
     }
-    return(NULL)
   })
   
   iv_sustancias_actual$enable()
   
-  # Información tratamiento - Derivación --------------------------------------------------------
+  
+  # Información tratamiento - Derivación ---------------------------------------
   
   iv_derivacion <- InputValidator$new()
-  iv_derivacion$add_rule("derivacion", function(value) {
-    if (is.null(value) || value == "") {
-      return("Campo obligatorio.")
-    }
-    return(NULL)
-  })
-  
+
+  ## Obligatorio
+  iv_derivacion$add_rule("derivacion", sv_required(tags$span("Campo obligatorio.",style = "font-size:10px;")))
+
   iv_derivacion$enable()
   
-  # Información tratamiento - Derivado de --------------------------------------------------------
+  # Información tratamiento - Derivado de --------------------------------------
   
   iv_derivado_de <- InputValidator$new()
+  
+  ## Obligatorio
   iv_derivado_de$add_rule("derivado_de", function(value) {
-    if (!is.null(input$derivacion) && input$derivacion == "Si") {
-      if (nchar(value) < 2) {
-        return("El campo debe tener al menos 2 caracteres.")
+    if(input$derivacion == "Si" & nchar(value) == 0) {
+      return(tags$span("Campo obligatorio.",style = "font-size:10px;"))
+      if (!is.null(input$derivacion) && input$derivacion == "Si") {
+        if (nchar(value) < 2 & nchar(value) > 0) {
+          return(tags$span("El campo debe tener al menos 2 caracteres.",style = "font-size:10px;"))
+        }
+        if (grepl("[^a-zA-Z0-9 ]", value)) {
+          return(tags$span("El campo no puede contener caracteres especiales.",style = "font-size:10px;"))
+        }
       }
-      if (grepl("[^a-zA-Z0-9 ]", value)) {
-        return("El campo no puede contener caracteres especiales.")
+    } else if (input$derivacion %in% c("No","No informado")) {
+      if(value != "") {
+        return(tags$span("El campo debe estar vacío.",style = "font-size:10px;"))
       }
     }
-    return(NULL)
   })
   
   iv_derivado_de$enable()
   
-  observe({
-    if (!is.null(input$derivacion) && input$derivacion %in% c("No", "No informado")) {
-      updateTextInput(session, "derivado_de", value = "")
-    }
-  })
-  
-  # Información tratamiento - Nº de tratameintos previos --------------------------------------------------------
+  # Información tratamiento - Nº de tratameintos previos -----------------------
 
-    iv_tratamientos_previos <- InputValidator$new()
+  iv_tratamientos_previos <- InputValidator$new()
+  
+  ## Obligatorio
   iv_tratamientos_previos$add_rule("num_tratamientos_previos", function(value) {
-    if (is.null(value) || !is.numeric(value)) {
-      return("Si nunca recibió un tratamiento, completar con 0.")
+    if(input$derivacion == "Si" & is.na(value)) {
+      return(tags$span("Si nunca recibió un tratamiento, completar con 0.",style = "font-size:10px;"))
+      if (!is.null(input$derivacion) && input$derivacion == "Si") {
+        if (value < 0 || value > 99) {
+          return(tags$span("El número debe ser un entero positivo entre 0 y 99.",style = "font-size:10px;"))
+        }
+      }
+    } else if (input$derivacion %in% c("No","No informado")) {
+      if(value != "") {
+        return(tags$span("El campo debe estar vacío.",style = "font-size:10px;"))
+      }
     }
-    
-    if (value < 0 || value > 99) {
-      return("El número debe ser un entero positivo entre 0 y 99.")
-    }
-    
-    return(NULL)
   })
   
   iv_tratamientos_previos$enable()
   
   # Información tratamiento - Lugar de último tratameinto --------------------------------------------------------
 
-    iv_lugar_ultimo_tratamiento <- InputValidator$new()
+  iv_lugar_ultimo_tratamiento <- InputValidator$new()
   iv_lugar_ultimo_tratamiento$add_rule("lugar_ultimo_tratamiento", function(value) {
     # Validar solo si "Número de Tratamientos previos" tiene un valor y es mayor que 0
     if (!is.null(input$num_tratamientos_previos) && !is.na(input$num_tratamientos_previos) && input$num_tratamientos_previos > 0) {
@@ -1521,7 +1645,7 @@ server <- function(input, output, session) {
         nombre_contacto_3 <- last(dni_existente$`Nombre del Contacto 3`)
         updateSelectInput(session, "nombre_contacto_3", selected = nombre_contacto_3)
 
-        } else {
+        } else if (nrow(dni_existente) == 0 | is.null(input$dni)) {
         
           
         iv_dni$enable()
@@ -1536,7 +1660,7 @@ server <- function(input, output, session) {
         updateTextInput(session, "apellido_nombre", value = "")
         updateSelectInput(session, "sexo_biologico", selected = "")
         updateSelectInput(session, "genero", selected = "")
-        updateDateInput(session, "fecha_nacimiento", value = NULL)
+        updateDateInput(session, "fecha_nacimiento", value = NA)
         updateSelectInput(session, "provincia", selected = "")
         updateSelectInput(session, "localidad", choices = NULL, selected = NULL)
         updateTextInput(session, "barrio", value = "")
