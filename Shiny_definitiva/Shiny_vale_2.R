@@ -489,8 +489,14 @@ ui <- page_navbar(
                 checkboxGroupInput(
                   inputId = "sustancias_consumo_actual",
                   label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
-                  choices = c("Alcohol","Crack","Cocaína","Marihuana","Nafta",
-                              "Pegamento","Psicofármacos","Otra"),
+                  choices = c("Alcohol",
+                              "Crack",
+                              "Cocaína",
+                              "Marihuana",
+                              "Nafta",
+                              "Pegamento",
+                              "Psicofármacos",
+                              "Otra"),
                   selected = NULL
                 )
               )
@@ -522,8 +528,11 @@ ui <- page_navbar(
               selectInput(
                 inputId = "derivacion",
                 label = tags$span("Derivación", style = "font-size: 12px;"),
-                choices = c("Si", "No", "No informado"),
-                selected = character (0)
+                choices = c("Si", 
+                            "No", 
+                            "No informado",
+                            ""),
+                selected = ""
               )
             ),
             
@@ -588,8 +597,7 @@ ui <- page_navbar(
                     "No finalizó admisión",
                     "Rechaza tratamiento",
                     "Seguimiento",
-                    ""
-                  ),
+                    ""),
                   selected = ""
                 )
               )
@@ -719,278 +727,243 @@ ui <- page_navbar(
         )
       ),
       
+      # Situación Socioeconómica, Jurídica y de Salud ------------------------------------------------------------
+      
       fluidRow(
         
-        # Situación Socioeconómica, Jurídica y de Salud ------------------------------------------------------------
-        column(
-          width = 7,
-          wellPanel( 
-            style = "min-height: 460px; margin-top: 20px;",
-            
-            h4("Situación Socioeconómica, Jurídica y de Salud", style = "font-size: 15px; font-weight: bold;"),
-            
-            fluidRow(
-              # Campo nivel educativo
-              column(
-                width = 6,
-                selectInput(
-                  inputId = "nivel_educativo_max",
-                  tags$span("Máximo Nivel educativo alcanzado", style = "font-size: 12px;"),
-                  choices = list(
-                    "Sin instrucción formal", 
-                    "Primario incompleto", 
-                    "Primario en curso", 
-                    "Primario completo", 
-                    "Secundario incompleto", 
-                    "Secundario en curso", 
-                    "Secundario completo", 
-                    "Nivel superior incompleto", 
-                    "Nivel superior en curso", 
-                    "Nivel superior completo", 
-                    "No informado",
-                    ""
-                  ),
-                  selected = "")
-              ),
-              
-              # CUD
-              column(
-                width = 6,
-                selectInput(
-                  inputId = "cud",
-                  tags$span("CUD", style = "font-size: 12px;"),
-                  choices = list(
-                    "Si", 
-                    "No", 
-                    "No informado",
-                    ""
-                  ),
-                  selected = "")
-              ),
-              
-              # Situación Habitacional Actual
-              column(
-                width = 6,
-                selectInput(
-                  inputId = "situacion_habitacional_actual",
-                  tags$span("Situación Habitacional Actual", style = "font-size: 12px;"),
-                  choices = list(
-                    "Casa/Departamento alquilado", 
-                    "Casa/Departamento cedido", 
-                    "Casa/Departamento propio", 
-                    "Institución de salud mental", 
-                    "Institución penal", 
-                    "Institución terapéutica", 
-                    "Pensión", 
-                    "Refugio", 
-                    "Situación de calle", 
-                    "Otra", 
-                    "No informada",
-                    ""
-                  ),
-                  selected = "")
-              ),
-              
-              # Campo emergente de texto para "Otra" opción
-              column(
-                width = 6,
-                conditionalPanel(
-                  condition = "input.situacion_habitacional_actual.includes('Otra')",
-                  textInput(
-                    inputId = "otra_situacion_habitacional_actual",
-                    label = tags$span("Especifique la situación habitacional", style="font-size: 12px;"),
-                    value = ""
-                  ) 
-                )
-              ),
-              
-              # Situación Laboral Actual
-              column(
-                width = 6,
-                selectInput(
-                  inputId = "situacion_laboral_actual",
-                  tags$span("Situación Laboral Actual", style = "font-size: 12px;"),
-                  choices = list(
-                    "Estable", 
-                    "Esporádico", 
-                    "No tiene", 
-                    "No informado",
-                    ""
-                  ),
-                  selected = "")
-              ),
-              
-              # Campo de selección múltiple de ingreso económico
-              column(
-                width = 12,
-                tags$div(
-                  style = "margin-bottom: 5px;",
-                  tags$span("Ingreso Económico", style = "font-size: 12px; white-space: nowrap;")
-                ),
-                tags$div(
-                  style = "column-count: 3; column-gap: 50px; margin-top: 10px;",  # Espacio entre columnas y margen superior
-                  checkboxGroupInput(
-                    inputId = "ingreso_economico",
-                    label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
-                    choices = c("AlimentAR", 
-                                "AUH",
-                                "AUHD", 
-                                "Jubilación", 
-                                "PNC nacional", 
-                                "PNC provincial", 
-                                "Salario formal", 
-                                "Salario informal", 
-                                "Sin ingresos", 
-                                "No informado",
-                                "Otro subsidio/plan social", 
-                                "Otro tipo de pensión", 
-                                "Otro tipo de ingreso"),
-                    selected = NULL
-                  )
-                )
-              ),
-              
-              # Campo emergente para texto si selecciona alguna de las opciones "Otro"
-              conditionalPanel(
-                condition = "input.ingreso_economico.includes('Otro subsidio/plan social') || 
-                input.ingreso_economico.includes('Otro tipo de pensión') || 
-                input.ingreso_economico.includes('Otro tipo de ingreso')",
-                tags$div(
-                  style = "margin-top: 20px;",
-                  textInput(
-                    inputId = "otro_ingreso",
-                    label = tags$span("Especifique el otro tipo de ingreso", style = "font-size: 12px;"),
-                    value = ""
-                  )
-                )
-              ),
-              
-              # Situación Judicial
-              column(
-                width = 6,
-                tags$div(
-                  style = "margin-top: 20px;",  # Ajusta el valor según el espacio que desees
-                  selectInput(
-                    inputId = "situacion_judicial",
-                    tags$span("Situación Judicial", style = "font-size: 12px;"),
-                    choices = list(
-                      "Sin causas", 
-                      "Con causa cerrada", 
-                      "Con causa abierta", 
-                      "Desconoce", 
-                      "No informada", 
-                      "Otra",
-                      ""
-                    ),
-                    selected = "")
-                )
-              ),
-              
-              # Campo emergente de texto para "Otra" opción
-              column(
-                width = 6,
-                tags$div(
-                  style = "margin-top: 20px;",
-                  conditionalPanel(
-                    condition = "input.situacion_judicial.includes('Otra')",
-                    textInput(
-                      inputId = "otra_situacion_judicial",
-                      label = tags$span("Especifique la situación judicial", style="font-size: 12px;"),
-                      value = ""
-                    )
-                  ) 
-                )
-              )
-            )
-          )
-        ),
-        
-        # Red de Apoyo y Referencias ------------------------------------------------------------
-        column(
-          width = 5,
-          wellPanel( 
-            style = "min-height: 300px; margin-top: 20px;",
-            
-            h4("Red de Apoyo y Referencias", style = "font-size: 15px; font-weight: bold;"),
-            
-            fluidRow(
-              
-              # Campo redes de apoyo
-              column(
-                width = 12,
-                tags$div(
-                  style = "margin-bottom: 5px;",
-                  tags$span("Redes de Apoyo", style = "font-size: 12px; white-space: nowrap;")
-                ),
-                tags$div(
-                  style = "column-count: 2; column-gap: 50px; margin-top: 10px;",  # Espacio entre columnas y margen superior
-                  checkboxGroupInput(
-                    inputId = "redes_apoyo",
-                    label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
-                    choices = c("Familiares", 
-                                "Amistades", 
-                                "Institucionalidades",
-                                "Sin vínculos actualmente", 
-                                "No informado"),
-                    selected = NULL
-                  )
-                )
-              )
-            ),
-            
-            fluidRow(
-              # Campo referencias APS
-              column(
-                width = 12,  # Cambiado a 12 para que ocupe toda la fila
-                style = "margin-top: 10px;",  # Ajusta el valor según el espacio que desees
-                selectInput(
-                  inputId = "referencia_aps",
-                  tags$span("Referencia APS", style = "font-size: 12px;"),
-                  choices = list(
-                    "Referencia con seguimiento", 
-                    "Referencia sin seguimiento", 
-                    "No está referenciado", 
-                    "No informada",
-                    ""
-                  ),
-                  selected = ""
-                )
-              )
-            ),
-            
-            fluidRow(
-              # Campo equipo de referencia
-              column(
-                width = 12,  # Cambiado a 12 para que ocupe toda la fila
-                textInput(
-                  inputId = "equipo_referencia",
-                  label = tags$span("Equipo de Referencia", style = "font-size: 12px;"),
-                  value = ""
-                )
-              )
-            )
-          )
-        ),
-        
-        # Información Adicional ------------------------------------------------------------
-        fluidRow(  # Usamos fluidRow para asegurar que esté alineado correctamente
+        fluidRow(
+          # Columna izquierda para Situación Socioeconómica, Jurídica y de Salud
           column(
-            width = 4,
+            width = 7,  # Ajusta el ancho si es necesario
             wellPanel( 
-              style = "min-height: 160px; margin-top: 20px;",
+              style = "min-height: 460px; margin-top: 20px;",
               
-              h4("Información Adicional", style = "font-size: 15px; font-weight: bold;"),
+              h4("Situación Socioeconómica, Jurídica y de Salud", style = "font-size: 15px; font-weight: bold;"),
               
               fluidRow(
-                # Campo de Observaciones
                 column(
-                  width = 12,  # Cambia el ancho según sea necesario
-                  textAreaInput(
-                    inputId = "observaciones",
-                    label = tags$span("Observaciones", style = "font-size: 12px;"),
-                    value = "",
-                    width = "100%",
-                    height = "80px"  # Ajusta la altura según sea necesario
+                  width = 6,
+                  selectInput(
+                    inputId = "nivel_educativo_max",
+                    tags$span("Máximo Nivel educativo alcanzado", style = "font-size: 12px;"),
+                    choices = list(
+                      "Sin instrucción formal", 
+                      "Primario incompleto", 
+                      "Primario en curso", 
+                      "Primario completo", 
+                      "Secundario incompleto", 
+                      "Secundario en curso", 
+                      "Secundario completo", 
+                      "Nivel superior incompleto", 
+                      "Nivel superior en curso", 
+                      "Nivel superior completo", 
+                      "No informado", 
+                      ""),
+                    selected = ""
+                  )
+                ),
+                
+                column(
+                  width = 6,
+                  selectInput(
+                    inputId = "cud",
+                    tags$span("CUD", style = "font-size: 12px;"),
+                    choices = list("Si", 
+                                   "No", 
+                                   "No informado", 
+                                   ""),
+                    selected = ""
+                  )
+                ),
+                
+                column(
+                  width = 6,
+                  selectInput(
+                    inputId = "situacion_habitacional_actual",
+                    tags$span("Situación Habitacional Actual", style = "font-size: 12px;"),
+                    choices = list(
+                      "Casa/Departamento alquilado", 
+                      "Casa/Departamento cedido", 
+                      "Casa/Departamento propio", 
+                      "Institución de salud mental", 
+                      "Institución penal", 
+                      "Institución terapéutica", 
+                      "Pensión", 
+                      "Refugio", 
+                      "Situación de calle", 
+                      "Otra", 
+                      "No informada", 
+                      ""),
+                    selected = ""
+                  )
+                ),
+                
+                column(
+                  width = 6,
+                  conditionalPanel(
+                    condition = "input.situacion_habitacional_actual.includes('Otra')",
+                    textInput(
+                      inputId = "otra_situacion_habitacional_actual",
+                      label = tags$span("Especifique la situación habitacional", style = "font-size: 12px;"),
+                      value = ""
+                    )
+                  )
+                ),
+                
+                column(
+                  width = 6,
+                  selectInput(
+                    inputId = "situacion_laboral_actual",
+                    tags$span("Situación Laboral Actual", style = "font-size: 12px;"),
+                    choices = list(
+                      "Estable", 
+                      "Esporádico", 
+                      "No tiene", 
+                      "No informado", 
+                      ""),
+                    selected = ""
+                  )
+                ),
+                
+                column(
+                  width = 12,
+                  tags$div(
+                    style = "margin-bottom: 5px;",
+                    tags$span("Ingreso Económico", style = "font-size: 12px; white-space: nowrap;")
+                  ),
+                  tags$div(
+                    style = "column-count: 3; column-gap: 50px; margin-top: 10px;",
+                    checkboxGroupInput(
+                      inputId = "ingreso_economico",
+                      label = NULL,  
+                      choices = c("AlimentAR", "AUH", "AUHD", "Jubilación", "PNC nacional", "PNC provincial", "Salario formal", "Salario informal", "Sin ingresos", "No informado", "Otro subsidio/plan social", "Otro tipo de pensión", "Otro tipo de ingreso"),
+                      selected = NULL
+                    )
+                  )
+                ),
+                
+                conditionalPanel(
+                  condition = "input.ingreso_economico.includes('Otro subsidio/plan social') || input.ingreso_economico.includes('Otro tipo de pensión') || input.ingreso_economico.includes('Otro tipo de ingreso')",
+                  tags$div(
+                    style = "margin-top: 20px;",
+                    textInput(
+                      inputId = "otro_ingreso",
+                      label = tags$span("Especifique el otro tipo de ingreso", style = "font-size: 12px;"),
+                      value = ""
+                    )
+                  )
+                ),
+                
+                column(
+                  width = 6,
+                  tags$div(
+                    style = "margin-top: 20px;",
+                    selectInput(
+                      inputId = "situacion_judicial",
+                      tags$span("Situación Judicial", style = "font-size: 12px;"),
+                      choices = list("Sin causas", "Con causa cerrada", "Con causa abierta", "Desconoce", "No informada", "Otra", ""),
+                      selected = ""
+                    )
+                  )
+                ),
+                
+                column(
+                  width = 6,
+                  tags$div(
+                    style = "margin-top: 20px;",
+                    conditionalPanel(
+                      condition = "input.situacion_judicial.includes('Otra')",
+                      textInput(
+                        inputId = "otra_situacion_judicial",
+                        label = tags$span("Especifique la situación judicial", style = "font-size: 12px;"),
+                        value = ""
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          ),
+
+          # Red de Apoyo y Referencias ------------------------------------------------------------
+          
+          column(
+            width = 5,
+            fluidRow(
+              # Red de Apoyo y Referencias
+              column(
+                width = 12,
+                wellPanel(
+                  style = "min-height: 300px; margin-top: 20px;",
+                  h4("Red de Apoyo y Referencias", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  fluidRow(
+                    column(
+                      width = 12,
+                      tags$div(
+                        style = "margin-bottom: 5px;",
+                        tags$span("Redes de Apoyo", style = "font-size: 12px; white-space: nowrap;")
+                      ),
+                      tags$div(
+                        style = "column-count: 2; column-gap: 50px; margin-top: 10px;",  
+                        checkboxGroupInput(
+                          inputId = "redes_apoyo",
+                          label = NULL,
+                          choices = c("Familiares", "Amistades", "Institucionalidades", "Sin vínculos actualmente", "No informado"),
+                          selected = NULL
+                        )
+                      )
+                    )
+                  ),
+                  
+                  fluidRow(
+                    column(
+                      width = 12,
+                      style = "margin-top: 10px;",
+                      selectInput(
+                        inputId = "referencia_aps",
+                        tags$span("Referencia APS", style = "font-size: 12px;"),
+                        choices = list("Referencia con seguimiento", "Referencia sin seguimiento", "No está referenciado", "No informada", ""),
+                        selected = ""
+                      )
+                    )
+                  ),
+                  
+                  fluidRow(
+                    column(
+                      width = 12,
+                      textInput(
+                        inputId = "equipo_referencia",
+                        label = tags$span("Equipo de Referencia", style = "font-size: 12px;"),
+                        value = ""
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+            
+            # Información Adicional ------------------------------------------------------------
+            
+            fluidRow(
+              # Información Adicional
+              column(
+                width = 12,
+                wellPanel(
+                  style = "min-height: 160px; margin-top: 20px;",
+                  h4("Información Adicional", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  fluidRow(
+                    column(
+                      width = 12,
+                      textAreaInput(
+                        inputId = "observaciones",
+                        label = tags$span("Observaciones", style = "font-size: 12px;"),
+                        value = "",
+                        width = "100%",
+                        height = "80px"
+                      )
+                    )
                   )
                 )
               )
@@ -1905,7 +1878,7 @@ server <- function(input, output, session) {
   
   iv_redes_apoyo <- InputValidator$new()
   iv_redes_apoyo$add_rule("redes_apoyo", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
-
+  
   iv_redes_apoyo$enable() 
   
   # Redes de Apoyo y Referencias - Referencias APS --------------------------------------------------------
@@ -1914,7 +1887,7 @@ server <- function(input, output, session) {
   iv_referencia_aps$add_rule("referencia_aps", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
   
   iv_referencia_aps$enable() 
-
+  
   # Redes de Apoyo y Referencias - Equipo de referencia --------------------------------------------------------
   
   iv_equipo_referencia <- InputValidator$new()
@@ -1925,7 +1898,7 @@ server <- function(input, output, session) {
         return("El campo es obligatorio.")
       }
     }
-      if (nchar(value) > 0) {
+    if (nchar(value) > 0) {
       if (!grepl("^[a-zA-Z0-9 ]+$", value)) {
         return("El campo no puede contener caracteres especiales.")
       }
@@ -1933,7 +1906,7 @@ server <- function(input, output, session) {
         return("El campo debe tener al menos 3 caracteres.")
       }
     }
-      if (input$referencia_aps %in% c("No está referenciado", "No informada") && value != "") {
+    if (input$referencia_aps %in% c("No está referenciado", "No informada") && value != "") {
       return("El campo debe estar vacío si la referencia APS es 'No está referenciado' o 'No informada'.")
     }
     
@@ -1946,23 +1919,21 @@ server <- function(input, output, session) {
   
   iv_observaciones <- InputValidator$new()
   iv_observaciones$add_rule("observaciones", function(value) {
-    if (nchar(value) < 4) {
+    if (nchar(value) > 0 && nchar(value) < 4) {
       return("El campo debe tener como mínimo 4 caracteres.")
     }
-      if (nchar(value) > 99) {
+    if (nchar(value) > 99) {
       return("El campo debe tener como máximo 99 caracteres.")
     }
-      if (nchar(value) > 0) {
-      if (grepl("[^A-Za-z0-9áéíóúñÁÉÍÓÚÑ ]", value)) {
-        return("El campo no puede contener caracteres especiales.")
-      }
+    if (nchar(value) > 0 && grepl("[^A-Za-z0-9áéíóúñÁÉÍÓÚÑ ]", value)) {
+      return("El campo no puede contener caracteres especiales.")
     }
     return(NULL)
   })
   
-  iv_observaciones$enable() 
+  iv_observaciones$enable()
   
+
 }
 
 shinyApp(ui, server)
-
