@@ -10,14 +10,15 @@ library(shinyjs)
 library(shinyvalidate)
 library(geoAr)
 library(tibble)
+library(writexl)
 
-# Importar base
+# Importar base ----------------------------------------------------------------
 base <- function(){
   data <- read_excel("Base completa.xlsx")
 }
 data <- base()
 
-# Base de provincias y localidades
+# Base de provincias y localidades ---------------------------------------------
 provincias <- show_arg_codes()[2:25, 5]
 provincias[[1]][1] <- "CABA"
 provincia_vacia <- tibble(name_iso = " ")
@@ -97,331 +98,340 @@ ui <- page_navbar(
     fluidRow(
       
       # Datos e historial de registro ------------------------------------------
-        column(
-          width = 2,
-          wellPanel(
-            
-            style = "min-height: 400px;",
-            
-            h4("Datos del Registro", style = "font-size: 15px; font-weight: bold;"), 
-            
-            # Campo ID de registro (readonly)
-            fluidRow(
-              div(
-                style = "margin-bottom: 8px;", 
-                tags$label(
-                  tags$span(
-                    "ID de registro", 
-                    style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")),
-                tags$input(
-                  id = "id_registro",
-                  type = "text",
-                  value = "",  # Este valor será actualizado desde el servidor
-                  readonly = TRUE,  # Hacer el campo no editable
-                  class = "form-control"
-                )
-              )
-            ),
-            
-            # Campo Fecha de registro
-            fluidRow(
-              div(
-                style = "width: 100%;margin-bottom: 8px;",
-                dateInput(
-                  "fecha_registro",
-                  tags$span("Fecha de registro", style = "font-size: 12px;"),
-                  value = Sys.Date(),
-                  format = "dd/mm/yyyy",
-                  min = Sys.Date() - years(1),
-                  max = Sys.Date()
-                )
-              )
-            ),
-            
-            h4("Historial de Registro", style = "font-size: 15px; font-weight: bold;"), 
-            
-            # Campo ID de persona (readonly)
+      column(
+        width = 2,
+        wellPanel(
+          
+          style = "min-height: 400px;",
+          
+          h4("Datos del Registro", style = "font-size: 15px; font-weight: bold;"), 
+          
+          # Campo ID de registro (readonly)
+          fluidRow(
             div(
-              style = "width: 100%; margin-bottom: 8px;", 
+              style = "margin-bottom: 8px;", 
               tags$label(
-                tags$span("ID de la persona", 
-                          style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
-              ),
+                tags$span(
+                  "ID de registro", 
+                  style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")),
               tags$input(
-                id = "id_persona",
+                id = "id_registro",
                 type = "text",
                 value = "",  # Este valor será actualizado desde el servidor
                 readonly = TRUE,  # Hacer el campo no editable
                 class = "form-control"
               )
-            ),
-            
-            # Campo Fecha del primer registro
+            )
+          ),
+          
+          # Campo Fecha de registro
+          fluidRow(
             div(
-              style = "width: 100%;margin-bottom: 20px;",
+              style = "width: 100%;margin-bottom: 8px;",
               dateInput(
-                "fecha_primer_registro",
-                tags$span("Fecha del primer registro", style = "font-size: 12px;"),
+                inputId = "fecha_registro",
+                label = tags$span("Fecha de registro", style = "font-size: 12px;"),
                 value = Sys.Date(),
-                format = "dd/mm/yyyy"
-                )
+                format = "dd/mm/yyyy",
+                min = Sys.Date() - years(1),
+                max = Sys.Date()
               )
             )
           ),
-        
+          
+          h4("Historial de Registro", style = "font-size: 15px; font-weight: bold;"), 
+          
+          # Campo ID de persona (readonly)
+          div(
+            style = "width: 100%; margin-bottom: 8px;", 
+            tags$label(
+              tags$span("ID de la persona", 
+                        style = "font-size: 12px; margin-bottom: 10px; display: inline-block;")
+            ),
+            tags$input(
+              id = "id_persona",
+              type = "text",
+              value = "",  # Este valor será actualizado desde el servidor
+              readonly = TRUE,  # Hacer el campo no editable
+              class = "form-control"
+            )
+          ),
+          
+          # Campo Fecha del primer registro
+          div(
+            style = "width: 100%;margin-bottom: 20px;",
+            dateInput(
+              inputId = "fecha_primer_registro",
+              label =  tags$span("Fecha del primer registro", style = "font-size: 12px;"),
+              value = Sys.Date(),
+              format = "dd/mm/yyyy",
+              max = Sys.Date()
+            )
+          )
+        )
+      ),
+      
       # Datos personales -------------------------------------------------------
-        column(
-          width = 6,
-          wellPanel(
+      column(
+        width = 6,
+        wellPanel(
+          
+          style = "min-height: 400px;", 
+          
+          h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
+          
+          fluidRow(
             
-            style = "min-height: 400px;", 
-            
-            h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
-            
-            fluidRow(
-              
-              # Campo recuerda DNI
-              column(
-                width = 3,
-                selectInput(
-                  inputId = "recuerda_dni",
-                  tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
-                  choices = c("","Si", "No", "No tiene" = "S/D"),
-                  selected = ""
-                  )
-                ),
-              
-              # Campo DNI
-              column(
-                width = 3,
-                numericInput(
-                  "dni",
-                  tags$span("DNI", style = "font-size: 12px;"),
-                  value = NULL
-                  ),
-                
-                # Mensaje sobre el DNI
-                div(
-                  textOutput("dni_message"),
-                  style = "color: green; font-size: 12px; margin-top: 5px;"
-                  )
-                
-                ),
-              
-              # Apellido y Nombre
-              column(
-                width = 6,
-                div(
-                  textInput(
-                    inputId = "apellido_nombre",
-                    label = tags$span("Apellido, Nombre (Apodo)", style = "font-size: 12px;"),
-                    placeholder = "Ejemplo: Perez, Juan (Juanchi)"
-                  )
-                )
+            # Campo recuerda DNI
+            column(
+              width = 3,
+              selectInput(
+                inputId = "recuerda_dni",
+                label = tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
+                choices = c("","Si", "No", "No tiene" = "S/D"),
+                selected = ""
               )
-              ),
-            
-            fluidRow(
-              
-              # Fecha de nacimiento
-              column(
-                width = 4,
-                div(
-                  dateInput(
-                    inputId = "fecha_nacimiento",
-                    label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
-                    value = "",
-                    format = "dd/mm/yyyy",  
-                    min = Sys.Date() - years(100),  # Limitar a 110 años atrás
-                    max = Sys.Date()  # Limitar a la fecha de hoy
-                  )
-                )
-              ),
-              
-              # Campo sexo biológico
-              column(
-                width = 4,
-                selectInput(
-                  "sexo_biologico",
-                  label = tags$span("Sexo biológico", style = "font-size: 12px;"),
-                  choices = c("Femenino", "Masculino", "No informado",""), 
-                  selected = ""
-                )
-              ),
-              
-              # Campo género
-              column(
-                width = 4,
-                selectInput(
-                  "genero",
-                  label = tags$span("Género", style = "font-size: 12px;"),
-                  choices = c("Hombre", "Hombre trans", 
-                              "Mujer", "Mujer trans",
-                              "No binario", "Otro",""),  
-                  selected = ""
-                )
-              )
-              ),
-            
-            fluidRow(
-              
-              # Campo Provincia
-              column(
-                width = 4,
-                div(
-                  style = "height: 38px;",
-                  selectInput(
-                    "provincia",
-                    label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
-                    choices = provincias,
-                    selected = provincias[[1]][1]
-                  )
-                )
-              ),
-              
-              # Campo localidad
-              column(
-                width = 4,
-                div(
-                  style = "height: 38px;",
-                  uiOutput("localidad_ui")
-                )
-              ),
-              
-              # Campo barrio
-              column(
-                width = 4,
-                div(
-                  style = "height: 38px;",
-                  textInput(
-                    "barrio",
-                    label = tags$span("Barrio", style = "font-size: 12px;")
-                  )
-                )
-              )
-            )
-            )
-          ),
-        
-      # Datos de contacto ------------------------------------------------------
-        column(
-          width = 4, 
-          wellPanel( 
-            
-            style = "min-height: 400px;",
-            
-            h4("Contacto 1", style = "font-size: 15px; font-weight: bold;"),
-            
-            fluidRow(
-            
-              # Campo teléfono de contacto 1
-              column(
-                width = 4,
-                numericInput(
-                  "telefono_contacto_1", 
-                  label = tags$span("Teléfono", style = "font-size: 12px;"),
-                  value = ""
-                )
-              ),
-              
-              # Campo tipo de vinculo 1
-              column(
-                width = 4,
-                selectizeInput(
-                  "tipo_vinculo_contacto_1",
-                  label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
-                  choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
-                  multiple = FALSE,
-                  options = list(create = TRUE)
-                  )
-              ),
-              
-              # Campo nombre del contacto 1
-              column(
-                width = 4,
-                textInput(
-                  "nombre_contacto_1",  
-                  label = tags$span("Nombre", style = "font-size: 12px;"),
-                  value = ""
-                  )
-                )
             ),
             
-            h4("Contacto 2", style = "font-size: 15px; font-weight: bold;"),
-            
-            fluidRow(
-              
-              # Campo telefono de contacto 2
-              column(
-                width = 4,
-                numericInput(
-                  "telefono_contacto_2",  
-                  label = tags$span("Teléfono", style = "font-size: 12px;"),
-                  value = ""
-                  )
-                ),
-              
-              # Campo tipo de vínculo 2
-              column(
-                width = 4,
-                selectizeInput(
-                  "tipo_vinculo_contacto_2",
-                  label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
-                  choices = c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a"),
-                  multiple = FALSE,
-                  options = list(create = TRUE)
-                )
+            # Campo DNI
+            column(
+              width = 3,
+              numericInput(
+                inputId = "dni",
+                label = tags$span("DNI", style = "font-size: 12px;"),
+                value = NULL
               ),
               
-              # Campo nombre del contacto 2
-              column(
-                width = 4,
+              # Mensaje sobre el DNI
+              div(
+                textOutput("dni_message"),
+                style = "color: green; font-size: 12px; margin-top: 5px;"
+              )
+              
+            ),
+            
+            # Apellido y Nombre
+            column(
+              width = 6,
+              div(
                 textInput(
-                  "nombre_contacto_2",  
-                  label = tags$span("Nombre", style = "font-size: 12px;"),
-                  value = ""
-                  )
-                )
-              ),
-            
-            h4("Contacto 3", style = "font-size: 15px; font-weight: bold;"),
-            
-            fluidRow(
-              
-              # Campo telefono de contacto 3
-              column(
-                width = 4,
-                numericInput(
-                  "telefono_contacto_3", 
-                  label = tags$span("Teléfono", style = "font-size: 12px;"),
-                  value = ""
-                )
-              ),
-              
-              # Campo tipo de vínculo 3
-              column(
-                width = 4,
-                selectizeInput(
-                  "tipo_vinculo_contacto_3",
-                  label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
-                  choices = c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a"),
-                  multiple = FALSE,
-                  options = list(create = TRUE)
-                )
-              ),
-              
-              # Campo nombre del contacto 3
-              column(
-                width = 4,
-                textInput(
-                  "nombre_contacto_3",  
-                  label = tags$span("Nombre", style = "font-size: 12px;"),
-                  value = ""
-                  )
+                  inputId = "apellido_nombre",
+                  label = tags$span("Apellido, Nombre (Apodo)", style = "font-size: 12px;"),
+                  placeholder = "Ejemplo: Perez, Juan (Juanchi)"
                 )
               )
             )
           ),
+          
+          fluidRow(
+            
+            # Fecha de nacimiento
+            column(
+              width = 3,
+              div(
+                dateInput(
+                  inputId = "fecha_nacimiento",
+                  label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
+                  value = "",
+                  format = "dd/mm/yyyy",  
+                  min = Sys.Date() - years(100),  # Limitar a 110 años atrás
+                  max = Sys.Date()  # Limitar a la fecha de hoy
+                )
+              )
+            ),
+            
+            # Edad
+            column(
+              width = 3,
+              numericInput(
+                "edad",
+                tags$span("Edad", style = "font-size:10px;"),
+                value = ""
+              )
+            ),
+            
+            # Campo sexo biológico
+            column(
+              width = 3,
+              selectInput(
+                "sexo_biologico",
+                label = tags$span("Sexo biológico", style = "font-size: 12px;"),
+                choices = c("Femenino", "Masculino", "No informado",""), 
+                selected = ""
+              )
+            ),
+            
+            # Campo género
+            column(
+              width = 3,
+              selectInput(
+                "genero",
+                label = tags$span("Género", style = "font-size: 12px;"),
+                choices = c("Mujer", "Hombre", "Trans (feminidades)", "Trans (masculinidades)", "Otro", "No informado",""),  
+                selected = ""
+              )
+            )
+          ),
+          
+          fluidRow(
+            
+            # Campo Provincia
+            column(
+              width = 4,
+              div(
+                style = "height: 38px;",
+                selectInput(
+                  "provincia",
+                  label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
+                  choices = provincias,
+                  selected = provincias[[1]][1]
+                )
+              )
+            ),
+            
+            # Campo localidad
+            column(
+              width = 4,
+              div(
+                style = "height: 38px;",
+                uiOutput("localidad_ui")
+              )
+            ),
+            
+            # Campo barrio
+            column(
+              width = 4,
+              div(
+                style = "height: 38px;",
+                textInput(
+                  "barrio",
+                  label = tags$span("Barrio", style = "font-size: 12px;")
+                )
+              )
+            )
+          )
+        )
+      ),
+      
+      # Datos de contacto ------------------------------------------------------
+      column(
+        width = 4, 
+        wellPanel( 
+          
+          style = "min-height: 400px;",
+          
+          h4("Contacto 1", style = "font-size: 15px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo teléfono de contacto 1
+            column(
+              width = 4,
+              numericInput(
+                "telefono_contacto_1", 
+                label = tags$span("Teléfono", style = "font-size: 12px;"),
+                value = ""
+              )
+            ),
+            
+            # Campo tipo de vinculo 1
+            column(
+              width = 4,
+              selectizeInput(
+                "tipo_vinculo_contacto_1",
+                label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
+                choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                multiple = FALSE,
+                options = list(create = TRUE)
+              )
+            ),
+            
+            # Campo nombre del contacto 1
+            column(
+              width = 4,
+              textInput(
+                "nombre_contacto_1",  
+                label = tags$span("Nombre", style = "font-size: 12px;"),
+                value = ""
+              )
+            )
+          ),
+          
+          h4("Contacto 2", style = "font-size: 15px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo telefono de contacto 2
+            column(
+              width = 4,
+              numericInput(
+                "telefono_contacto_2",  
+                label = tags$span("Teléfono", style = "font-size: 12px;"),
+                value = ""
+              )
+            ),
+            
+            # Campo tipo de vínculo 2
+            column(
+              width = 4,
+              selectizeInput(
+                "tipo_vinculo_contacto_2",
+                label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
+                choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                multiple = FALSE,
+                options = list(create = TRUE)
+              )
+            ),
+            
+            # Campo nombre del contacto 2
+            column(
+              width = 4,
+              textInput(
+                "nombre_contacto_2",  
+                label = tags$span("Nombre", style = "font-size: 12px;"),
+                value = ""
+              )
+            )
+          ),
+          
+          h4("Contacto 3", style = "font-size: 15px; font-weight: bold;"),
+          
+          fluidRow(
+            
+            # Campo telefono de contacto 3
+            column(
+              width = 4,
+              numericInput(
+                "telefono_contacto_3", 
+                label = tags$span("Teléfono", style = "font-size: 12px;"),
+                value = ""
+              )
+            ),
+            
+            # Campo tipo de vínculo 3
+            column(
+              width = 4,
+              selectizeInput(
+                "tipo_vinculo_contacto_3",
+                label = tags$span("Tipo de vínculo", style = "font-size: 12px;"),
+                choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                multiple = FALSE,
+                options = list(create = TRUE)
+              )
+            ),
+            
+            # Campo nombre del contacto 3
+            column(
+              width = 4,
+              textInput(
+                "nombre_contacto_3",  
+                label = tags$span("Nombre", style = "font-size: 12px;"),
+                value = ""
+              )
+            )
+          )
+        )
+      ),
       
       # Información del Consumo y Tratamiento ----------------------------------
       
@@ -453,10 +463,10 @@ ui <- page_navbar(
               selectInput(
                 inputId = "sustancia_inicio_consumo",
                 label = tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px; white-space: nowrap;"),
-                choices = c("Alcohol", "Crack", "Cocaína", "Marihuana", "Nafta aspirada","Pegamento", "Psicofármacos", "Otra", ""),
+                choices = c("No informado","Alcohol", "Crack", "Cocaína", "Marihuana", "Nafta aspirada","Pegamento", "Psicofármacos", "Otra", ""),
                 selected = ""  # No selecciona ninguna opción por defecto
-                )
-              ),
+              )
+            ),
             
             # Campo emergente de texto para "Otra" opción al lado del selectInput
             column(
@@ -468,14 +478,24 @@ ui <- page_navbar(
                   inputId = "otra_sustancia",
                   label = tags$span("Especifique la sustancia", style="font-size: 12px;"),
                   value = ""
-                  )
                 )
               )
-            ),
+            )
+          ),
           
           h4("Consumo actual", style = "font-size: 15px; font-weight: bold;"),
           
           fluidRow(
+            selectInput(
+              "persona_consume",
+              tags$span("¿Consume actualmente?", style = "font-size:12px;"),
+              choices = c("","Si","No","No informado"),
+              selected = ""
+            )
+          ),
+          
+          fluidRow(
+            
             
             # Campo de selección múltiple de sustancias
             column(
@@ -483,7 +503,7 @@ ui <- page_navbar(
               tags$div(
                 style = "margin-bottom: 10px;",
                 tags$span("Sustancia/s de Consumo Actual", style = "font-size: 12px; white-space: nowrap;")
-                ),
+              ),
               tags$div(
                 style = "column-count: 3; column-gap: 50px; margin-top: 10px;",  # Espacio entre columnas y margen superior
                 checkboxGroupInput(
@@ -492,23 +512,23 @@ ui <- page_navbar(
                   choices = c("Alcohol","Crack","Cocaína","Marihuana","Nafta",
                               "Pegamento","Psicofármacos","Otra"),
                   selected = NULL
-                  )
                 )
-              ),
-              
-              # Campo emergente de texto para "Otra" opción
-              column(
-                width = 4,
-                conditionalPanel(
-                  condition = "input.sustancias_consumo_actual.includes('Otra')",
-                  textInput(
-                    inputId = "otra_sustancia_actual",
-                    label = tags$span("Especifique la sustancia", style="font-size: 12px;"),
-                    value = ""
-                    )
-                  )
-                )
+              )
             ),
+            
+            # Campo emergente de texto para "Otra" opción
+            column(
+              width = 4,
+              conditionalPanel(
+                condition = "input.sustancias_consumo_actual.includes('Otra')",
+                textInput(
+                  inputId = "otra_sustancia_actual",
+                  label = tags$span("Especifique la sustancia", style="font-size: 12px;"),
+                  value = ""
+                )
+              )
+            )
+          ),
           
           h4("Tratamiento", style = "font-size: 15px; font-weight: bold; margin-top: 20px;"),
           
@@ -517,7 +537,7 @@ ui <- page_navbar(
             # Campo derivación
             column(
               
-              width = 4,
+              width = 3,
               
               selectInput(
                 inputId = "derivacion",
@@ -529,7 +549,7 @@ ui <- page_navbar(
             
             # Campo derivado de
             column(
-              width = 4,
+              width = 3,
               
               textInput(
                 inputId = "derivado_de",
@@ -541,7 +561,7 @@ ui <- page_navbar(
             
             # Campo número de tratamientos previos
             column(
-              width = 4,
+              width = 3,
               
               tags$div(
                 tags$span("Nº de Tratamientos Previos", style = "font-size: 12px; white-space: nowrap;")
@@ -557,7 +577,7 @@ ui <- page_navbar(
             
             # Campo emergente de texto para Número de trat > 0
             column(
-              width = 4,
+              width = 3,
               style = "margin-bottom: 10px;", 
               conditionalPanel(
                 condition = "input.num_tratamientos_previos > '0'",
@@ -567,36 +587,10 @@ ui <- page_navbar(
                   value = ""
                 )
               )
-            ),
-            
-            column(
-              width = 4,
-              style = "margin-bottom: 10px;", 
-              conditionalPanel(
-                condition = "input.num_tratamientos_previos > '0'",
-                selectInput(
-                  inputId = "tratamiento_elegido",
-                  label = tags$span("Tratamiento elegido", style="font-size: 12px;"),
-                  choices = c(
-                    "Cdd Baigorria",
-                    "Cdd Buen Pastor",
-                    "Centro de día Zeballos",
-                    "Derivado",
-                    "Internación B.P.",
-                    "Internación Baig.",
-                    "Internación Cristalería",
-                    "No finalizó admisión",
-                    "Rechaza tratamiento",
-                    "Seguimiento",
-                    ""
-                  ),
-                  selected = ""
-                )
-              )
             )
           )
         )
-        ),
+      ),
       
       # Entrevistas ------------------------------------------------------------
       
@@ -715,6 +709,32 @@ ui <- page_navbar(
                 format = "dd/mm/yyyy"  # Formato de la fecha
               )
             )
+          ),
+          
+          h4("Tratamiento elegido", style = "font-size: 15px; font-weight: bold;"),
+          
+          fluidRow(
+            column(
+              width = 12,
+              selectInput(
+                inputId = "tratamiento_elegido",
+                label = "",
+                choices = c(
+                  "Cdd Baigorria",
+                  "Cdd Buen Pastor",
+                  "Centro de día Zeballos",
+                  "Derivado",
+                  "Internación B.P.",
+                  "Internación Baig.",
+                  "Internación Cristalería",
+                  "No finalizó admisión",
+                  "Rechaza tratamiento",
+                  "Seguimiento",
+                  ""
+                ),
+                selected = ""
+              )
+            )
           )
         )
       ),
@@ -736,7 +756,8 @@ ui <- page_navbar(
                 selectInput(
                   inputId = "nivel_educativo_max",
                   tags$span("Máximo Nivel educativo alcanzado", style = "font-size: 12px;"),
-                  choices = list(
+                  choices = list( 
+                    "No informado",
                     "Sin instrucción formal", 
                     "Primario incompleto", 
                     "Primario en curso", 
@@ -746,8 +767,7 @@ ui <- page_navbar(
                     "Secundario completo", 
                     "Nivel superior incompleto", 
                     "Nivel superior en curso", 
-                    "Nivel superior completo", 
-                    "No informado",
+                    "Nivel superior completo",
                     ""
                   ),
                   selected = "")
@@ -760,9 +780,9 @@ ui <- page_navbar(
                   inputId = "cud",
                   tags$span("CUD", style = "font-size: 12px;"),
                   choices = list(
+                    "No informado",
                     "Si", 
                     "No", 
-                    "No informado",
                     ""
                   ),
                   selected = "")
@@ -775,6 +795,7 @@ ui <- page_navbar(
                   inputId = "situacion_habitacional_actual",
                   tags$span("Situación Habitacional Actual", style = "font-size: 12px;"),
                   choices = list(
+                    "No informada",
                     "Casa/Departamento alquilado", 
                     "Casa/Departamento cedido", 
                     "Casa/Departamento propio", 
@@ -785,7 +806,6 @@ ui <- page_navbar(
                     "Refugio", 
                     "Situación de calle", 
                     "Otra", 
-                    "No informada",
                     ""
                   ),
                   selected = "")
@@ -971,24 +991,24 @@ ui <- page_navbar(
           ),
           
           wellPanel( 
-              style = "min-height: 160px; margin-top: 20px;",
-              
-              h4("Información Adicional", style = "font-size: 15px; font-weight: bold;"),
-              
-              fluidRow(
-                # Campo de Observaciones
-                column(
-                  width = 12,  # Cambia el ancho según sea necesario
-                  textAreaInput(
-                    inputId = "observaciones",
-                    label = tags$span("Observaciones", style = "font-size: 12px;"),
-                    value = "",
-                    width = "100%",
-                    height = "80px"  # Ajusta la altura según sea necesario
-                  )
+            style = "min-height: 160px; margin-top: 20px;",
+            
+            h4("Información Adicional", style = "font-size: 15px; font-weight: bold;"),
+            
+            fluidRow(
+              # Campo de Observaciones
+              column(
+                width = 12,  # Cambia el ancho según sea necesario
+                textAreaInput(
+                  inputId = "observaciones",
+                  label = tags$span("Observaciones", style = "font-size: 12px;"),
+                  value = "",
+                  width = "100%",
+                  height = "80px"  # Ajusta la altura según sea necesario
                 )
               )
-            ),
+            )
+          ),
           tags$div(
             style = "margin-top:10px; margin-bottom:10px;",
             actionButton(
@@ -996,12 +1016,12 @@ ui <- page_navbar(
               label = "Guardar registro",
               icon = icon("save"),
               class = "btn-primary"
-              )
             )
           )
         )
       )
-    ),
+    )
+  ),
   
   nav_panel(
     tags$span("Consulta y modificación de registros", style = "font-size: 14px;"),
@@ -1035,42 +1055,42 @@ server <- function(input, output, session) {
   
   # Fecha de registro ----------------------------------------------------------
   
-  iv_fecha_registro <- InputValidator$new()
+  iv <- InputValidator$new()
   
   ## Campo obligatorio
-  iv_fecha_registro$add_rule("fecha_registro", 
-                             sv_required(
-                               tags$span("Campo obligatorio.", style = "font-size: 10px;")
-                               )
-                             )
+  iv$add_rule("fecha_registro", 
+              sv_required(
+                tags$span("Campo obligatorio.", style = "font-size: 10px;")
+              )
+  )
   
-  iv_fecha_registro$enable()
+  iv$enable()
   
   # Fecha primer registro ------------------------------------------------------
   
-  iv_fecha_primer_registro <- InputValidator$new()
+  iv <- InputValidator$new()
   
   ## Campo obligatorio
-  iv_fecha_primer_registro$add_rule("fecha_primer_registro",
-                                    sv_required(
-                                      tags$span("Campo obligatorio.", style = "font-size: 10px;")
-                                      )
-                                    )
+  iv$add_rule("fecha_primer_registro",
+              sv_required(
+                tags$span("Campo obligatorio.", style = "font-size: 10px;")
+              )
+  )
   
-  iv_fecha_primer_registro$enable()
+  iv$enable()
   
   # Recuerda DNI ---------------------------------------------------------------
   
-  iv_recuerda_dni <- InputValidator$new()
+  iv <- InputValidator$new()
   
   ## Campo obligatorio
-  iv_recuerda_dni$add_rule("recuerda_dni",
-                           sv_required(
-                             tags$span("Campo obligatorio.", style = "font-size: 10px;")
-                             )
-                           )
+  iv$add_rule("recuerda_dni",
+              sv_required(
+                tags$span("Campo obligatorio.", style = "font-size: 10px;")
+              )
+  )
   
-  iv_recuerda_dni$enable()
+  iv$enable()
   
   ## Acciones según la selección de recuerda_dni
   observeEvent(input$recuerda_dni, {
@@ -1079,7 +1099,7 @@ server <- function(input, output, session) {
       updateNumericInput(session, "dni", value = "")
       shinyjs::disable("dni")
       iv_dni$disable()
-      } else {
+    } else {
       # Si selecciona Sí, habilitar el campo y agregar la validación
       shinyjs::enable("dni")  # Habilitar el campo
       iv_dni$enable()  # Activar la validación
@@ -1093,7 +1113,7 @@ server <- function(input, output, session) {
   iv_dni$add_rule("dni", sv_required(
     tags$span("Campo obligatorio.",
               style = "font-size: 10px;")
-    )
+  )
   )
   
   ## Solo números (sin puntos, espacios, etc.)
@@ -1121,15 +1141,15 @@ server <- function(input, output, session) {
   iv_apellido_nombre$add_rule("apellido_nombre", 
                               sv_required(tags$span("Campo obligatorio.", 
                                                     style = "font-size: 10px;")
-                                          )
                               )
+  )
   
   ## Caracteres especiales (excepto tildes, coma y paréntesis)
   iv_apellido_nombre$add_rule("apellido_nombre", function(value) {
     if(grepl("[^a-zA-ZáéíóúÁÉÍÓÚñÑ,() ]", value)) {
       return(tags$span("No se admiten caracteres especiales.",
                        style = "font-size: 10px;")
-             )
+      )
     }
   })
   
@@ -1154,8 +1174,8 @@ server <- function(input, output, session) {
   iv_sexo_biologico$add_rule("sexo_biologico",
                              sv_required(tags$span("Campo obligatorio.",
                                                    style = "font-size: 10px;")
-                                         )
                              )
+  )
   
   iv_sexo_biologico$enable()
   
@@ -1167,8 +1187,8 @@ server <- function(input, output, session) {
   iv_genero$add_rule("genero",
                      sv_required(tags$span("Campo obligatorio.",
                                            style = "font-size: 10px;")
-                                 )
                      )
+  )
   
   iv_genero$enable()
   
@@ -1232,8 +1252,8 @@ server <- function(input, output, session) {
   iv_telefono_1$add_rule("telefono_contacto_1",
                          sv_required(tags$span("Campo obligatorio.",
                                                style = "font-size: 10px;")
-                                     )
                          )
+  )
   
   ## Entre 7 y 10 caracteres
   iv_telefono_1$add_rule("telefono_contacto_1", function(value) {
@@ -1301,8 +1321,8 @@ server <- function(input, output, session) {
   iv_vinculo_1$add_rule("tipo_vinculo_contacto_1",
                         sv_required(tags$span("Campo obligatorio.",
                                               style = "font-size: 10px;")
-                                    )
                         )
+  )
   
   ## Más de 2 caracteres y sin caracteres especiales
   iv_vinculo_1$add_rule("tipo_vinculo_contacto_1", function(value) {
@@ -1403,7 +1423,7 @@ server <- function(input, output, session) {
     }
     return(NULL)
   })
-
+  
   ## Al menos 2 caracteres, sin caracteres especiales
   
   iv_nombre_1$add_rule("nombre_contacto_1", function(value) {
@@ -1472,7 +1492,7 @@ server <- function(input, output, session) {
   iv_estado_psicologo$enable()
   
   # Entrevista psiquiatra - Estado ---------------------------------------------
-
+  
   iv_estado_psiquiatra <- InputValidator$new()
   
   ## Obligatorio
@@ -1551,7 +1571,7 @@ server <- function(input, output, session) {
   iv_fecha_psicologo$enable()
   
   # Entrevista psiquiatra - Fecha ----------------------------------------------
-
+  
   iv_fecha_psiquiatra <- InputValidator$new()
   
   # Validaciones dinámicas para el campo de fecha de la entrevista
@@ -1693,7 +1713,7 @@ server <- function(input, output, session) {
   iv_edad_inicio$enable()
   
   # Información consumo - Sustancia de inicio ----------------------------------
-
+  
   iv_sustancia_inicio <- InputValidator$new()
   
   iv_sustancia_inicio$add_rule("sustancia_inicio_consumo", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
@@ -1718,7 +1738,7 @@ server <- function(input, output, session) {
   iv_sustancia_inicio$enable()
   
   # Información consumo - Sustancia de consumo actual --------------------------
-
+  
   iv_sustancias_actual <- InputValidator$new()
   
   ## Obligatorio
@@ -1747,10 +1767,10 @@ server <- function(input, output, session) {
   # Información tratamiento - Derivación ---------------------------------------
   
   iv_derivacion <- InputValidator$new()
-
+  
   ## Obligatorio
   iv_derivacion$add_rule("derivacion", sv_required(tags$span("Campo obligatorio.",style = "font-size:10px;")))
-
+  
   iv_derivacion$enable()
   
   # Información tratamiento - Derivado de --------------------------------------
@@ -1779,7 +1799,7 @@ server <- function(input, output, session) {
   iv_derivado_de$enable()
   
   # Información tratamiento - Nº de tratameintos previos -----------------------
-
+  
   iv_tratamientos_previos <- InputValidator$new()
   
   ## Obligatorio
@@ -1791,17 +1811,13 @@ server <- function(input, output, session) {
           return(tags$span("El número debe ser un entero positivo entre 0 y 99.",style = "font-size:10px;"))
         }
       }
-    } else if (input$derivacion %in% c("No","No informado")) {
-      if(value != "") {
-        return(tags$span("El campo debe estar vacío.",style = "font-size:10px;"))
-      }
     }
   })
   
   iv_tratamientos_previos$enable()
   
   # Información tratamiento - Lugar de último tratameinto ----------------------
-
+  
   iv_lugar_ultimo_tratamiento <- InputValidator$new()
   iv_lugar_ultimo_tratamiento$add_rule("lugar_ultimo_tratamiento", function(value) {
     # Validar solo si "Número de Tratamientos previos" tiene un valor y es mayor que 0
@@ -1858,7 +1874,7 @@ server <- function(input, output, session) {
       if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
         return(tags$span("No se admiten caracteres especiales.",style="font-size:10px;"))
       }
-      }
+    }
     return(NULL)
   })
   
@@ -1998,7 +2014,7 @@ server <- function(input, output, session) {
         
         sexo_biologico <- last(dni_existente$`Sexo biológico`)
         updateSelectInput(session, "sexo_biologico", selected = sexo_biologico)
-
+        
         genero <- last(dni_existente$Género)
         updateSelectInput(session, "genero", selected = genero)
         
@@ -2109,11 +2125,11 @@ server <- function(input, output, session) {
         updateSelectInput(session, "tratamiento_elegido", selected = tratamiento_elegido)
         
         
-
-        } else if (nrow(dni_existente) == 0) {
-          
+        
+      } else if (nrow(dni_existente) == 0) {
+        
         iv_dni$enable()
-          
+        
         # Si el DNI no está en la base, asignar un nuevo ID de persona (máximo + 1)
         id_persona <- max(data$`ID de la persona`, na.rm = TRUE) + 1
         
@@ -2151,136 +2167,27 @@ server <- function(input, output, session) {
     updateTextInput(session, "id_persona", value = as.numeric(id_persona))
   })
   
-  # Función para guardar el registro
   observeEvent(input$guardar_registro, {
     
-    # Validar todas las reglas usando shinyvalidate
-    # Si alguna validación no pasa, no se guarda el registro
-    if (iv_fecha_registro$is_valid() &&
-        iv_fecha_primer_registro$is_valid() &&
-        iv_recuerda_dni$is_valid() &&
-        iv_dni$is_valid() &&
-        iv_apellido_nombre$is_valid() &&
-        iv_sexo_biologico$is_valid() &&
-        iv_genero$is_valid() &&
-        iv_provincia$is_valid() &&
-        iv_telefono_1$is_valid() &&
-        iv_vinculo_1$is_valid() &&
-        iv_nombre_1$is_valid() &&
-        iv_telefono_2$is_valid() &&
-        iv_vinculo_2$is_valid() &&
-        iv_nombre_2$is_valid() &&
-        iv_telefono_3$is_valid() &&
-        iv_vinculo_3$is_valid() &&
-        iv_nombre_3$is_valid() &&
-        iv_edad_inicio$is_valid() &&
-        iv_sustancia_inicio$is_valid() &&
-        iv_sustancias_actual$is_valid() &&
-        iv_derivacion$is_valid() &&
-        iv_derivado_de$is_valid() &&
-        iv_tratamientos_previos$is_valid() &&
-        iv_lugar_ultimo_tratamiento$is_valid() &&
-        iv_tratamiento_elegido$is_valid() &&
-        iv_nivel_educativo_max$is_valid() &&
-        iv_cud$is_valid() &&
-        iv_situacion_habitacional$is_valid() &&
-        iv_situacion_laboral_actual$is_valid() &&
-        iv_ingreso_economico$is_valid() &&
-        iv_situacion_judicial$is_valid() &&
-        iv_redes_apoyo$is_valid() &&
-        iv_referencia_aps$is_valid() &&
-        iv_equipo_referencia$is_valid() &&
-        iv_observaciones$is_valid()) {  # Continúa agregando todas las validaciones necesarias
-      
-      # Crear un nuevo registro con los valores del input
-      nuevo_registro <- data.frame(
-        `ID de registro` = as.numeric(input$id_registro),
-        `Fecha de registro` = format(input$fecha_registro, "%d/%m/%Y"),
-        `ID de la persona` = as.numeric(input$id_persona),
-        `Recuerda DNI` = input$recuerda_dni,
-        `DNI` = as.numeric(input$dni),
-        `Apellido y Nombre` = input$apellido_nombre,
-        `Fecha de Nacimiento` = format(input$fecha_nacimiento, "%d/%m/%Y"),
-        `Sexo biológico` = input$sexo_biologico,
-        `Género` = input$genero,
-        `Provincia` = input$provincia,
-        `Localidad` = input$localidad,
-        `Barrio` = input$barrio,
-        `Teléfono de Contacto 1` = input$telefono_contacto_1,
-        `Tipo de Vínculo con el Contacto 1` = input$tipo_vinculo_contacto_1,
-        `Nombre del Contacto 1` = input$nombre_contacto_1,
-        `Teléfono de Contacto 2` = input$telefono_contacto_2,
-        `Tipo de Vínculo con el Contacto 2` = input$tipo_vinculo_contacto_2,
-        `Nombre del Contacto 2` = input$nombre_contacto_2,
-        `Teléfono de Contacto 3` = input$telefono_contacto_3,
-        `Tipo de Vínculo con el Contacto 3` = input$tipo_vinculo_contacto_3,
-        `Nombre del Contacto 3` = input$nombre_contacto_3,
-        `Estado de la Entrevista con Psicológo` = input$estado_psicologo,
-        `Fecha de la Entrevista con Psicológo` = format(input$fecha_entrevista_psicologo, "%d/%m/%Y"),
-        `Estado de entrevista con Psiquiátra` = input$estado_psiquiatra,
-        `Fecha de la Entrevista con Psiquiátra` = format(input$fecha_entrevista_psiquiatra, "%d/%m/%Y"),
-        `Estado de entrevista con Trabajador Social` = input$estado_ts,
-        `Fecha de la Entrevista con Trabajador Social` = format(input$fecha_entrevista_ts, "%d/%m/%Y"),
-        `Edad de Inicio de Cosumo` = input$edad_inicio_consumo,
-        `Inicio con Alcohol` = ifelse("Alcohol" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Cocaína` = ifelse("Cocaína" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Crack` = ifelse("Crack" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Marihuana` = ifelse("Marihuana" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Nafta aspirada` = ifelse("Nafta aspirada" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Pegamento` = ifelse("Pegamento" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Psicofármacos` = ifelse("Psicofármacos" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Otras` = ifelse("Otra" %in% input$sustancia_inicio_consumo, "Si", "No"),
-        `Inicio con Otras - Descripción` = ifelse("Otra" %in% input$sustancia_inicio_consumo, input$otra_sustancia, ""),
-        `Consumo actual con Alcohol` = ifelse("Alcohol" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Cocaína` = ifelse("Cocaína" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Crack` = ifelse("Crack" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Marihuana` = ifelse("Marihuana" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Nafta Aspirada` = ifelse("Nafta" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Psicofármacos` = ifelse("Psicofármacos" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Otras` = ifelse("Otra" %in% input$sustancias_consumo_actual, "Si", "No"),
-        `Consumo actual con Otras - Descripción` = ifelse("Otra" %in% input$sustancias_consumo_actual, input$otra_sustancia_actual, ""),
-        `Consumo actual con Policonsumo` = ifelse(length(input$sustancias_consumo_actual) > 1, "Si", "No"),
-        `Derivación` = input$derivacion,
-        `Derivado de` = input$derivado_de,
-        `Número de Tratamientos Previos` = as.numeric(input$num_tratamientos_previos),
-        `Lugar de Último Tratamiento` = input$lugar_ultimo_tratamiento,
-        `Tratamiento Elegido` = input$tratamiento_elegido,
-        `Nivel Máximo Educativo Alcanzado` = input$nivel_educativo_max,
-        `CUD` = input$cud,
-        `Situación Habitacional Actual` = input$situacion_habitacional_actual,
-        `Situación Laboral Actual` = input$situacion_laboral_actual,
-        `Ingreso Económico` = paste(input$ingreso_economico, collapse = ", "),  # Unir las opciones seleccionadas con coma
-        `Situación Judicial` = input$situacion_judicial,
-        `Redes de Apoyo` = paste(input$redes_apoyo, collapse = ", "),
-        `Referencia a APS` = input$referencia_aps,
-        `Equipo de Referencia` = input$equipo_referencia,
-        `Observaciones` = input$observaciones,
-        stringsAsFactors = FALSE
-      )
-      
-      # Almacenar el nuevo registro en la base de datos (agregarlo al final)
-      data <<- rbind(data, nuevo_registro)
-      write.xlsx(data, "Base completa.xlsx")
-      
-      # Mostrar mensaje de éxito
+    # Accede al valor del campo id_registro
+    id_registro_value <- ifelse(is.null(input$id_registro) || input$id_registro == "", "No hay ID de registro", input$id_registro)
+    fecha_registro_value <- ifelse(is.null(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
+    
+    # Muestra el valor en una caja de mensaje (modal)
+    if(iv$is_valid()) {
       showModal(modalDialog(
-        title = "Registro Guardado",
-        "El registro ha sido guardado exitosamente.",
-        easyClose = TRUE,
-        footer = NULL
+        title = "Registro",
+        paste("ID de registro:", id_registro_value," - Fecha de registro:" , fecha_registro_value),
+        easyClose = TRUE
       ))
-      
     } else {
-      # Mostrar mensaje de error si las reglas no se cumplen
       showModal(modalDialog(
-        title = "Error",
-        "No se cumplen las reglas de validación. Por favor, revisa los campos.",
-        easyClose = TRUE,
-        footer = NULL
+        title = "Registro",
+        paste("No se cumplen las reglas"),
+        easyClose = TRUE
       ))
     }
   })
-  
   
 }
 
