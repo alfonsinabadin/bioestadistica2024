@@ -2178,16 +2178,24 @@ server <- function(input, output, session) {
   
   observeEvent(input$guardar_registro, {
     
-    # Accede al valor del campo id_registro
-    id_registro_value <- ifelse(is.na(input$edad) || input$edad == "", "No hay ID de registro", input$edad)
-    fecha_registro_value <- ifelse(!isTruthy(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
+    nuevo_registro <- data.frame(
+      `ID de registro` = ifelse(is.na(input$id_registro) || input$id_registro == "", NA, as.numeric(input$id_registro)),
+      `Fecha de registro` = ifelse(!isTruthy(input$fecha_registro), NA, as.character(input$fecha_registro)),
+      `ID de la persona` = as.numeric(input$id_persona),
+      `Recuerda DNI` = ifelse(is.null(input$recuerda_dni) || input$recuerda_dni == "", NA, input$recuerda_dni),
+      DNI = ifelse(is.na(input$dni) || input$dni == "", NA, input$dni),
+      `Apellido y Nombre` = ifelse(is.na(input$apellido_nombre) || input$apellido_nombre == "", NA, input$apellido_nombre)
+    )
+    
+    #fecha_registro_value <- ifelse(!isTruthy(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
+    #apellido_nombre <- ifelse(is.null(input$apellido_nombre) || input$apellido_nombre == "", "No hay Apellido y nombre", input$apellido_nombre)
     
     # Muestra el valor en una caja de mensaje (modal)
     if(iv_fecha_primer_registro$is_valid()
     ) {
       showModal(modalDialog(
         title = "Registro",
-        paste("ID de registro:", id_registro_value," - Fecha de registro:" , fecha_registro_value),
+        print(nuevo_registro),
         easyClose = TRUE
       ))
     } else {
