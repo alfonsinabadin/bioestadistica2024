@@ -2179,12 +2179,90 @@ server <- function(input, output, session) {
   observeEvent(input$guardar_registro, {
     
     nuevo_registro <- data.frame(
+      
+      # Datos de registro --------------------------------------------------
       `ID de registro` = ifelse(is.na(input$id_registro) || input$id_registro == "", NA, as.numeric(input$id_registro)),
       `Fecha de registro` = ifelse(!isTruthy(input$fecha_registro), NA, as.character(input$fecha_registro)),
       `ID de la persona` = as.numeric(input$id_persona),
+      
+      # Datos de la persona ------------------------------------------------
       `Recuerda DNI` = ifelse(is.null(input$recuerda_dni) || input$recuerda_dni == "", NA, input$recuerda_dni),
       DNI = ifelse(is.na(input$dni) || input$dni == "", NA, input$dni),
-      `Apellido y Nombre` = ifelse(is.na(input$apellido_nombre) || input$apellido_nombre == "", NA, input$apellido_nombre)
+      `Apellido y Nombre` = ifelse(is.na(input$apellido_nombre) || input$apellido_nombre == "", NA, input$apellido_nombre),
+      `Edad del primer registro` = ifelse(is.na(input$edad) || input$edad == "", NA, as.numeric(input$edad)),
+      `Sexo biológico` = ifelse(is.null(input$sexo_biologico) || input$sexo_biologico == "", NA, input$sexo_biologico),
+      `Género` = ifelse(is.null(input$genero) || input$genero == "", NA, input$genero),
+      Provincia = ifelse(is.null(input$provincia) || input$provincia == "", NA, input$provincia),
+      Localidad = ifelse(is.null(input$localidad) || input$localidad == "", NA, input$localidad),
+      Barrio = ifelse(is.null(input$barrio) || input$barrio == "", NA, input$barrio),
+      
+      # Contacto 1 ---------------------------------------------------------
+      `Teléfono de Contacto 1` = ifelse(is.na(input$telefono_contacto_1) || input$telefono_contacto_1 == "", NA, as.numeric(input$telefono_contacto_1)),
+      `Tipo de Vínculo con el Contacto 1` = ifelse(is.null(input$tipo_vinculo_contacto_1) || input$tipo_vinculo_contacto_1 == "", NA, input$tipo_vinculo_contacto_1),
+      `Nombre del Contacto 1` = ifelse(is.na(input$nombre_contacto_1) || input$nombre_contacto_1 == "", NA, input$nombre_contacto_1),
+      
+      # Contacto 2 ---------------------------------------------------------
+      `Teléfono de Contacto 2` = ifelse(is.na(input$telefono_contacto_2) || input$telefono_contacto_2 == "", NA, as.numeric(input$telefono_contacto_2)),
+      `Tipo de Vínculo con el Contacto 2` = ifelse(is.null(input$tipo_vinculo_contacto_2) || input$tipo_vinculo_contacto_2 == "", NA, input$tipo_vinculo_contacto_2),
+      `Nombre del Contacto 2` = ifelse(is.na(input$nombre_contacto_2) || input$nombre_contacto_2 == "", NA, input$nombre_contacto_2),
+      
+      # Contacto 3 ---------------------------------------------------------
+      `Teléfono de Contacto 3` = ifelse(is.na(input$telefono_contacto_3) || input$telefono_contacto_3 == "", NA, as.numeric(input$telefono_contacto_3)),
+      `Tipo de Vínculo con el Contacto 3` = ifelse(is.null(input$tipo_vinculo_contacto_3) || input$tipo_vinculo_contacto_3 == "", NA, input$tipo_vinculo_contacto_3),
+      `Nombre del Contacto 3` = ifelse(is.na(input$nombre_contacto_3) || input$nombre_contacto_3 == "", NA, input$nombre_contacto_3),
+      
+      # Inicio del consumo -------------------------------------------------
+      `Edad de Inicio de Cosumo` = ifelse(is.na(input$edad_inicio_consumo) || input$edad_inicio_consumo == "", NA, as.numeric(input$edad_inicio_consumo)),
+      # Sustancia de inicio
+      
+      # Consumo actual -----------------------------------------------------
+      # falta la variable de si consume actualmente o no
+      `Consumo actual con Alcohol` = ifelse(is.null(input$sustancias_consumo_actual) || !"Alcohol" %in% input$sustancias_consumo_actual, NA, "Alcohol"),
+      `Consumo actual con Cocaína` = ifelse(is.null(input$sustancias_consumo_actual) || !"Cocaína" %in% input$sustancias_consumo_actual, NA, "Cocaína"),
+      `Consumo actual con Crack` = ifelse(is.null(input$sustancias_consumo_actual) || !"Crack" %in% input$sustancias_consumo_actual, NA, "Marihuana"),
+      `Consumo actual con Marihuana` = ifelse(is.null(input$sustancias_consumo_actual) || !"Marihuana" %in% input$sustancias_consumo_actual, NA, "Crack"),
+      `Consumo actual con Nafta Aspirada` = ifelse(is.null(input$sustancias_consumo_actual) || !"Nafta" %in% input$sustancias_consumo_actual, NA, "Nafta"),
+      `Consumo actual con Psicofármacos` = ifelse(is.null(input$sustancias_consumo_actual) || !"Psicofármacos" %in% input$sustancias_consumo_actual, NA, "Psicofármacos"),
+      # falta la variable pegamento en la base de datos
+      `Inicio con Otras` = ifelse(is.null(input$sustancias_consumo_actual) || !"Otra" %in% input$sustancias_consumo_actual, NA, "Otra"),
+      # agregar la variable que indique que otra sustancia se consumio si selecciono otra
+      
+      # Tratamiento --------------------------------------------------------
+      Derivación = ifelse(is.null(input$derivacion) || input$derivacion == "", NA, input$derivacion),
+      `Derivado de`= ifelse(is.null(input$derivado_de) || input$derivado_de == "", NA, input$derivado_de),
+      `Número de Tratamientos Previos` = ifelse(is.na(input$num_tratamientos_previos) || input$num_tratamientos_previos == "", NA, as.numeric(input$num_tratamientos_previos)),
+      `Lugar de Último Tratamiento` = ifelse(is.na(input$lugar_ultimo_tratamiento) || input$lugar_ultimo_tratamiento == "", NA, input$lugar_ultimo_tratamiento),
+      
+      # Entrevista Psicólogo -----------------------------------------------
+      `Estado de la Entrevista con Psicológo` = ifelse(is.null(input$estado_psicologo) || input$estado_psicologo == "", NA, input$estado_psicologo),
+      `Fecha de la Entrevista con Psicológo` = ifelse(!isTruthy(input$fecha_entrevista_psiquiatra), NA, as.character(input$fecha_entrevista_psiquiatra)),
+      
+      # Entrevista Psiquiatra -----------------------------------------------
+      `Estado de la Entrevista con Psiquiatra` = ifelse(is.null(input$estado_psiquiatra) || input$estado_psiquiatra == "", NA, input$estado_psiquiatra),
+      `Fecha de la Entrevista con Psiquiatra` = ifelse(!isTruthy(input$fecha_entrevista_psiquiatra), NA, as.character(input$fecha_entrevista_psiquiatra)),
+      
+      # Entrevista trabajador social ----------------------------------------
+      `Estado de entrevista con Trabajador Social` = ifelse(is.null(input$estado_ts) || input$estado_ts == "", NA, input$estado_ts),
+      `Fecha de la Entrevista con Trabajador Social` = ifelse(!isTruthy(input$fecha_entrevista_ts), NA, as.character(input$fecha_entrevista_ts)),
+      
+      # Situación Socioeconómica, Jurídica y de Salud -----------------------
+      `Nivel Máximo Educativo Alcanzado` = ifelse(is.null(input$nivel_educativo_max) || input$nivel_educativo_max == "", NA, input$nivel_educativo_max),
+      CUD = ifelse(is.null(input$cud) || input$cud == "", NA, input$cud),
+      `Situación Habitacional Actual` = ifelse(is.null(input$situacion_habitacional_actual) || input$situacion_habitacional_actual == "", NA, input$situacion_habitacional_actual),
+      # agregar la variable si hay otra situación habitacional actual (creo)
+      `Situación Laboral Actual`  = ifelse(is.null(input$situacion_laboral_actual) || input$situacion_laboral_actual == "", NA, input$situacion_laboral_actual),
+      # poner la variable ingreso economico como variables binarios de si o no
+      `Situación Judicial` = ifelse(is.null(input$situacion_judicial) || input$situacion_judicial == "", NA, input$situacion_judicial),
+      # agregar la varaible de si hay otra situación judicial
+      
+      # Red de Apoyo y Referencias ------------------------------------------
+      # agregar la variable redes de apoyos como distintas variables binarias de si o no
+      `Referencia a APS` = ifelse(is.null(input$referencia_aps) || input$referencia_aps == "", NA, input$referencia_aps),
+      `Equipo de Referencia` = ifelse(is.na(input$equipo_referencia) || input$equipo_referencia == "", NA, input$equipo_referencia),
+
+      # Información Adicional -----------------------------------------------
+      Observaciones = ifelse(is.na(input$observaciones) || input$observaciones == "", NA, input$observaciones)
+
     )
     
     #fecha_registro_value <- ifelse(!isTruthy(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
