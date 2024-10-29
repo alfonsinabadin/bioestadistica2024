@@ -246,7 +246,7 @@ ui <- page_navbar(
               numericInput(
                 "edad",
                 tags$span("Edad", style = "font-size:10px;"),
-                value = ""
+                value = NULL
               )
             ),
             
@@ -256,7 +256,7 @@ ui <- page_navbar(
               selectInput(
                 "sexo_biologico",
                 label = tags$span("Sexo biológico", style = "font-size: 12px;"),
-                choices = c("Femenino", "Masculino", "No informado",""), 
+                choices = c("No informado","Femenino", "Masculino", ""), 
                 selected = ""
               )
             ),
@@ -267,7 +267,7 @@ ui <- page_navbar(
               selectInput(
                 "genero",
                 label = tags$span("Género", style = "font-size: 12px;"),
-                choices = c("Mujer", "Hombre", "Trans (feminidades)", "Trans (masculinidades)", "Otro", "No informado",""),  
+                choices = c("No informado","Mujer", "Hombre", "Trans (feminidades)", "Trans (masculinidades)", "Otro", ""),  
                 selected = ""
               )
             )
@@ -489,7 +489,7 @@ ui <- page_navbar(
             selectInput(
               "persona_consume",
               tags$span("¿Consume actualmente?", style = "font-size:12px;"),
-              choices = c("","Si","No","No informado"),
+              choices = c("No informado","","Si","No"),
               selected = ""
             )
           ),
@@ -542,7 +542,7 @@ ui <- page_navbar(
               selectInput(
                 inputId = "derivacion",
                 label = tags$span("Derivación", style = "font-size: 12px;"),
-                choices = c("","Si", "No", "No informado"),
+                choices = c("No informado","","Si", "No"),
                 selected = ""
               )
             ),
@@ -830,11 +830,11 @@ ui <- page_navbar(
                 selectInput(
                   inputId = "situacion_laboral_actual",
                   tags$span("Situación Laboral Actual", style = "font-size: 12px;"),
-                  choices = list(
+                  choices = list( 
+                    "No informado",
                     "Estable", 
                     "Esporádico", 
-                    "No tiene", 
-                    "No informado",
+                    "No tiene",
                     ""
                   ),
                   selected = "")
@@ -852,19 +852,20 @@ ui <- page_navbar(
                   checkboxGroupInput(
                     inputId = "ingreso_economico",
                     label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
-                    choices = c("AlimentAR", 
-                                "AUH",
-                                "AUHD", 
-                                "Jubilación", 
-                                "PNC nacional", 
-                                "PNC provincial", 
-                                "Salario formal", 
-                                "Salario informal", 
-                                "Sin ingresos", 
-                                "No informado",
-                                "Otro subsidio/plan social", 
-                                "Otro tipo de pensión", 
-                                "Otro tipo de ingreso"),
+                    choices = c(
+                      "No informado",
+                      "AlimentAR",
+                      "AUH",
+                      "AUHD",
+                      "Jubilación",
+                      "PNC nacional",
+                      "PNC provincial",
+                      "Salario formal", 
+                      "Salario informal", 
+                      "Sin ingresos", 
+                      "Otro subsidio/plan social", 
+                      "Otro tipo de pensión", 
+                      "Otro tipo de ingreso"),
                     selected = NULL
                   )
                 )
@@ -946,11 +947,11 @@ ui <- page_navbar(
                   checkboxGroupInput(
                     inputId = "redes_apoyo",
                     label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
-                    choices = c("Familiares", 
+                    choices = c("No informado",
+                                "Familiares", 
                                 "Amistades", 
                                 "Institucionalidades",
-                                "Sin vínculos actualmente", 
-                                "No informado"),
+                                "Sin vínculos actualmente"),
                     selected = NULL
                   )
                 )
@@ -1055,42 +1056,42 @@ server <- function(input, output, session) {
   
   # Fecha de registro ----------------------------------------------------------
   
-  iv <- InputValidator$new()
+  iv_fecha_registro <- InputValidator$new()
   
   ## Campo obligatorio
-  iv$add_rule("fecha_registro", 
-              sv_required(
-                tags$span("Campo obligatorio.", style = "font-size: 10px;")
-              )
+  iv_fecha_registro$add_rule("fecha_registro", 
+                             sv_required(
+                               tags$span("Campo obligatorio.", style = "font-size: 10px;")
+                             )
   )
   
-  iv$enable()
+  iv_fecha_registro$enable()
   
   # Fecha primer registro ------------------------------------------------------
   
-  iv <- InputValidator$new()
+  iv_fecha_primer_registro <- InputValidator$new()
   
   ## Campo obligatorio
-  iv$add_rule("fecha_primer_registro",
-              sv_required(
-                tags$span("Campo obligatorio.", style = "font-size: 10px;")
-              )
+  iv_fecha_primer_registro$add_rule("fecha_primer_registro",
+                                    sv_required(
+                                      tags$span("Campo obligatorio.", style = "font-size: 10px;")
+                                    )
   )
   
-  iv$enable()
+  iv_fecha_primer_registro$enable()
   
   # Recuerda DNI ---------------------------------------------------------------
   
-  iv <- InputValidator$new()
+  iv_recuerda_dni <- InputValidator$new()
   
   ## Campo obligatorio
-  iv$add_rule("recuerda_dni",
-              sv_required(
-                tags$span("Campo obligatorio.", style = "font-size: 10px;")
-              )
+  iv_recuerda_dni$add_rule("recuerda_dni",
+                           sv_required(
+                             tags$span("Campo obligatorio.", style = "font-size: 10px;")
+                           )
   )
   
-  iv$enable()
+  iv_recuerda_dni$enable()
   
   ## Acciones según la selección de recuerda_dni
   observeEvent(input$recuerda_dni, {
@@ -1165,6 +1166,58 @@ server <- function(input, output, session) {
   iv_apellido_nombre$enable()
   
   # Fecha de nacimiento --------------------------------------------------------
+  
+  # Edad -----------------------------------------------------------------------
+  
+  iv_edad <- InputValidator$new()
+  
+  iv_edad$add_rule("edad", function(value) {
+    if(!isTruthy(input$fecha_nacimiento)) {
+      if(length(as.numeric(input$edad)) == 0 | is.na(input$edad)) {
+        return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+      }
+    }
+  })
+  
+  iv_edad$add_rule("edad", function(value) {
+    if(!is.na(value)) {
+      if (value < 1) {
+        return("La edad debe tener 1 o 2 dígitos.")
+      }
+      if (value > 99) {
+        return("La edad debe tener 1 o 2 dígitos.")
+      }
+      return(NULL)
+    }
+  })
+  
+  ## 8 dígitos
+  iv_edad$add_rule("edad", function(value) {
+    if(!is.na(value)) {
+      if (!grepl("^[0-9]+$", value)) {
+        return("No se admiten caracteres especiales.")
+      }
+      return(NULL)
+    }
+  })
+  
+  iv_edad$enable()
+  
+  observe({
+    # Verificar que ambas fechas estén registradas
+    if (isTruthy(input$fecha_nacimiento) && isTruthy(input$fecha_registro)) {
+      
+      # Calcular la edad en años usando fecha de registro como referencia
+      edad <- trunc(as.numeric(difftime(as.Date(input$fecha_registro), as.Date(input$fecha_nacimiento), units = "days")) %/% 365)
+      
+    } else {
+      # Si falta alguna de las fechas, dejar el campo en NA
+      edad <- NA
+    }
+    
+    # Actualizar el campo de `edad` en el formulario
+    updateNumericInput(session, "edad", value = edad)
+  })
   
   # Sexo biológico -------------------------------------------------------------
   
@@ -1283,7 +1336,7 @@ server <- function(input, output, session) {
     if (nchar(value) < 7) {
       return(tags$span("El teléfono debe tener al menos 7 dígitos.", style = "font-size: 10px;"))
     }
-    if (nchar(value) > 10) {
+    if (nchar(value) > 11) {
       return(tags$span("El teléfono debe tener menos de 10 dígitos.", style = "font-size: 10px;"))
     }
     if (!grepl("^[0-9]+$", value)) {
@@ -1439,7 +1492,7 @@ server <- function(input, output, session) {
     esta <- input$tipo_vinculo_contacto_1 %in% c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
     if (!esta) {
       if(!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ /]+$", value)) {  # Incluye el símbolo '/'
-        return(tags$span("No se admiten caracteres especiales excepto '/', letras y espacios.", style = "font-size: 10px;"))
+        return(tags$span("No se admiten caracteres especiales.", style = "font-size: 10px;"))
       }
     }
   })
@@ -1701,11 +1754,14 @@ server <- function(input, output, session) {
   iv_edad_inicio <- InputValidator$new()
   iv_edad_inicio$add_rule("edad_inicio_consumo", function(value) {
     if (value != "") {
-      if (nchar(value) > 2) {
+      if(nchar(value) > 2) {
         return(tags$span("La edad no puede tener más de 2 dígitos.", style = "font-size:10px;"))
       }
-      if (!grepl("^[0-9]+$", value)) {
+      if(!grepl("^[0-9]+$", value)) {
         return(tags$span("Solo se admiten números.", style = "font-size:10px;"))
+      }
+      if(!is.na(value) & !is.na(input$edad) & input$edad < value) {
+        return(tags$span("La edad de inicio no puede ser mayor a la actual.", style = "font-size:10px;"))
       }
     }
     return(NULL)
@@ -1737,12 +1793,27 @@ server <- function(input, output, session) {
   
   iv_sustancia_inicio$enable()
   
+  # Información consumo - Consumo actual ---------------------------------------
+  
+  iv_persona_consume <- InputValidator$new()
+  
+  iv_persona_consume$add_rule("persona_consume", sv_required(tags$span("Campo obligatorio.", style = "font-size: 10px;")))
+  
+  iv_persona_consume$enable()
+  
   # Información consumo - Sustancia de consumo actual --------------------------
   
   iv_sustancias_actual <- InputValidator$new()
   
   ## Obligatorio
-  iv_sustancias_actual$add_rule("sustancias_consumo_actual", sv_required(tags$span("Campo obligatorio.", style = "font-size: 10px;")))
+  
+  iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
+    if(input$persona_consume == "Si") {
+      if(is.null(value) || length(value) == 0) {
+        return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+      }
+    }
+  })
   
   iv_sustancias_actual$add_rule("otra_sustancia_actual", function(value) {
     # Verificar si 'Otra' está seleccionada en el selectInput
@@ -1786,7 +1857,7 @@ server <- function(input, output, session) {
           return(tags$span("El campo debe tener al menos 2 caracteres.",style = "font-size:10px;"))
         }
         if (grepl("[^a-zA-Z0-9 ]", value)) {
-          return(tags$span("El campo no puede contener caracteres especiales.",style = "font-size:10px;"))
+          return(tags$span("No se admiten caracteres especiales.",style = "font-size:10px;"))
         }
       }
     } else if (input$derivacion %in% c("No","No informado")) {
@@ -1804,13 +1875,8 @@ server <- function(input, output, session) {
   
   ## Obligatorio
   iv_tratamientos_previos$add_rule("num_tratamientos_previos", function(value) {
-    if(input$derivacion == "Si" & is.na(value)) {
-      return(tags$span("Si nunca recibió un tratamiento, completar con 0.",style = "font-size:10px;"))
-      if (!is.null(input$derivacion) && input$derivacion == "Si") {
-        if (value < 0 || value > 99) {
-          return(tags$span("El número debe ser un entero positivo entre 0 y 99.",style = "font-size:10px;"))
-        }
-      }
+    if (value < 0 || value > 99) {
+      return(tags$span("El número debe estar entre 0 y 99.",style = "font-size:10px;"))
     }
   })
   
@@ -1826,7 +1892,7 @@ server <- function(input, output, session) {
         return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size:10px;"))
       }
       if (grepl("[^a-zA-Z0-9 ]", value)) {
-        return(tags$span("El campo no puede contener caracteres especiales.",style = "font-size:10px;"))
+        return(tags$span("No se admiten caracteres especiales.",style = "font-size:10px;"))
       }
     }
     return(NULL)  # Sin errores
@@ -1946,7 +2012,7 @@ server <- function(input, output, session) {
     }
     if (nchar(value) > 0) {
       if (!grepl("^[a-zA-Z0-9 ]+$", value)) {
-        return("El campo no puede contener caracteres especiales.")
+        return("No se admiten caracteres especiales.")
       }
       if (nchar(value) < 3) {
         return("El campo debe tener al menos 3 caracteres.")
@@ -1960,26 +2026,6 @@ server <- function(input, output, session) {
   }) 
   
   iv_equipo_referencia$enable() 
-  
-  # Información adicional - Observaciones --------------------------------------
-  
-  iv_observaciones <- InputValidator$new()
-  iv_observaciones$add_rule("observaciones", function(value) {
-    if (nchar(value) < 4) {
-      return("El campo debe tener como mínimo 4 caracteres.")
-    }
-    if (nchar(value) > 99) {
-      return("El campo debe tener como máximo 99 caracteres.")
-    }
-    if (nchar(value) > 0) {
-      if (grepl("[^A-Za-z0-9áéíóúñÁÉÍÓÚÑ ]", value)) {
-        return("El campo no puede contener caracteres especiales.")
-      }
-    }
-    return(NULL)
-  })
-  
-  iv_observaciones$enable() 
   
   # Actualizaciones con el dni -------------------------------------------------
   
@@ -2012,16 +2058,17 @@ server <- function(input, output, session) {
         apellido_nombre <- last(dni_existente$`Apellido y Nombre`)  # Obtener el último apellido y nombre para ese DNI
         updateTextInput(session, "apellido_nombre", value = apellido_nombre)  # Actualizar con el valor de la base
         
+        fecha_nacimiento <- last(dni_existente$`Fecha de Nacimiento`)
+        updateDateInput(session, "fecha_nacimiento", value = fecha_nacimiento)
+        
         sexo_biologico <- last(dni_existente$`Sexo biológico`)
         updateSelectInput(session, "sexo_biologico", selected = sexo_biologico)
         
         genero <- last(dni_existente$Género)
         updateSelectInput(session, "genero", selected = genero)
         
-        fecha_nacimiento <- last(dni_existente$`Fecha de Nacimiento`)
-        updateDateInput(session, "fecha_nacimiento", value = fecha_nacimiento)
-        
         provincia <- last(dni_existente$`Provincia`)
+        
         localidad <- last(dni_existente$`Localidad`)
         
         # Si la provincia no está en las opciones del selectInput, la añadimos temporalmente
@@ -2047,39 +2094,12 @@ server <- function(input, output, session) {
         barrio <- last(dni_existente$Barrio)
         updateSelectInput(session, "barrio", selected = barrio)
         
-        telefono_contacto_1 <- last(dni_existente$`Teléfono de Contacto 1`)
-        updateNumericInput(session, "telefono_contacto_1", value = telefono_contacto_1)
-        
-        telefono_contacto_2 <- last(dni_existente$`Teléfono de Contacto 2`)
-        updateNumericInput(session, "telefono_contacto_2", value = telefono_contacto_2)
-        
-        telefono_contacto_3 <- last(dni_existente$`Teléfono de Contacto 3`)
-        updateNumericInput(session, "telefono_contacto_3", value = telefono_contacto_3)
-        
-        tipo_vinculo_contacto_1 <- last(dni_existente$`Tipo de Vínculo con el Contacto 1`)
-        updateSelectizeInput(session, "tipo_vinculo_contacto_1", selected = tipo_vinculo_contacto_1)
-        
-        tipo_vinculo_contacto_2 <- last(dni_existente$`Tipo de Vínculo con el Contacto 2`)
-        updateSelectizeInput(session, "tipo_vinculo_contacto_2", selected = tipo_vinculo_contacto_2)
-        
-        tipo_vinculo_contacto_3 <- last(dni_existente$`Tipo de Vínculo con el Contacto 3`)
-        updateSelectizeInput(session, "tipo_vinculo_contacto_3", selected = tipo_vinculo_contacto_3)
-        
-        nombre_contacto_1 <- last(dni_existente$`Nombre del Contacto 1`)
-        updateSelectInput(session, "nombre_contacto_1", selected = nombre_contacto_1)
-        
-        nombre_contacto_2 <- last(dni_existente$`Nombre del Contacto 2`)
-        updateSelectInput(session, "nombre_contacto_2", selected = nombre_contacto_2)
-        
-        nombre_contacto_3 <- last(dni_existente$`Nombre del Contacto 3`)
-        updateSelectInput(session, "nombre_contacto_3", selected = nombre_contacto_3)
-        
         edad_inicio_consumo <- last(dni_existente$`Edad de Inicio de Cosumo`)
         updateTextInput(session, "edad_inicio_consumo", value = edad_inicio_consumo)
         
         
         # Vector con los nombres de las drogas (para el selectInput)
-        drogas <- c("Alcohol", "Cocaína", "Crack", "Marihuana", "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra","")
+        drogas <- c("NoAlcohol", "Cocaína", "Crack", "Marihuana", "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra","")
         
         # Vector con los nombres de las columnas correspondientes en el data frame
         columnas <- c("Inicio con Alcohol", "Inicio con Cocaína", "Inicio con Crack", 
@@ -2087,7 +2107,7 @@ server <- function(input, output, session) {
                       "Inicio con Pegamento", "Inicio con Psicofármacos", "Inicio con Otras")
         
         # Vector observado
-        ultima_fila  <- tail(dni_existente[,31:38],1)
+        ultima_fila  <- tail(dni_existente[,30:38],1)
         
         # Columna con si
         columna_con_si <- columnas[which(ultima_fila == "Si")]
@@ -2124,8 +2144,6 @@ server <- function(input, output, session) {
         tratamiento_elegido <- last(dni_existente$`Tratamiento Elegido`)
         updateSelectInput(session, "tratamiento_elegido", selected = tratamiento_elegido)
         
-        
-        
       } else if (nrow(dni_existente) == 0) {
         
         iv_dni$enable()
@@ -2145,15 +2163,6 @@ server <- function(input, output, session) {
         updateSelectInput(session, "provincia", selected = "")
         updateSelectInput(session, "localidad", choices = NULL, selected = NULL)
         updateTextInput(session, "barrio", value = "")
-        updateNumericInput(session, "telefono_contacto_1", value = "")
-        updateNumericInput(session, "telefono_contacto_2", value = "")
-        updateNumericInput(session, "telefono_contacto_3", value = "")
-        updateSelectizeInput(session, "tipo_vinculo_contacto_1", selected = "")
-        updateSelectizeInput(session, "tipo_vinculo_contacto_2", selected = "")
-        updateSelectizeInput(session, "tipo_vinculo_contacto_3", selected = "")
-        updateTextInput(session, "nombre_contacto_1", value = "")
-        updateTextInput(session, "nombre_contacto_2", value = "")
-        updateTextInput(session, "nombre_contacto_3", value = "")
         updateTextInput(session, "edad_inicio_consumo", value = "")
         updateSelectInput(session, "sustancia_inicio_consumo", selected = "")
         updateTextInput(session, "otra_sustancia", value = "")
@@ -2170,11 +2179,12 @@ server <- function(input, output, session) {
   observeEvent(input$guardar_registro, {
     
     # Accede al valor del campo id_registro
-    id_registro_value <- ifelse(is.null(input$id_registro) || input$id_registro == "", "No hay ID de registro", input$id_registro)
-    fecha_registro_value <- ifelse(is.null(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
+    id_registro_value <- ifelse(is.na(input$edad) || input$edad == "", "No hay ID de registro", input$edad)
+    fecha_registro_value <- ifelse(!isTruthy(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
     
     # Muestra el valor en una caja de mensaje (modal)
-    if(iv$is_valid()) {
+    if(iv_fecha_primer_registro$is_valid()
+    ) {
       showModal(modalDialog(
         title = "Registro",
         paste("ID de registro:", id_registro_value," - Fecha de registro:" , fecha_registro_value),
