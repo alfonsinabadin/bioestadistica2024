@@ -2216,7 +2216,7 @@ server <- function(input, output, session) {
       # Sustancia de inicio
       
       # Consumo actual -----------------------------------------------------
-      # falta la variable de si consume actualmente o no
+      `¿Consume actualmente?` = ifelse(is.null(input$persona_consume) || input$persona_consume == "", NA, input$persona_consume),
       `Consumo actual con Alcohol` = ifelse(is.null(input$sustancias_consumo_actual) || !"Alcohol" %in% input$sustancias_consumo_actual, NA, "Alcohol"),
       `Consumo actual con Cocaína` = ifelse(is.null(input$sustancias_consumo_actual) || !"Cocaína" %in% input$sustancias_consumo_actual, NA, "Cocaína"),
       `Consumo actual con Crack` = ifelse(is.null(input$sustancias_consumo_actual) || !"Crack" %in% input$sustancias_consumo_actual, NA, "Marihuana"),
@@ -2225,7 +2225,7 @@ server <- function(input, output, session) {
       `Consumo actual con Psicofármacos` = ifelse(is.null(input$sustancias_consumo_actual) || !"Psicofármacos" %in% input$sustancias_consumo_actual, NA, "Psicofármacos"),
       # falta la variable pegamento en la base de datos
       `Inicio con Otras` = ifelse(is.null(input$sustancias_consumo_actual) || !"Otra" %in% input$sustancias_consumo_actual, NA, "Otra"),
-      # agregar la variable que indique que otra sustancia se consumio si selecciono otra
+      `Consumo actual con Otras - Descripción` = ifelse(is.na(input$otra_sustancia_actual) || input$otra_sustancia_actual == "", NA, input$otra_sustancia_actual),
       
       # Tratamiento --------------------------------------------------------
       Derivación = ifelse(is.null(input$derivacion) || input$derivacion == "", NA, input$derivacion),
@@ -2249,7 +2249,7 @@ server <- function(input, output, session) {
       `Nivel Máximo Educativo Alcanzado` = ifelse(is.null(input$nivel_educativo_max) || input$nivel_educativo_max == "", NA, input$nivel_educativo_max),
       CUD = ifelse(is.null(input$cud) || input$cud == "", NA, input$cud),
       `Situación Habitacional Actual` = ifelse(is.null(input$situacion_habitacional_actual) || input$situacion_habitacional_actual == "", NA, input$situacion_habitacional_actual),
-      # agregar la variable si hay otra situación habitacional actual (creo)
+      `Situación Habitacional Actual - Otra` = ifelse(is.na(input$otra_situacion_habitacional_actual) || input$otra_situacion_habitacional_actual == "", NA, input$otra_situacion_habitacional_actual),
       `Situación Laboral Actual`  = ifelse(is.null(input$situacion_laboral_actual) || input$situacion_laboral_actual == "", NA, input$situacion_laboral_actual),
       # poner la variable ingreso economico como variables binarios de si o no
       `Situación Judicial` = ifelse(is.null(input$situacion_judicial) || input$situacion_judicial == "", NA, input$situacion_judicial),
