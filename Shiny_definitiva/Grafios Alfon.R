@@ -3,6 +3,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(plotly)
+library(gridExtra)
 
 data <- read_excel("Shiny_definitiva/Base completa.xlsx")
 
@@ -153,3 +154,181 @@ g <- ggplot(df, aes(x = Edad, y = `Nivel Máximo Educativo Alcanzado`, fill = co
        fill = "Conteo") +
   theme_grey()
 ggplotly(g, tooltip = 'text')
+
+# grafico 7
+
+df <- data%>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>% 
+  ungroup() %>%
+  mutate(`Situación Laboral Actual` = factor(
+    `Situación Laboral Actual`,
+    levels = c("Estable", "Esporádico", "No tiene", "No informado"),
+    ordered = TRUE
+  )) %>%
+  group_by(`Situación Laboral Actual`,.add = TRUE) %>%
+  summarise(conteo = n(), .groups = "drop") %>%
+  filter(!is.na(`Situación Laboral Actual`)) %>%
+  complete(`Situación Laboral Actual`) %>%
+  mutate(conteo = ifelse(is.na(conteo),0,conteo))
+
+plot_ly(
+  df,
+  labels = ~`Situación Laboral Actual`,
+  values = ~conteo,
+  type = 'pie',
+  textinfo = 'label+percent',
+  hoverinfo = 'label+value',
+  marker = list(colors = c("#FFA500", "#FF8C00", "#FFD700"))
+) %>%
+  layout(
+    title = "Distribución por situación laboral actual",
+    showlegend = TRUE
+  )
+
+# grafico 8
+
+df <- data %>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>% 
+  ungroup() %>%
+  mutate(`Ingreso Económico` = factor(`Ingreso Económico`,
+                                      levels = c(
+                                        "No informado",
+                                        "AlimentAR",
+                                        "AUH",
+                                        "AUHD",
+                                        "Jubilación",
+                                        "PNC nacional",
+                                        "PNC provincial",
+                                        "Salario formal", 
+                                        "Salario informal", 
+                                        "Sin ingresos", 
+                                        "Otro subsidio/plan social", 
+                                        "Otro tipo de pensión", 
+                                        "Otro tipo de ingreso"),
+                                      ordered = TRUE
+  )
+  ) %>%
+  group_by(`Ingreso Económico`, .add = TRUE) %>%
+  summarize(conteo = n(), .groups = "drop") %>%
+  filter(!is.na(`Ingreso Económico`)) %>%
+  complete(`Ingreso Económico`) %>%
+  mutate(conteo = ifelse(is.na(conteo),0,conteo))
+
+g <- ggplot(df, aes(x = conteo, y = `Ingreso Económico`)) +
+  geom_bar(stat = "identity", fill = "#ec7e14", 
+           aes(text = paste("Ingreso económico:", `Ingreso Económico`, "<br>Conteo:", conteo))) +
+  labs(x = "Conteo", y = "Ingreso económico", title = "Conteo por ingreso económico`") +
+  scale_x_continuous(breaks = seq(min(df$conteo),max(df$conteo),by = 50)) +
+  theme_grey() +
+  theme(legend.position = 'none')
+
+ggplotly(g, tooltip = 'text')
+
+# grafico 9
+
+df <- data %>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>% 
+  ungroup() %>%
+  mutate(`Situación Habitacional Actual` = factor(`Situación Habitacional Actual`,
+                                      levels = c(
+                                        "No informada",
+                                        "Casa/Departamento alquilado", 
+                                        "Casa/Departamento cedido", 
+                                        "Casa/Departamento propio", 
+                                        "Institución de salud mental", 
+                                        "Institución penal", 
+                                        "Institución terapéutica", 
+                                        "Pensión", 
+                                        "Refugio", 
+                                        "Situación de calle", 
+                                        "Otra"),
+                                      ordered = TRUE
+  )
+  ) %>%
+  group_by(`Situación Habitacional Actual`, .add = TRUE) %>%
+  summarize(conteo = n(), .groups = "drop") %>%
+  filter(!is.na(`Situación Habitacional Actual`)) %>%
+  complete(`Situación Habitacional Actual`) %>%
+  mutate(conteo = ifelse(is.na(conteo),0,conteo))
+
+g <- ggplot(df, aes(x = conteo, y = `Situación Habitacional Actual`)) +
+  geom_bar(stat = "identity", fill = "#ec7e14", 
+           aes(text = paste("Situación habitacional actual:", `Situación Habitacional Actual`, "<br>Conteo:", conteo))) +
+  labs(x = "Conteo", y = "Situación habitacional actual", title = "Conteo por situación habitacional`") +
+  scale_x_continuous(breaks = seq(min(df$conteo),max(df$conteo),by = 50)) +
+  theme_grey() +
+  theme(legend.position = 'none')
+
+ggplotly(g, tooltip = 'text')
+
+# grafico 10
+
+df <- data%>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>% 
+  ungroup() %>%
+  mutate(`Referencia a APS` = factor(
+    `Referencia a APS`,
+     levels = c("Referencia con seguimiento", 
+                "Referencia sin seguimiento", 
+                "No está referenciado", 
+                "No informada"),
+    ordered = TRUE
+  )) %>%
+  group_by(`Referencia a APS`,.add = TRUE) %>%
+  summarise(conteo = n(), .groups = "drop") %>%
+  filter(!is.na(`Referencia a APS`)) %>%
+  complete(`Referencia a APS`) %>%
+  mutate(conteo = ifelse(is.na(conteo),0,conteo))
+
+p2 <- plot_ly(
+  df,
+  labels = ~`Referencia a APS`,
+  values = ~conteo,
+  type = 'pie',
+  textinfo = 'label+percent',
+  hoverinfo = 'label+value',
+  marker = list(colors = c("#FFA500", "#FF8C00", "#FFD700"))
+) %>%
+  layout(
+    title = "Distribución por situación laboral actual",
+    showlegend = TRUE
+  )
+
+df <- data%>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>% 
+  ungroup() %>%
+  mutate(`Redes de Apoyo` = factor(
+    `Redes de Apoyo`,
+     levels = c("No informado",
+                "Familiares", 
+                "Amistades", 
+                "Institucionalidades",
+                "Sin vínculos actualmente"),
+    ordered = TRUE
+  )) %>%
+  group_by(`Redes de Apoyo`,.add = TRUE) %>%
+  summarise(conteo = n(), .groups = "drop") %>%
+  filter(!is.na(`Redes de Apoyo`)) %>%
+  complete(`Redes de Apoyo`) %>%
+  mutate(conteo = ifelse(is.na(conteo),0,conteo))
+
+p1 <- plot_ly(
+  df,
+  labels = ~`Redes de Apoyo`,
+  values = ~conteo,
+  type = 'pie',
+  textinfo = 'label+percent',
+  hoverinfo = 'label+value',
+  marker = list(colors = c("#FFA500", "#FF8C00", "#FFD700"))
+) %>%
+  layout(
+    title = "Distribución por situación laboral actual",
+    showlegend = TRUE
+  )
+
+subplot(p1, p2, nrows=1)

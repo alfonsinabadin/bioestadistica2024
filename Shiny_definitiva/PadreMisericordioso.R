@@ -1031,7 +1031,36 @@ ui <- page_navbar(
   
   nav_panel(
     tags$span("Tablero de visualización", style = "font-size: 14px;"),
-    class = "bslib-page-dashboard"
+    class = "bslib-page-dashboard",
+    fluidRow(
+      column(2, selectInput("anio", "Seleccione un año:", 
+                            choices = c("Todos los años", 
+                                        sort(unique(format(data$`Fecha de registro`,"%Y")))), 
+                            selected = "Todos los años"))
+    ),
+    tags$head(
+      tags$style(HTML("
+      .dataTable th {
+        font-size: 12px; /* Cambia el tamaño de la fuente de los encabezados aquí */
+        color: white; /* Cambia el color de la letra si es necesario */
+        background-color: #EF8D16; /* Asegúrate de que el color de fondo sea consistente */
+        padding: 2px; /* Ajusta el padding para reducir la altura */
+      }
+      .dataTable td {
+        font-size: 11px; /* Cambia este valor para el contenido */
+        padding: 3px; /* Ajusta el padding de las celdas del cuerpo si es necesario */
+      }
+    "))
+    ),
+    fluidRow(
+      column(7,
+             plotlyOutput("grafico_interactivo")
+      ),
+      column(5,
+             plotOutput("grafico_serie")
+             ),
+      dataTableOutput("tabla_resumen")
+    )
   ),
   
   nav_item(
