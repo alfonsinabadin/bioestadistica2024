@@ -1,6 +1,41 @@
 library(ggplot2)
 library(dplyr)
 
+# CARACTERISTICAS DE CONSUMO
+# Nivel educativo vs sustancia de inicio
+df <- data %>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>%
+  ungroup() %>%
+  select(`Nivel Máximo Educativo Alcanzado`, starts_with("Inicio con")) %>%
+  pivot_longer(cols = starts_with("Inicio con"),
+               names_to = "Sustancia",
+               values_to = "Inicio") %>%
+  filter(Inicio == "Si", !is.na(`Nivel Máximo Educativo Alcanzado`)) %>%
+  group_by(Sustancia, `Nivel Máximo Educativo Alcanzado`) %>%
+  summarize(conteo = n(), .groups = 'drop') %>%
+  group_by(`Nivel Máximo Educativo Alcanzado`) %>%  
+  mutate(porcentaje = (conteo / sum(conteo)) * 100) %>% 
+  ungroup()
+
+g <- ggplot(df, aes(x = porcentaje, y = `Nivel Máximo Educativo Alcanzado`, fill = Sustancia)) +
+  geom_bar(stat = "identity", position = "stack", 
+           aes(text = paste("Sustancia:", `Sustancia`, 
+                            "<br>Porcentaje:", round(porcentaje, 2), "%",
+                            "<br>Conteo:", conteo))) +
+ 
+  scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
+                               "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
+  labs(x = "Porcentaje", y = "Nivel Máximo Educativo Alcanzado", 
+       title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
+  scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+  theme_grey() +
+  theme(legend.position = "right")
+
+ggplotly(g, tooltip = 'text')
+
+
+# DERIVACION Y TRATAMIENTO ASIGNADO
 # Cantidad de tratamientos Previos (Grafico Dot-Plot) ----------------------------------------------
 ### Para mi no tiene sentido hacer un Dot Plot con categorica
 data$`Número de Tratamientos Previos` <- as.factor(data$`Número de Tratamientos Previos`)
@@ -72,3 +107,36 @@ g <- ggplot(df, aes(x = porcentaje, y = reorder(`Tratamiento Elegido`, conteo)))
   theme(legend.position = 'none')
 
 ggplotly(g, tooltip = 'text')
+
+# Consumo Actual vs Tratamiento elegido (Gráfico de barras subdivididas) -------------------------
+
+df <- data %>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>%
+  ungroup() %>%
+  select(`Tratamiento Elegido`, starts_with("Consumo actual con")) %>%
+  pivot_longer(cols = starts_with("Consumo actual con"),
+               names_to = "Sustancia",
+               values_to = "Consumo") %>%
+  filter(Consumo == "Si", !is.na(`Tratamiento Elegido`)) %>%
+  group_by(Sustancia, `Tratamiento Elegido`) %>%
+  summarize(conteo = n(), .groups = 'drop') %>%
+  group_by(Sustancia) %>%
+  mutate(porcentaje = (conteo / sum(conteo)) * 100)
+
+g <- ggplot(df, aes(x = porcentaje, y = Sustancia, fill = `Tratamiento Elegido`)) +
+  geom_bar(stat = "identity", position = "stack", 
+           aes(text = paste("Tratamiento:", `Tratamiento Elegido`, 
+                            "<br>Porcentaje:", round(porcentaje, 2), "%",
+                            "<br>Conteo:", conteo))) +
+  scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100","#ffec51",
+                               "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00", "#f28f3b" )) +
+  labs(x = "Porcentaje", y = "Sustancia de Consumo Actual", 
+       title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
+  scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+  
+  theme_grey() +
+  theme(legend.position = "right")
+
+ggplotly(g, tooltip = 'text')
+
