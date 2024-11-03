@@ -11,6 +11,7 @@ library(shinyvalidate)
 library(geoAr)
 library(tibble)
 library(writexl)
+library(kableExtra)
 
 # Importar base ----------------------------------------------------------------
 base <- function(){
@@ -43,7 +44,6 @@ ui <- page_navbar(
     secondary = "#fbc91c",
     base_font = font_google("Montserrat")
   ),
-  
   # Dejo seteados los tamaños de las tipografías de los títulos de cada campo
   tags$head(
     tags$style(HTML("
@@ -1032,40 +1032,44 @@ ui <- page_navbar(
   nav_panel(
     tags$span("Tablero de visualización", style = "font-size: 14px;"),
     class = "bslib-page-dashboard",
-    fluidRow(
-      column(2, selectInput("anio", "Seleccione un año:", 
-                            choices = c("Todos los años", 
-                                        sort(unique(format(data$`Fecha de registro`,"%Y")))), 
-                            selected = "Todos los años"))
+  sidebarLayout(
+    sidebarPanel(
+      h4("Menú de categorías"),
+      selectInput("anio", "Seleccione un año:", 
+                  choices = c("Todos los años", 
+                              sort(unique(format(data$`Fecha de registro`, "%Y"))), 
+                              selected = "Todos los años")),
+      tabsetPanel(
+        id = "menu_tabs",
+        tabPanel("Características Demográficas"),
+        tabPanel("Características Sociales y Económicas"),
+        tabPanel("Características de Consumo"),
+        tabPanel("Derivación y Tratamiento Asignado")
+      )
     ),
-    tags$head(
-      tags$style(HTML("
-      .dataTable th {
-        font-size: 12px; /* Cambia el tamaño de la fuente de los encabezados aquí */
-        color: white; /* Cambia el color de la letra si es necesario */
-        background-color: #EF8D16; /* Asegúrate de que el color de fondo sea consistente */
-        padding: 2px; /* Ajusta el padding para reducir la altura */
-      }
-      .dataTable td {
-        font-size: 11px; /* Cambia este valor para el contenido */
-        padding: 3px; /* Ajusta el padding de las celdas del cuerpo si es necesario */
-      }
-    "))
-    ),
-    fluidRow(
-      column(7,
-             plotlyOutput("grafico_interactivo")
+    mainPanel(
+      uiOutput("contenido_pestana"),  
+      conditionalPanel(
+        condition = "input.menu_tabs == 'Derivación y Tratamiento Asignado'",
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_previos")),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_asignados")),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("cons_vs_trat"))
       ),
-      column(5,
-             plotOutput("grafico_serie")
-             ),
-      dataTableOutput("tabla_resumen")
-    )
-  ),
-  
-  nav_item(
-    input_dark_mode(id = "dark_mode", mode = "light")
+      conditionalPanel(
+        condition = "input.menu_tabs == 'Características de Consumo'",
+        uiOutput("tabla_inicio_reg"),
+        uiOutput("tabla_s_inicio"),
+        uiOutput("tabla_s_actual"),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("acual_vs_inicio")),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("edad_sinicio")),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("educ_sustancia"))
+      )
   )
+)
+),
+nav_item(
+  input_dark_mode(id = "dark_mode", mode = "light")
+)
 )
 
 server <- function(input, output, session) {
@@ -2313,7 +2317,326 @@ server <- function(input, output, session) {
       ))
     }
   })
+# PESTAÑA VISUALIZACION
+  # Características Demográficas -----------------------------------------------
+  # Características Sociales y Económicas --------------------------------------
+  # Caracteristicas de consumo -------------------------------------------------
+  # Edad inicio y Edad de registro
+  output$tabla_inicio_reg <- renderText({
+    data <- data %>%
+      mutate(edad_inicio_cat = cut(
+        `Edad de Inicio de Cosumo`,
+        breaks = c(-Inf, 12, 17, 29, 60, Inf),  
+        labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
+        right = FALSE  
+      )) %>%
+      mutate(edad_registro_cat = cut(
+        `Edad del registro`,
+        breaks = c(-Inf, 12, 17, 29, 60, Inf),  
+        labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
+        right = FALSE  
+      ))
+    tabla_cruzada <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%  
+      ungroup() %>%
+      filter(!is.na(edad_inicio_cat) & !is.na(edad_registro_cat)) %>%
+      count(edad_inicio_cat, edad_registro_cat, .drop = FALSE) %>% 
+      pivot_wider(
+        names_from = edad_registro_cat, 
+        values_from = n, 
+        values_fill = 0  
+      ) %>%
+      ungroup() %>%
+      rename("Edad de Inicio\\Edad de Registro" = edad_inicio_cat) 
+    
+    tabla_cruzada <- tabla_cruzada %>%
+      mutate(Total_Fila = rowSums(select(., -`Edad de Inicio\\Edad de Registro`)))
+    
+    
+    totales_columna <- tabla_cruzada %>%
+      summarise(across(starts_with("0 a 12"):ends_with("Mayor de 60"), sum, na.rm = TRUE))
+    
+    tabla_cruzada <- bind_rows(tabla_cruzada, c(`Edad de Inicio\\Edad de Registro` = "Total_Columna", totales_columna))
+    
+    suma_total <- sum(tabla_cruzada$Total_Fila, na.rm = TRUE)
+    
+    tabla_cruzada <- tabla_cruzada %>%
+      add_row(`Edad de Inicio\\Edad de Registro` = "Total", !!!totales_columna, Total_Fila = suma_total)
+    
+    tabla_cruzada <- tabla_cruzada %>%
+      filter(`Edad de Inicio\\Edad de Registro` != "Total_Columna") %>%
+      rename("Total" = Total_Fila) 
+    
+    kable(tabla_cruzada, format = "html", table.attr = "style='width:100%;'") %>%
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+      add_header_above(c("Edad de inicio vs Edad de Registro" = ncol(tabla_cruzada))) %>%  
+      column_spec(1, bold = TRUE, width = "150px", background = "#ffb600", color = "white") %>%  
+      row_spec(0, background = "#ffb600", color = "white") %>%
+      row_spec(nrow(tabla_cruzada), bold = TRUE)%>%  
+      column_spec(7, bold = TRUE)
+  })
+  # Tabla sustancia de inicio
+  output$tabla_s_inicio <- renderText({
+    tabla_s_inicio <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(starts_with("Inicio con")) %>%
+      pivot_longer(
+        cols = starts_with("Inicio con"),
+        names_to = "Sustancia",
+        values_to = "Inicio"
+      ) %>%
+      filter(Inicio %in% c("Si", "No")) %>%
+      group_by(Sustancia, Inicio) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      pivot_wider(names_from = Inicio, values_from = conteo, values_fill = 0) %>%
+      mutate(
+        Total = Si + No,
+        Porcentaje = paste0(round((Si / Total) * 100, 2), "%")
+      )
+    
+    kable(tabla_s_inicio, format = "html", table.attr = "style='width:100%;'") %>%
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+      row_spec(0, background = "#ffb600", color = "white") %>%
+      add_header_above(c("Sustancia de inicio" = 5)) %>%
+      column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;") %>%
+      as.character()  # Convertir la tabla a cadena de texto HTML
+  })
+  # Tabla sustancia actual
+  output$tabla_s_actual <- renderText({
+    tabla_s_actual <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(starts_with("Consumo actual con")) %>%
+      pivot_longer(
+        cols = starts_with("Consumo actual con"),
+        names_to = "Sustancia",
+        values_to = "Consumo"
+      ) %>%
+      filter(Consumo %in% c("Si", "No")) %>%  
+      group_by(Sustancia, Consumo) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      pivot_wider(names_from = Consumo, values_from = conteo, values_fill = 0) %>%
+      mutate(
+        Total = Si + No,                   
+        Porcentaje = round((Si / Total) * 100,2),
+        Porcentaje = paste0(Porcentaje, "%"))
+    
+    kable(tabla_s_actual, format = "html", table.attr = "style='width:100%;'") %>%
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+      row_spec(0, background = "#ffb600", color = "white") %>%
+      add_header_above(if(ncol(tabla_s_actual) == 5) c("Sustancia actual" = 5) else NULL) %>%
+      column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;")
+  })
+  # Sustancia Actual vs Sustancia de Inicio
+  output$acual_vs_inicio <- renderPlotly({
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(starts_with("Consumo actual con"), starts_with("Inicio con")) %>%
+      pivot_longer(cols = starts_with("Consumo actual con"),
+                   names_to = "Sustancia_Consumo_Actual",
+                   values_to = "Consumo_Actual") %>%
+      pivot_longer(cols = starts_with("Inicio con"),
+                   names_to = "Sustancia_Inicio",
+                   values_to = "Inicio") %>%
+      filter(Consumo_Actual == "Si" & Inicio == "Si") %>%  
+      group_by(Sustancia_Consumo_Actual, Sustancia_Inicio) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      group_by(Sustancia_Consumo_Actual) %>%  
+      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>%
+      ungroup()
+    
+    g <- ggplot(df, aes(x = porcentaje, y = Sustancia_Consumo_Actual, fill = Sustancia_Inicio)) +
+      geom_bar(stat = "identity", position = "stack", 
+               aes(text = paste("Sustancia:", `Sustancia_Inicio`, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%",
+                                "<br>Conteo:", conteo))) +
+      
+      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
+                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
+      labs(x = "Porcentaje", y = "Sustancia de consumo actual", 
+           title = "Distribución de Sustancia actual por Sustancia al inicio") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      theme_grey() +
+      theme(legend.position = "right")
+    
+    ggplotly(g, tooltip = 'text')
+  })
+  # Edad vs Sustancia de Inicio
+  output$edad_sinicio <- renderPlotly({
+    data <- data %>%
+      mutate(edad_inicio_cat = cut(
+        `Edad de Inicio de Cosumo`,
+        breaks = c(-Inf, 12, 17, 29, 60, Inf),  
+        labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
+        right = FALSE  
+      ))
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(`edad_inicio_cat`, starts_with("Inicio con")) %>%
+      pivot_longer(cols = starts_with("Inicio con"),
+                   names_to = "Sustancia",
+                   values_to = "Inicio") %>%
+      filter(Inicio == "Si", !is.na(`edad_inicio_cat`)) %>%
+      group_by(Sustancia, `edad_inicio_cat`) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      group_by(`edad_inicio_cat`) %>%  
+      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>% 
+      ungroup()
+    g <- ggplot(df, aes(x = porcentaje, y = `edad_inicio_cat`, fill = Sustancia)) +
+      geom_bar(stat = "identity", position = "stack", 
+               aes(text = paste("Sustancia:", `Sustancia`, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%",
+                                "<br>Conteo:", conteo))) +
+      
+      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
+                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
+      labs(x = "Porcentaje", y = "Edad de inicio", 
+           title = "Distribución de Edad  por Sustancia de Consumo al inicio") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      theme_grey() +
+      theme(legend.position = "right")
+    
+    ggplotly(g, tooltip = 'text')
+  })
+  # Nivel Educativo vs Sustancia de inicio
+  output$educ_sustancia <- renderPlotly({
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(`Nivel Máximo Educativo Alcanzado`, starts_with("Inicio con")) %>%
+      pivot_longer(cols = starts_with("Inicio con"),
+                   names_to = "Sustancia",
+                   values_to = "Inicio") %>%
+      filter(Inicio == "Si", !is.na(`Nivel Máximo Educativo Alcanzado`)) %>%
+      group_by(Sustancia, `Nivel Máximo Educativo Alcanzado`) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      group_by(`Nivel Máximo Educativo Alcanzado`) %>%  
+      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>% 
+      ungroup()
+    
+    g <- ggplot(df, aes(x = porcentaje, y = `Nivel Máximo Educativo Alcanzado`, fill = Sustancia)) +
+      geom_bar(stat = "identity", position = "stack", 
+               aes(text = paste("Sustancia:", `Sustancia`, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%",
+                                "<br>Conteo:", conteo))) +
+      
+      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
+                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
+      labs(x = "Porcentaje", y = "Nivel Máximo Educativo Alcanzado", 
+           title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      theme_grey() +
+      theme(legend.position = "right")
+    
+    ggplotly(g, tooltip = 'text')
+  })
   
+  # Derivacion y tratamiento asignado ------------------------------------------
+  # Cantidad de tratamientos Previos
+  output$trat_previos <- renderPlotly({
+    data$`Número de Tratamientos Previos` <- as.factor(data$`Número de Tratamientos Previos`)
+    
+    conteo_na <- sum(is.na(data$`Número de Tratamientos Previos`))
+    
+    data_summary <- data %>%
+      filter(!is.na(`Número de Tratamientos Previos`)) %>%
+      group_by(`Número de Tratamientos Previos`) %>%
+      summarise(conteo = n(), .groups = 'drop') %>%
+      complete(`Número de Tratamientos Previos`, fill = list(conteo = 0))  # Completa con ceros donde no hay tratamientos
+    
+    total_count <- sum(data_summary$conteo)
+    data_summary <- data_summary %>%
+      mutate(porcentaje = (conteo / total_count) * 100)
+    
+    g <- ggplot(data_summary, aes(x = porcentaje, y = reorder(`Número de Tratamientos Previos`, conteo))) +
+      geom_bar(stat = "identity", fill = "#ff8800", 
+               aes(text = paste("Número de Tratamientos Previos:", `Número de Tratamientos Previos`, 
+                                "<br>Conteo:", conteo, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%"))) +
+      labs(x = "Porcentaje", y = "Número de Tratamientos Previos", title = "Porcentaje por Número de Tratamientos Previos") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +  # Espaciado en porcentajes
+      theme_grey() +
+      theme(legend.position = 'none') +
+      annotate("text", x = max(data_summary$porcentaje) * 0.8, y = 1, 
+               label = paste("Datos faltantes =", conteo_na), 
+               size = 5, color = "black", hjust = 0)
+    
+    ggplotly(g, tooltip = 'text')
+  })
+  
+  # Tratamiento Asignado
+  output$trat_asignados <- renderPlotly({
+    data$`Tratamiento Elegido` <- as.factor(data$`Tratamiento Elegido`)
+    
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>% 
+      ungroup() %>%
+      group_by(`Tratamiento Elegido`) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      complete(`Tratamiento Elegido`, fill = list(conteo = 0)) %>%  
+      filter(!is.na(`Tratamiento Elegido`))  
+    
+    total_conteo <- sum(df$conteo)
+    
+    df <- df %>%
+      mutate(porcentaje = (conteo / total_conteo) * 100)
+    
+    g <- ggplot(df, aes(x = porcentaje, y = reorder(`Tratamiento Elegido`, conteo))) +
+      geom_bar(stat = "identity", fill = "#ff8800", 
+               aes(text = paste("Tratamiento:", `Tratamiento Elegido`, 
+                                "<br>Conteo:", conteo, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%"))) +  
+      labs(x = "Porcentaje", y = "Tratamiento Elegido", title = "Porcentaje por Tratamiento Elegido") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +  
+      theme_grey() +
+      theme(legend.position = 'none')
+    
+    ggplotly(g, tooltip = 'text')
+  })
+  
+  # Consumo actual vs Tratamiento elegido
+  output$cons_vs_trat <- renderPlotly({
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(`Tratamiento Elegido`, starts_with("Consumo actual con")) %>%
+      pivot_longer(cols = starts_with("Consumo actual con"),
+                   names_to = "Sustancia",
+                   values_to = "Consumo") %>%
+      filter(Consumo == "Si", !is.na(`Tratamiento Elegido`)) %>%
+      group_by(Sustancia, `Tratamiento Elegido`) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      group_by(Sustancia) %>%
+      mutate(porcentaje = (conteo / sum(conteo)) * 100)
+    
+    g <- ggplot(df, aes(x = porcentaje, y = Sustancia, fill = `Tratamiento Elegido`)) +
+      geom_bar(stat = "identity", position = "stack", 
+               aes(text = paste("Tratamiento:", `Tratamiento Elegido`, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%",
+                                "<br>Conteo:", conteo))) +
+      scale_fill_manual(values = c("#ff4800","#ff7b00", "#ff8800", "#ff9500", "#ffa200",
+                                   "#ffaa00", "#ffb700", "#ffc300","#ffd000","#ffdd00",
+                                   "#ffea00")) +
+      labs(x = "Porcentaje", y = "Sustancia de Consumo Actual", 
+           title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      
+      theme_grey() +
+      theme(legend.position = "right")
+    
+    ggplotly(g, tooltip = 'text')
+  })
 }
 
 shinyApp(ui, server)

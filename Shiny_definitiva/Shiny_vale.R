@@ -34,7 +34,11 @@ ui <- fluidPage(
       ),
       conditionalPanel(
         condition = "input.menu_tabs == 'Características de Consumo'",
-        plotlyOutput("educ_sustancia"),
+        uiOutput("tabla_s_inicio"),
+        uiOutput("tabla_s_actual"),
+        plotlyOutput("acual_vs_inicio"),
+        plotlyOutput("edad_sinicio"),
+        plotlyOutput("educ_sustancia")
 
       )
     )
@@ -286,7 +290,137 @@ server <- function(input, output) {
       # Aquí puedes añadir otros gráficos relacionados con esta categoría
     }
   })
-  # Caracteristicas de consumo
+  # Caracteristicas de consumo ------------------------------------------------
+    # Tabla sustancia de inicio
+  output$tabla_s_inicio <- renderText({
+    tabla_s_inicio <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(starts_with("Inicio con")) %>%
+      pivot_longer(
+        cols = starts_with("Inicio con"),
+        names_to = "Sustancia",
+        values_to = "Inicio"
+      ) %>%
+      filter(Inicio %in% c("Si", "No")) %>%
+      group_by(Sustancia, Inicio) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      pivot_wider(names_from = Inicio, values_from = conteo, values_fill = 0) %>%
+      mutate(
+        Total = Si + No,
+        Porcentaje = paste0(round((Si / Total) * 100, 2), "%")
+      )
+    
+    kable(tabla_s_inicio, format = "html", table.attr = "style='width:100%;'") %>%
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+      row_spec(0, background = "#ffb600", color = "white") %>%
+      add_header_above(c("Sustancia de inicio" = 5)) %>%
+      column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;") %>%
+      as.character()  # Convertir la tabla a cadena de texto HTML
+  })
+    # Tabla sustancia actual
+  output$tabla_s_actual <- renderText({
+    tabla_s_actual <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(starts_with("Consumo actual con")) %>%
+      pivot_longer(
+        cols = starts_with("Consumo actual con"),
+        names_to = "Sustancia",
+        values_to = "Consumo"
+      ) %>%
+      filter(Consumo %in% c("Si", "No")) %>%  
+      group_by(Sustancia, Consumo) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      pivot_wider(names_from = Consumo, values_from = conteo, values_fill = 0) %>%
+      mutate(
+        Total = Si + No,                   
+        Porcentaje = round((Si / Total) * 100,2),
+        Porcentaje = paste0(Porcentaje, "%"))
+    
+    kable(tabla_s_actual, format = "html", table.attr = "style='width:100%;'") %>%
+      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
+      row_spec(0, background = "#ffb600", color = "white") %>%
+      add_header_above(if(ncol(tabla_s_actual) == 5) c("Sustancia actual" = 5) else NULL) %>%
+      column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;")
+  })
+    # Sustancia Actual vs Sustancia de Inicio
+  output$acual_vs_inicio <- renderPlotly({
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(starts_with("Consumo actual con"), starts_with("Inicio con")) %>%
+      pivot_longer(cols = starts_with("Consumo actual con"),
+                   names_to = "Sustancia_Consumo_Actual",
+                   values_to = "Consumo_Actual") %>%
+      pivot_longer(cols = starts_with("Inicio con"),
+                   names_to = "Sustancia_Inicio",
+                   values_to = "Inicio") %>%
+      filter(Consumo_Actual == "Si" & Inicio == "Si") %>%  
+      group_by(Sustancia_Consumo_Actual, Sustancia_Inicio) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      group_by(Sustancia_Consumo_Actual) %>%  
+      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>%
+      ungroup()
+    
+    g <- ggplot(df, aes(x = porcentaje, y = Sustancia_Consumo_Actual, fill = Sustancia_Inicio)) +
+      geom_bar(stat = "identity", position = "stack", 
+               aes(text = paste("Sustancia:", `Sustancia_Inicio`, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%",
+                                "<br>Conteo:", conteo))) +
+      
+      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
+                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
+      labs(x = "Porcentaje", y = "Sustancia de consumo actual", 
+           title = "Distribución de Sustancia actual por Sustancia al inicio") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      theme_grey() +
+      theme(legend.position = "right")
+    
+    ggplotly(g, tooltip = 'text')
+  })
+    # Edad vs Sustancia de Inicio
+  output$edad_sinicio <- renderPlotly({
+    data <- data %>%
+      mutate(edad_inicio_cat = cut(
+        `Edad de Inicio de Cosumo`,
+        breaks = c(-Inf, 12, 17, 29, 60, Inf),  
+        labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
+        right = FALSE  
+      ))
+    df <- data %>%
+      group_by(`ID de la persona`) %>%
+      filter(row_number() == n()) %>%
+      ungroup() %>%
+      select(`edad_inicio_cat`, starts_with("Inicio con")) %>%
+      pivot_longer(cols = starts_with("Inicio con"),
+                   names_to = "Sustancia",
+                   values_to = "Inicio") %>%
+      filter(Inicio == "Si", !is.na(`edad_inicio_cat`)) %>%
+      group_by(Sustancia, `edad_inicio_cat`) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      group_by(`edad_inicio_cat`) %>%  
+      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>% 
+      ungroup()
+    g <- ggplot(df, aes(x = porcentaje, y = `edad_inicio_cat`, fill = Sustancia)) +
+      geom_bar(stat = "identity", position = "stack", 
+               aes(text = paste("Sustancia:", `Sustancia`, 
+                                "<br>Porcentaje:", round(porcentaje, 2), "%",
+                                "<br>Conteo:", conteo))) +
+      
+      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
+                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
+      labs(x = "Porcentaje", y = "Edad de inicio", 
+           title = "Distribución de Edad  por Sustancia de Consumo al inicio") +
+      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      theme_grey() +
+      theme(legend.position = "right")
+    
+    ggplotly(g, tooltip = 'text')
+  })
     # Nivel Educativo vs Sustancia de inicio
   output$educ_sustancia <- renderPlotly({
     df <- data %>%
