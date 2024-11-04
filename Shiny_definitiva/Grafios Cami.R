@@ -4,8 +4,32 @@ library(kableExtra)
 
 # CARACTERISTICAS DE CONSUMO
 # Edad de inicio consumo
-# Mismo histograma que ya hicieron habria que adaptarlo con la variable Edad de Inicio de Consumo
+df <- data %>%
+  filter(!is.na(`Edad de Inicio de Cosumo`)) %>%
+  group_by(`Edad de Inicio de Cosumo`) %>%
+  summarize(conteo = n(), .groups = 'drop') %>%
+  ungroup()
 
+# Medidas descriptivas
+media_edad <- mean(data$`Edad de Inicio de Cosumo`, na.rm = TRUE)
+desviacion_edad <- sd(data$`Edad de Inicio de Cosumo`, na.rm = TRUE)
+n <- sum(!is.na(data$`Edad de Inicio de Cosumo`))
+
+
+g <- ggplot(df, aes(x = `Edad de Inicio de Cosumo`, y = conteo)) +
+      geom_bar(stat = "identity", fill = "#ec7e14") +
+      labs(x = "Edad de Inicio", y = "Conteo", title = "Conteo por Edad de Inicio") +
+      scale_x_continuous(breaks = seq(min(df$`Edad de Inicio de Cosumo`), max(df$`Edad de Inicio de Cosumo`), by = 1)) +
+      theme_grey() +
+      theme(legend.position = 'none')+
+      annotate("text", 
+           x = max(df$`Edad de Inicio de Cosumo`) * 0.95, 
+           y = max(df$conteo) * 0.95,                   
+           label = paste("Media:", round(media_edad, 1), 
+                         "\nDesvío:", round(desviacion_edad, 1), 
+                         "\nn:", n),
+           color = "black", size = 4, hjust = 0)
+ggplotly(g, tooltip = 'text')
 
 # Edad inicio y Edad de registro
 data <- data %>%
@@ -149,13 +173,7 @@ g <- ggplot(df, aes(x = porcentaje, y = Sustancia_Consumo_Actual, fill = Sustanc
 ggplotly(g, tooltip = 'text')
 
 # Edad vs sustancia de inicio
-data <- data %>%
-  mutate(edad_inicio_cat = cut(
-    `Edad de Inicio de Cosumo`,
-    breaks = c(-Inf, 12, 17, 29, 60, Inf),  
-    labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
-    right = FALSE  
-  ))
+
 df <- data %>%
   group_by(`ID de la persona`) %>%
   filter(row_number() == n()) %>%

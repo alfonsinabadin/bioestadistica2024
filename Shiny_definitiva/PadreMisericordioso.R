@@ -12,6 +12,7 @@ library(geoAr)
 library(tibble)
 library(writexl)
 library(kableExtra)
+library(tidyr)
 
 # Importar base ----------------------------------------------------------------
 base <- function(){
@@ -1037,8 +1038,8 @@ ui <- page_navbar(
       h4("Menú de categorías"),
       selectInput("anio", "Seleccione un año:", 
                   choices = c("Todos los años", 
-                              sort(unique(format(data$`Fecha de registro`, "%Y"))), 
-                              selected = "Todos los años")),
+                              sort(unique(format(data$`Fecha de registro`, "%Y")))), 
+                  selected = "Todos los años"),
       tabsetPanel(
         id = "menu_tabs",
         tabPanel("Características Demográficas"),
@@ -1048,21 +1049,22 @@ ui <- page_navbar(
       )
     ),
     mainPanel(
-      uiOutput("contenido_pestana"),  
-      conditionalPanel(
-        condition = "input.menu_tabs == 'Derivación y Tratamiento Asignado'",
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_previos")),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_asignados")),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("cons_vs_trat"))
-      ),
+      uiOutput("contenido_pestana"),
       conditionalPanel(
         condition = "input.menu_tabs == 'Características de Consumo'",
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("hist_edad_inicio")),
         uiOutput("tabla_inicio_reg"),
         uiOutput("tabla_s_inicio"),
         uiOutput("tabla_s_actual"),
         tags$div(style = "margin-bottom: 20px;", plotlyOutput("acual_vs_inicio")),
         tags$div(style = "margin-bottom: 20px;", plotlyOutput("edad_sinicio")),
         tags$div(style = "margin-bottom: 20px;", plotlyOutput("educ_sustancia"))
+      ),
+      conditionalPanel(
+        condition = "input.menu_tabs == 'Derivación y Tratamiento Asignado'",
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_previos")),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_asignados")),
+        tags$div(style = "margin-bottom: 20px;", plotlyOutput("cons_vs_trat"))
       )
   )
 )
@@ -2318,11 +2320,54 @@ server <- function(input, output, session) {
     }
   })
 # PESTAÑA VISUALIZACION
+  datos_filtrados <- reactive({
+    if (input$anio == "Todos los años") {
+      return(data)  # Devuelve todos los datos
+    } else {
+      anio_seleccionado <- as.numeric(input$anio)
+      return(data[data$`Fecha de registro` >= as.Date(paste0(anio_seleccionado, "-01-01")) & 
+                    data$`Fecha de registro` < as.Date(paste0(anio_seleccionado + 1, "-01-01")), ])
+    }
+  })
   # Características Demográficas -----------------------------------------------
   # Características Sociales y Económicas --------------------------------------
   # Caracteristicas de consumo -------------------------------------------------
+  # Edad de inicio consumo
+  output$hist_edad_inicio <- renderPlotly({
+    data <- datos_filtrados()
+    
+    df <- data %>%
+      filter(!is.na(`Edad de Inicio de Cosumo`)) %>%
+      group_by(`Edad de Inicio de Cosumo`) %>%
+      summarize(conteo = n(), .groups = 'drop') %>%
+      ungroup()
+    
+    # Medidas descriptivas
+    media_edad <- mean(data$`Edad de Inicio de Cosumo`, na.rm = TRUE)
+    desviacion_edad <- sd(data$`Edad de Inicio de Cosumo`, na.rm = TRUE)
+    n <- sum(!is.na(data$`Edad de Inicio de Cosumo`))
+    
+    
+    g <- ggplot(df, aes(x = `Edad de Inicio de Cosumo`, y = conteo)) +
+      geom_bar(stat = "identity", fill = "#ff8800") +
+      labs(x = "Edad de Inicio", y = "Conteo", title = "Conteo por Edad de Inicio") +
+      scale_x_continuous(breaks = seq(min(df$`Edad de Inicio de Cosumo`), max(df$`Edad de Inicio de Cosumo`), by = 1)) +
+      theme_grey() +
+      theme(legend.position = 'none')+
+      annotate("text", 
+               x = max(df$`Edad de Inicio de Cosumo`) * 0.95, 
+               y = max(df$conteo) * 0.95,                   
+               label = paste("Media:", round(media_edad, 1), 
+                             "\nDesvío:", round(desviacion_edad, 1), 
+                             "\nn:", n),
+               color = "black", size = 4, hjust = 0)
+    ggplotly(g, tooltip = 'text')
+    
+  })
   # Edad inicio y Edad de registro
   output$tabla_inicio_reg <- renderText({
+    data <- datos_filtrados()
+    
     data <- data %>%
       mutate(edad_inicio_cat = cut(
         `Edad de Inicio de Cosumo`,
@@ -2378,6 +2423,9 @@ server <- function(input, output, session) {
   })
   # Tabla sustancia de inicio
   output$tabla_s_inicio <- renderText({
+    data <- datos_filtrados()
+    
+    # Procesa la tabla si hay datos
     tabla_s_inicio <- data %>%
       group_by(`ID de la persona`) %>%
       filter(row_number() == n()) %>%
@@ -2397,6 +2445,7 @@ server <- function(input, output, session) {
         Porcentaje = paste0(round((Si / Total) * 100, 2), "%")
       )
     
+    # Genera la tabla con kable
     kable(tabla_s_inicio, format = "html", table.attr = "style='width:100%;'") %>%
       kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
       row_spec(0, background = "#ffb600", color = "white") %>%
@@ -2406,6 +2455,8 @@ server <- function(input, output, session) {
   })
   # Tabla sustancia actual
   output$tabla_s_actual <- renderText({
+    data <- datos_filtrados()
+    
     tabla_s_actual <- data %>%
       group_by(`ID de la persona`) %>%
       filter(row_number() == n()) %>%
@@ -2433,6 +2484,8 @@ server <- function(input, output, session) {
   })
   # Sustancia Actual vs Sustancia de Inicio
   output$acual_vs_inicio <- renderPlotly({
+    data <- datos_filtrados()
+    
     df <- data %>%
       group_by(`ID de la persona`) %>%
       filter(row_number() == n()) %>%
@@ -2469,6 +2522,8 @@ server <- function(input, output, session) {
   })
   # Edad vs Sustancia de Inicio
   output$edad_sinicio <- renderPlotly({
+    data <- datos_filtrados()
+    
     data <- data %>%
       mutate(edad_inicio_cat = cut(
         `Edad de Inicio de Cosumo`,
@@ -2508,6 +2563,8 @@ server <- function(input, output, session) {
   })
   # Nivel Educativo vs Sustancia de inicio
   output$educ_sustancia <- renderPlotly({
+    data <- datos_filtrados()
+    
     df <- data %>%
       group_by(`ID de la persona`) %>%
       filter(row_number() == n()) %>%
@@ -2543,6 +2600,8 @@ server <- function(input, output, session) {
   # Derivacion y tratamiento asignado ------------------------------------------
   # Cantidad de tratamientos Previos
   output$trat_previos <- renderPlotly({
+    data <- datos_filtrados()
+    
     data$`Número de Tratamientos Previos` <- as.factor(data$`Número de Tratamientos Previos`)
     
     conteo_na <- sum(is.na(data$`Número de Tratamientos Previos`))
@@ -2575,6 +2634,8 @@ server <- function(input, output, session) {
   
   # Tratamiento Asignado
   output$trat_asignados <- renderPlotly({
+    data <- datos_filtrados()
+    
     data$`Tratamiento Elegido` <- as.factor(data$`Tratamiento Elegido`)
     
     df <- data %>%
@@ -2606,6 +2667,8 @@ server <- function(input, output, session) {
   
   # Consumo actual vs Tratamiento elegido
   output$cons_vs_trat <- renderPlotly({
+    data <- datos_filtrados()
+    
     df <- data %>%
       group_by(`ID de la persona`) %>%
       filter(row_number() == n()) %>%
