@@ -4,16 +4,91 @@ library(tidyr)
 library(ggplot2)
 library(plotly)
 library(gridExtra)
+library(graphics)
+library(egg)
+library(ggthemes)
 
 data <- read_excel("Shiny_definitiva/Base completa.xlsx")
 
 # Características demográficas -------------------------------------------------
 
-# grafico 1
+# Distribución de la edad al ingreso
 
-## no se entiende
+df <- data %>%
+  group_by(`ID de la persona`) %>%
+  filter(row_number() == n()) %>% 
+  ungroup()
 
-# grafico 2
+conteo_na <- paste("Hay", sum(is.na(df$`Edad del registro`)), "registros personales\nsin información")
+
+## histograma 
+
+df <- df %>%
+  filter(!is.na(`Edad del registro`)) %>%
+  select(`Edad del registro`) 
+
+hist <- ggplot(df) +
+  geom_histogram(aes(x = `Edad del registro`, y = (..count..)),
+                 position = "identity", binwidth = 2,
+                 fill = "#ff8800", color = "grey1") +
+  labs(x = "Edad de registro", 
+       y = "Frecuencia", 
+       title = "Distribución de la edad de registro",
+       subtitle = conteo_na) +
+  scale_x_continuous(limits = c(0,60), breaks = seq(0,60,10)) +
+  theme_fivethirtyeight() + 
+  theme(axis.title = element_text())
+
+hist_plotly <- ggplotly(hist) %>%
+  layout(title = list(y = 0.98,
+                      text = "Distribución de la edad de registro",
+                      font = list(family = "Montserrat Semibold", size = 15, color = "grey1")),
+         xaxis = list(title = list(text = "Edad de registro",
+                                   font = list(family = "Montserrat", size = 12, color = "grey1")),
+                      tickvals = seq(0, 60, 10),
+                      tickfont = list(family = "Montserrat", size = 10, color = "grey")),
+         yaxis = list(title = list(text = "Frecuencia",
+                                   font = list(family = "Montserrat", size = 12, color = "grey1")),
+                      tickfont = list(family = "Montserrat", size = 10, color = "grey"))) %>%
+  add_annotations(
+    text = conteo_na,
+    x = 0.05, y = 0.95,  # Posición centrada
+    xref = "paper", yref = "paper",
+    showarrow = FALSE,
+    font = list(family = "Montserrat", size = 12, color = "white"),
+    bgcolor = "grey",  # Fondo negro semi-transparente
+    bordercolor = "grey",  # Color del borde
+    borderwidth = 2,
+    borderpad = 10,
+    align = "center"
+  )
+
+
+## boxplot 
+
+df <- df %>% 
+  group_by(`Edad del registro`) %>%
+  summarise(value = n())
+
+box_plotly <- plot_ly(df, x = ~`Edad del registro`, type = "box",
+                      marker = list(color = "grey10"),
+                      line = list(color = "grey10"),
+                      fillcolor = "#ff8800") %>%
+  layout(xaxis = list(title = list(text = "Edad de registro",
+                                   font = list(family = "Montserrat", size = 15, color = "grey1")),
+                      tickvals = seq(0, 60, 10),
+                      tickfont = list(family = "Montserrat", size = 10, color = "grey")),
+         yaxis = list(showticklabels = FALSE)) # Oculta etiquetas en eje X
+
+## grafico final 
+
+subplot(box_plotly, hist_plotly, nrows = 2, heights = c(0.2, 0.8), 
+        shareX = TRUE,
+        titleX = TRUE,
+        titleY = TRUE, 
+        margin = 0)
+
+# Edad en años cumplidos, al ingreso
 
 df <- data %>%
   group_by(`ID de la persona`) %>%
@@ -29,22 +104,21 @@ df <- data %>%
       ordered = TRUE
     )
   ) %>%
-  select(Edad) %>%
   group_by(Edad) %>%
-  summarize(conteo = n()) %>%
+  summarise(conteo = n()) %>%
   complete(Edad) %>%
-  mutate(conteo = ifelse(is.na(conteo),0,conteo)) %>%
-  filter(!is.na(Edad))
+  mutate(conteo = ifelse(is.na(conteo),0,conteo))
 
-g <- ggplot(df, aes(x = conteo, y = rev(Edad))) +
-  geom_bar(stat = "identity", fill = "#ec7e14", 
-           aes(text = paste("Categoría de Edad:", rev(Edad), "<br>Conteo:", conteo))) +
-  labs(x = "Conteo", y = "Categoría de Edad", title = "Conteo por categoría de Edad") +
-  scale_x_continuous(breaks = seq(min(df$conteo),max(df$conteo),by = 50)) +
-  theme_grey() +
-  theme(legend.position = 'none')
+Edad <- subset(df$Edad,!is.na(df$Edad))
+Conteo <- subset(df$conteo,!is.na(df$Edad))
 
-ggplotly(g, tooltip = 'text')
+plot_ly(type='pie', labels=Edad, values=Conteo,
+        textinfo='label+percent',
+        insidetextorientation='none')
+
+
+
+
 
 # grafico 3 
 
@@ -52,7 +126,7 @@ df <- data %>%
   mutate(Género = factor(Género, 
                          levels = c("No informado", "Mujer", "Hombre", "Trans (feminidades)", "Trans (masculinidades)", "Otro"),
                          ordered = TRUE)
-         ) %>%
+  ) %>%
   group_by(`ID de la persona`) %>%
   filter(row_number() == n()) %>% 
   ungroup() %>%
@@ -92,20 +166,20 @@ df <- data %>%
   ungroup() %>%
   mutate(`Nivel Máximo Educativo Alcanzado` = factor(`Nivel Máximo Educativo Alcanzado`,
                                                      levels = c("Sin instrucción formal", 
-                                                      "Primario incompleto","Primario en curso", 
-                                                      "Primario completo","Secundario incompleto", 
-                                                      "Secundario en curso","Secundario completo", 
-                                                      "Nivel superior incompleto","Nivel superior en curso", 
-                                                      "Nivel superior completo"), 
+                                                                "Primario incompleto","Primario en curso", 
+                                                                "Primario completo","Secundario incompleto", 
+                                                                "Secundario en curso","Secundario completo", 
+                                                                "Nivel superior incompleto","Nivel superior en curso", 
+                                                                "Nivel superior completo"), 
                                                      ordered = TRUE
-                                                     )
-         ) %>%
+  )
+  ) %>%
   group_by(`Nivel Máximo Educativo Alcanzado`) %>%
   summarize(conteo = n()) %>%
   complete(`Nivel Máximo Educativo Alcanzado`) %>%
   mutate(conteo = ifelse(is.na(conteo),0,conteo)) %>%
   filter(!is.na(`Nivel Máximo Educativo Alcanzado`))
-  
+
 g <- ggplot(df, aes(x = conteo, y = `Nivel Máximo Educativo Alcanzado`)) +
   geom_bar(stat = "identity", fill = "#ec7e14", 
            aes(text = paste("Nivel Máximo Educativo Alcanzado:", `Nivel Máximo Educativo Alcanzado`, "<br>Conteo:", conteo))) +
@@ -130,15 +204,15 @@ df <- data %>%
                                                                 "Nivel superior incompleto","Nivel superior en curso", 
                                                                 "Nivel superior completo"), 
                                                      ordered = TRUE
-                                                     ),
-         Edad = factor(
-           ifelse(`Edad del registro` >= 0 & `Edad del registro` <= 12, "0 a 12",
-                  ifelse(`Edad del registro` >= 13 & `Edad del registro` <= 17, "13 a 17",
-                         ifelse(`Edad del registro` >= 18 & `Edad del registro` <= 29, "18 a 29",
-                                ifelse(`Edad del registro` >= 30 & `Edad del registro` <= 60, "30 a 60", NA)))),
-           levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
-           ordered = TRUE
-         )
+  ),
+  Edad = factor(
+    ifelse(`Edad del registro` >= 0 & `Edad del registro` <= 12, "0 a 12",
+           ifelse(`Edad del registro` >= 13 & `Edad del registro` <= 17, "13 a 17",
+                  ifelse(`Edad del registro` >= 18 & `Edad del registro` <= 29, "18 a 29",
+                         ifelse(`Edad del registro` >= 30 & `Edad del registro` <= 60, "30 a 60", NA)))),
+    levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
+    ordered = TRUE
+  )
   ) %>%
   group_by(Edad, `Nivel Máximo Educativo Alcanzado`, .add=TRUE) %>%
   summarise(conteo = ifelse(is.na(n()),0,n()), .groups = "drop") %>%
@@ -149,7 +223,7 @@ g <- ggplot(df, aes(x = Edad, y = `Nivel Máximo Educativo Alcanzado`, fill = co
     "Nivel Máximo Educativo Alcanzado:", `Nivel Máximo Educativo Alcanzado`,
     "<br>Edad:", Edad, 
     "<br>Conteo:", conteo))) +
-  scale_fill_gradient(low = "#FFDC2E", high = "#ec7e14") +
+  scale_fill_gradient(low = "#FFDC2E", high = "#ec7e14") + # probar min y max
   labs(title = "Máximo nivel educativo alcanzado según grupo de edad",
        fill = "Conteo") +
   theme_grey()
@@ -185,6 +259,7 @@ plot_ly(
     title = "Distribución por situación laboral actual",
     showlegend = TRUE
   )
+### sacar el no infnormado a un cuadro de texto
 
 # grafico 8
 
@@ -192,7 +267,7 @@ df <- data %>%
   group_by(`ID de la persona`) %>%
   filter(row_number() == n()) %>% 
   ungroup() %>%
-  mutate(`Ingreso Económico` = factor(`Ingreso Económico`,
+  mutate(`Ingreso Económico` = factor(`Ingresos Económicos`,
                                       levels = c(
                                         "No informado",
                                         "AlimentAR",
@@ -233,19 +308,19 @@ df <- data %>%
   filter(row_number() == n()) %>% 
   ungroup() %>%
   mutate(`Situación Habitacional Actual` = factor(`Situación Habitacional Actual`,
-                                      levels = c(
-                                        "No informada",
-                                        "Casa/Departamento alquilado", 
-                                        "Casa/Departamento cedido", 
-                                        "Casa/Departamento propio", 
-                                        "Institución de salud mental", 
-                                        "Institución penal", 
-                                        "Institución terapéutica", 
-                                        "Pensión", 
-                                        "Refugio", 
-                                        "Situación de calle", 
-                                        "Otra"),
-                                      ordered = TRUE
+                                                  levels = c(
+                                                    "No informada",
+                                                    "Casa/Departamento alquilado", 
+                                                    "Casa/Departamento cedido", 
+                                                    "Casa/Departamento propio", 
+                                                    "Institución de salud mental", 
+                                                    "Institución penal", 
+                                                    "Institución terapéutica", 
+                                                    "Pensión", 
+                                                    "Refugio", 
+                                                    "Situación de calle", 
+                                                    "Otra"),
+                                                  ordered = TRUE
   )
   ) %>%
   group_by(`Situación Habitacional Actual`, .add = TRUE) %>%
@@ -272,10 +347,10 @@ df <- data%>%
   ungroup() %>%
   mutate(`Referencia a APS` = factor(
     `Referencia a APS`,
-     levels = c("Referencia con seguimiento", 
-                "Referencia sin seguimiento", 
-                "No está referenciado", 
-                "No informada"),
+    levels = c("Referencia con seguimiento", 
+               "Referencia sin seguimiento", 
+               "No está referenciado", 
+               "No informada"),
     ordered = TRUE
   )) %>%
   group_by(`Referencia a APS`,.add = TRUE) %>%
@@ -304,11 +379,11 @@ df <- data%>%
   ungroup() %>%
   mutate(`Redes de Apoyo` = factor(
     `Redes de Apoyo`,
-     levels = c("No informado",
-                "Familiares", 
-                "Amistades", 
-                "Institucionalidades",
-                "Sin vínculos actualmente"),
+    levels = c("No informado",
+               "Familiares", 
+               "Amistades", 
+               "Institucionalidades",
+               "Sin vínculos actualmente"),
     ordered = TRUE
   )) %>%
   group_by(`Redes de Apoyo`,.add = TRUE) %>%
