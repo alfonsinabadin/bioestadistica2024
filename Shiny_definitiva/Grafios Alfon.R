@@ -112,9 +112,46 @@ df <- data %>%
 Edad <- subset(df$Edad,!is.na(df$Edad))
 Conteo <- subset(df$conteo,!is.na(df$Edad))
 
-plot_ly(type='pie', labels=Edad, values=Conteo,
-        textinfo='label+percent',
-        insidetextorientation='none')
+# Calcula el conteo de vacíos
+conteo_na <- sum(is.na(data$`Edad del registro`))
+texto_na <- paste("Vacíos: ", conteo_na)
+
+plot_ly(
+  type = 'pie',
+  labels = Edad,
+  values = Conteo,
+  textinfo = 'none',  # Oculta etiquetas dentro de los sectores
+  hole = 0.5,  # Convierte el gráfico en una dona
+  marker = list(colors = c("#FF8800", "#FFA500", "#FFD700", "#FFEB3B")),
+  showlegend = TRUE
+) %>%
+  layout(
+    title = list(text = "Distribución de Edad",
+                 font = list(family = "Montserrat Semibold", size = 15, color = "grey1")),
+    showlegend = TRUE,
+    legend = list(
+      title = list(text = "Categorías de Sedronar",
+                   font = list(family = "Montserrat", size = 12, color = "grey1")),
+      orientation = "v",  # Alineación vertical
+      x = 1.1,  # Posiciona la leyenda a la derecha
+      y = 0.5,  # Centra la leyenda verticalmente
+      bordercolor = "grey10",  # Color del borde
+      borderwidth = 1  # Ancho del borde
+    ),
+    annotations = list(
+      list(
+        x = 0.5, y = 0.5,  # Posición centrada en el gráfico
+        text = texto_na,
+        showarrow = FALSE,
+        font = list(size = 12, color = "white"),
+        bgcolor = "grey",
+        bordercolor = "grey",
+        borderwidth = 2,
+        borderpad = 10,
+        align = "center"
+      )
+    )
+  )
 
 
 
