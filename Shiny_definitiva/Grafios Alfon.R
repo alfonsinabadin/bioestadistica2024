@@ -30,12 +30,12 @@ df <- df %>%
 hist <- ggplot(df) +
   geom_histogram(aes(x = `Edad del registro`, y = (..count..)),
                  position = "identity", binwidth = 2,
-                 fill = "#ff8800", color = "grey1") +
+                 fill = "#ff8800", color = "grey1")+
+  scale_x_continuous(limits = c(0,60), breaks = seq(0,60,1))  +
   labs(x = "Edad de registro", 
        y = "Frecuencia", 
        title = "Distribución de la edad de registro",
        subtitle = conteo_na) +
-  scale_x_continuous(limits = c(0,60), breaks = seq(0,60,10)) +
   theme_fivethirtyeight() + 
   theme(axis.title = element_text())
 
@@ -45,7 +45,7 @@ hist_plotly <- ggplotly(hist) %>%
                       font = list(family = "Montserrat Semibold", size = 15, color = "grey1")),
          xaxis = list(title = list(text = "Edad de registro",
                                    font = list(family = "Montserrat", size = 12, color = "grey1")),
-                      tickvals = seq(0, 60, 10),
+                      tickvals = seq(0, 60, 1),
                       tickfont = list(family = "Montserrat", size = 10, color = "grey")),
          yaxis = list(title = list(text = "Frecuencia",
                                    font = list(family = "Montserrat", size = 12, color = "grey1")),

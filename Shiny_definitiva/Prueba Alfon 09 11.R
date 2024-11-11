@@ -106,42 +106,69 @@ ui <- page_navbar(
     icon = icon("chart-simple"),
     
     tabPanel("Análisis demográfico",
-             div(
-               style = "margin: 20px;",
-               
-               pickerInput(
-                 "year_filter",
-                 label = tags$span("Selecciona años:", style = "font-size:15px;"),
-                 choices = NULL,  # Los años se actualizarán en el server
-                 selected = NULL,
-                 multiple = TRUE,
-                 options = pickerOptions(
-                   actionsBox = TRUE,   # Para seleccionar/deseleccionar todo
-                   #live-search = TRUE,    # Permite buscar dentro del selector
-                   selectAllText = "Todos",
-                   deselectAllText = "Ninguno",
-                   noneSelectedText = "Seleccione"
-                 )
-               ),
-               
-               fluidRow(
-                 
-                 h4(tags$span("Distribución de la Edad", style = "font-size: 18px; font-weight: bold; text-align:center;")),
-                 
-                 column(
-                   width = 8,
-                   plotlyOutput("histbox.edad")
+             
+             fluidRow(
+               # Datos e historial de registro ------------------------------------------
+               column(
+                 width = 2,
+                 wellPanel(
                    
+                   style = "min-height: 400px;",
+                   
+                   h4("Filtros", style = "font-size: 15px; font-weight: bold;"), 
+                   
+                   fluidRow(
+                     div(
+                       
+                       # Filtro año
+                       pickerInput(
+                         "year_filter",
+                         label = tags$span("Año del registro:", style = "font-size:15px;"),
+                         choices = NULL,  # Los años se actualizarán en el server
+                         selected = NULL,
+                         multiple = TRUE,
+                         options = pickerOptions(
+                           actionsBox = TRUE,   # Para seleccionar/deseleccionar todo
+                           #live-search = TRUE,    # Permite buscar dentro del selector
+                           selectAllText = "Todos",
+                           deselectAllText = "Ninguno",
+                           noneSelectedText = "Seleccione"
+                           )
+                         ),
+                       
+                       # Filtro Edad Categorica
+                       
+                       checkboxGroupInput(
+                         "edad_filter",
+                         label = tags$span("Categoría de edad:", style = "font-size:15px;"),
+                         choices = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
+                         selected = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"))
+                       )
+                     )
+                   )
                  ),
-                 column(
-                   width = 4,
-                   plotlyOutput("dona.edad")  # Gráfico de dona
-                 )
                  
-               )
+                 column(
+                   width = 10,
+                   
+                   fluidRow(
+                     
+                     column(
+                       width = 8,
+                       plotlyOutput("histbox.edad")
+                       ),
+                     
+                     column(
+                       width = 4,
+                       plotlyOutput("dona.edad")  # Gráfico de dona
+                       )
+                     
+                     )
+                   
+                   )
                
              )
-    ),
+             ),
     
     tabPanel("Análisis socioeconómico")
   ),
@@ -151,14 +178,23 @@ ui <- page_navbar(
   )
 )
 
-# Lógica del servidor ----------------------------------------------------------
 server <- function(input, output, session) {
   
   # Cargar datos
   data <- base() %>%
     group_by(`ID de la persona`) %>%
     filter(row_number() == n()) %>% 
-    ungroup()
+    ungroup() %>%
+    mutate(
+      EdadCategorica = factor(
+        ifelse(`Edad del registro` >= 0 & `Edad del registro` <= 12, "0 a 12",
+               ifelse(`Edad del registro` >= 13 & `Edad del registro` <= 17, "13 a 17",
+                      ifelse(`Edad del registro` >= 18 & `Edad del registro` <= 29, "18 a 29",
+                             ifelse(`Edad del registro` >= 30 & `Edad del registro` <= 60, "30 a 60", NA)))),
+        levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
+        ordered = TRUE
+      )
+    )
   
   # Extraer los años únicos de la base y actualizar el filtro de años
   observe({
@@ -170,12 +206,12 @@ server <- function(input, output, session) {
   # Crear el data frame reactivo filtrado
   filtered_data <- reactive({
     data %>%
-      filter(is.null(input$year_filter) | year(`Fecha de registro`) %in% input$year_filter)
+      filter(is.null(input$year_filter) | year(`Fecha de registro`) %in% input$year_filter,
+             is.null(input$edad_filter) | EdadCategorica %in% input$edad_filter)
   })
   
   # Histograma con boxplot
   output$histbox.edad <- renderPlotly({
-    
     # Cargar base reactiva
     df <- filtered_data()
     
@@ -204,16 +240,19 @@ server <- function(input, output, session) {
       theme(axis.title = element_text())
     
     hist_plotly <- ggplotly(hist, tooltip = "text") %>%
-      layout(title = list(y = 0.98,
+      layout(title = list(y = 0.95,
                           text = "Distribución de la edad de registro",
-                          font = list(family = "Montserrat Semibold", size = 15, color = "grey1")),
+                          font = list(family = "Montserrat", size = 20, color = "grey1")),
              xaxis = list(title = list(text = "Edad de registro",
                                        font = list(family = "Montserrat", size = 12, color = "grey1")),
                           tickvals = seq(0, 60, 10),
                           tickfont = list(family = "Montserrat", size = 10, color = "grey")),
              yaxis = list(title = list(text = "Frecuencia",
                                        font = list(family = "Montserrat", size = 12, color = "grey1")),
-                          tickfont = list(family = "Montserrat", size = 10, color = "grey"))) %>%
+                          tickfont = list(family = "Montserrat", size = 10, color = "grey")),
+             hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
+                                           style = "italic", textcase = "word caps"))
+                               ) %>%
       add_annotations(
         text = conteo_na,
         x = 0.05, y = 0.95,
@@ -235,12 +274,17 @@ server <- function(input, output, session) {
                           line = list(color = "grey10"),
                           fillcolor = "#ff8800") %>%
       add_boxplot(hoverinfo = "x") %>%
-      layout(xaxis = list(title = list(text = "Edad de registro",
+      layout(title = list(y = 0.95,
+                          text = "Distribución de la edad de registro",
+                          font = list(family = "Montserrat", size = 20, color = "grey1")),
+             xaxis = list(title = list(text = "Edad de registro",
                                        font = list(family = "Montserrat", size = 15, color = "grey1")),
                           tickvals = seq(0, 60, 10),
                           tickfont = list(family = "Montserrat", size = 10, color = "grey"),
                           hoverformat = ".2f"),
-             yaxis = list(showticklabels = FALSE))
+             yaxis = list(showticklabels = FALSE),
+             hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
+                                           style = "italic")))
     
     # Combinar histogram y boxplot
     subplot(box_plotly, hist_plotly, nrows = 2, heights = c(0.2, 0.8), 
@@ -250,19 +294,8 @@ server <- function(input, output, session) {
   # Gráfico de dona para distribución de edad
   output$dona.edad <- renderPlotly({
     df <- filtered_data() %>%
-      mutate(
-        EdadCategorica = factor(
-          ifelse(`Edad del registro` >= 0 & `Edad del registro` <= 12, "0 a 12",
-                 ifelse(`Edad del registro` >= 13 & `Edad del registro` <= 17, "13 a 17",
-                        ifelse(`Edad del registro` >= 18 & `Edad del registro` <= 29, "18 a 29",
-                               ifelse(`Edad del registro` >= 30 & `Edad del registro` <= 60, "30 a 60", NA)))),
-          levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
-          ordered = TRUE
-        )
-      ) %>%
       group_by(EdadCategorica) %>%
       summarise(conteo = n()) %>%
-      complete(EdadCategorica, fill = list(conteo = 0)) %>%
       filter(!is.na(EdadCategorica))
     
     plot_ly(
@@ -272,13 +305,11 @@ server <- function(input, output, session) {
       values = ~conteo,
       textinfo = 'none',
       hole = 0.5,  # Dona
-      marker = list(colors = rev(c("#FF8800", "#FFA500", "#FFD700", "#FFEB3B"))),
+      marker = list(colors = c("#FBC91C", "#EC7E14", "#4C443C","#F9EDCC")),
       showlegend = TRUE,
       source = "edad_dona_plot"
     ) %>%
       layout(
-        caption = list(text = "Distribución de Edad",
-                     font = list(family = "Montserrat Semibold", size = 15, color = "grey1")),
         paper_bgcolor = '#f0f0f0',
         plot_bgcolor = '#f0f0f0',
         showlegend = TRUE,
@@ -286,11 +317,16 @@ server <- function(input, output, session) {
           title = list(text = "Categorías de Edad",
                        font = list(family = "Montserrat", size = 12, color = "grey1")),
           orientation = "v",
-          x = 1.1,
+          x = 1.2,
           y = 0.5,
           bordercolor = "grey10",
           borderwidth = 1
-        )
+        ),
+        title = list(y = 0.95,
+                     text = "Según categorías del SEDRONAR",
+                     font = list(family = "Montserrat", size = 20, color = "grey1")),
+        hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
+                                      style = "italic", textcase = "word caps"))
       )
   })
   
