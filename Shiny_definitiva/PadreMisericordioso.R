@@ -13,6 +13,7 @@ library(tibble)
 library(writexl)
 library(kableExtra)
 library(tidyr)
+library(openxlsx)
 
 # Importar base ----------------------------------------------------------------
 base <- function(){
@@ -836,9 +837,23 @@ ui <- page_navbar(
                     "Estable", 
                     "Esporádico", 
                     "No tiene",
+                    "Otra",
                     ""
                   ),
                   selected = "")
+              ),
+              
+              # Campo emergente de texto para "Otra" opción
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.situacion_laboral_actual.includes('Otra')",
+                  textInput(
+                    inputId = "otra_situacion_laboral_actual",
+                    label = tags$span("Especifique la situación laboral", style="font-size: 12px;"),
+                    value = ""
+                  ) 
+                )
               ),
               
               # Campo de selección múltiple de ingreso económico
@@ -1331,7 +1346,7 @@ server <- function(input, output, session) {
   })
   
   iv_barrio$enable()
-  
+
   # Contacto 1 - Teléfono ------------------------------------------------------
   
   iv_telefono_1 <- InputValidator$new()
@@ -1986,6 +2001,18 @@ server <- function(input, output, session) {
   iv_situacion_laboral_actual <- InputValidator$new()
   iv_situacion_laboral_actual$add_rule("situacion_laboral_actual", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
   
+  iv_situacion_laboral_actual$add_rule("otra_situacion_laboral_actual", function(value) {
+    if (input$situacion_laboral_actual == "Otra") {
+      if (is.null(value) || value == "") {
+        return(tags$span("Debe completar el campo si selecciona 'Otra'.",style = "font-size:10px;"))
+      }
+      if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+        return(tags$span("No se admiten caracteres especiales.",style="font-size:10px;"))
+      }
+    }
+    return(NULL)
+  })
+  
   iv_situacion_laboral_actual$enable()
   
   # Situación Socioeconómica, Jurídica y de Salud - Ingreso económico --------------------------------------------------------
@@ -2211,114 +2238,501 @@ server <- function(input, output, session) {
     updateTextInput(session, "id_persona", value = as.numeric(id_persona))
   })
   
+  # GUARDAR NUEVO REGISTRO
+  
   observeEvent(input$guardar_registro, {
     
     nuevo_registro <- data.frame(
       
       # Datos de registro --------------------------------------------------
-      `ID de registro` = ifelse(is.na(input$id_registro) || input$id_registro == "", NA, as.numeric(input$id_registro)),
-      `Fecha de registro` = ifelse(!isTruthy(input$fecha_registro), NA, as.character(input$fecha_registro)),
+      `ID de registro` = ifelse(isTruthy(input$id_registro), as.numeric(input$id_registro), NA),
+      `Fecha de registro` = ifelse(isTruthy(input$fecha_registro), as.character(input$fecha_registro), NA),
       `ID de la persona` = as.numeric(input$id_persona),
       
       # Datos de la persona ------------------------------------------------
-      `Recuerda DNI` = ifelse(is.null(input$recuerda_dni) || input$recuerda_dni == "", NA, input$recuerda_dni),
-      DNI = ifelse(is.na(input$dni) || input$dni == "", NA, input$dni),
-      `Apellido y Nombre` = ifelse(is.na(input$apellido_nombre) || input$apellido_nombre == "", NA, input$apellido_nombre),
-      `Edad del primer registro` = ifelse(is.na(input$edad) || input$edad == "", NA, as.numeric(input$edad)),
-      `Sexo biológico` = ifelse(is.null(input$sexo_biologico) || input$sexo_biologico == "", NA, input$sexo_biologico),
-      `Género` = ifelse(is.null(input$genero) || input$genero == "", NA, input$genero),
-      Provincia = ifelse(is.null(input$provincia) || input$provincia == "", NA, input$provincia),
-      Localidad = ifelse(is.null(input$localidad) || input$localidad == "", NA, input$localidad),
-      Barrio = ifelse(is.null(input$barrio) || input$barrio == "", NA, input$barrio),
+      `Recuerda DNI` = ifelse(isTruthy(input$recuerda_dni), input$recuerda_dni, NA),
+      DNI = ifelse(isTruthy(input$dni), input$dni, NA),
+      `Apellido, Nombre` = ifelse(isTruthy(input$apellido_nombre), input$apellido_nombre, NA),
+      `Fecha de Nacimiento` = ifelse(isTruthy(input$fecha_nacimiento), as.character(input$fecha_nacimiento), NA),
+      `Edad del registro` = ifelse(isTruthy(input$edad), as.numeric(input$edad), NA),
+      `Sexo biológico` = ifelse(isTruthy(input$sexo_biologico), input$sexo_biologico, NA),
+      `Género` = ifelse(isTruthy(input$genero), input$genero, NA),
+      Provincia = ifelse(isTruthy(input$provincia), input$provincia, NA),
+      Localidad = ifelse(isTruthy(input$localidad), input$localidad, NA),
+      Barrio = ifelse(isTruthy(input$barrio), input$barrio, NA),
       
       # Contacto 1 ---------------------------------------------------------
-      `Teléfono de Contacto 1` = ifelse(is.na(input$telefono_contacto_1) || input$telefono_contacto_1 == "", NA, as.numeric(input$telefono_contacto_1)),
-      `Tipo de Vínculo con el Contacto 1` = ifelse(is.null(input$tipo_vinculo_contacto_1) || input$tipo_vinculo_contacto_1 == "", NA, input$tipo_vinculo_contacto_1),
-      `Nombre del Contacto 1` = ifelse(is.na(input$nombre_contacto_1) || input$nombre_contacto_1 == "", NA, input$nombre_contacto_1),
+      `Teléfono de Contacto 1` = ifelse(isTruthy(input$telefono_contacto_1), as.numeric(input$telefono_contacto_1), NA),
+      `Tipo de Vínculo con el Contacto 1` = ifelse(isTruthy(input$tipo_vinculo_contacto_1), input$tipo_vinculo_contacto_1, NA),
+      `Nombre del Contacto 1` = ifelse(isTruthy(input$nombre_contacto_1), input$nombre_contacto_1, NA),
       
       # Contacto 2 ---------------------------------------------------------
-      `Teléfono de Contacto 2` = ifelse(is.na(input$telefono_contacto_2) || input$telefono_contacto_2 == "", NA, as.numeric(input$telefono_contacto_2)),
-      `Tipo de Vínculo con el Contacto 2` = ifelse(is.null(input$tipo_vinculo_contacto_2) || input$tipo_vinculo_contacto_2 == "", NA, input$tipo_vinculo_contacto_2),
-      `Nombre del Contacto 2` = ifelse(is.na(input$nombre_contacto_2) || input$nombre_contacto_2 == "", NA, input$nombre_contacto_2),
+      `Teléfono de Contacto 2` = ifelse(isTruthy(input$telefono_contacto_2), as.numeric(input$telefono_contacto_2), NA),
+      `Tipo de Vínculo con el Contacto 2` = ifelse(isTruthy(input$tipo_vinculo_contacto_2), input$tipo_vinculo_contacto_2, NA),
+      `Nombre del Contacto 2` = ifelse(isTruthy(input$nombre_contacto_2), input$nombre_contacto_2, NA),
       
       # Contacto 3 ---------------------------------------------------------
-      `Teléfono de Contacto 3` = ifelse(is.na(input$telefono_contacto_3) || input$telefono_contacto_3 == "", NA, as.numeric(input$telefono_contacto_3)),
-      `Tipo de Vínculo con el Contacto 3` = ifelse(is.null(input$tipo_vinculo_contacto_3) || input$tipo_vinculo_contacto_3 == "", NA, input$tipo_vinculo_contacto_3),
-      `Nombre del Contacto 3` = ifelse(is.na(input$nombre_contacto_3) || input$nombre_contacto_3 == "", NA, input$nombre_contacto_3),
-      
-      # Inicio del consumo -------------------------------------------------
-      `Edad de Inicio de Cosumo` = ifelse(is.na(input$edad_inicio_consumo) || input$edad_inicio_consumo == "", NA, as.numeric(input$edad_inicio_consumo)),
-      # Sustancia de inicio
-      
-      # Consumo actual -----------------------------------------------------
-      `¿Consume actualmente?` = ifelse(is.null(input$persona_consume) || input$persona_consume == "", NA, input$persona_consume),
-      `Consumo actual con Alcohol` = ifelse(is.null(input$sustancias_consumo_actual) || !"Alcohol" %in% input$sustancias_consumo_actual, NA, "Alcohol"),
-      `Consumo actual con Cocaína` = ifelse(is.null(input$sustancias_consumo_actual) || !"Cocaína" %in% input$sustancias_consumo_actual, NA, "Cocaína"),
-      `Consumo actual con Crack` = ifelse(is.null(input$sustancias_consumo_actual) || !"Crack" %in% input$sustancias_consumo_actual, NA, "Marihuana"),
-      `Consumo actual con Marihuana` = ifelse(is.null(input$sustancias_consumo_actual) || !"Marihuana" %in% input$sustancias_consumo_actual, NA, "Crack"),
-      `Consumo actual con Nafta Aspirada` = ifelse(is.null(input$sustancias_consumo_actual) || !"Nafta" %in% input$sustancias_consumo_actual, NA, "Nafta"),
-      `Consumo actual con Psicofármacos` = ifelse(is.null(input$sustancias_consumo_actual) || !"Psicofármacos" %in% input$sustancias_consumo_actual, NA, "Psicofármacos"),
-      # falta la variable pegamento en la base de datos
-      `Inicio con Otras` = ifelse(is.null(input$sustancias_consumo_actual) || !"Otra" %in% input$sustancias_consumo_actual, NA, "Otra"),
-      `Consumo actual con Otras - Descripción` = ifelse(is.na(input$otra_sustancia_actual) || input$otra_sustancia_actual == "", NA, input$otra_sustancia_actual),
-      
-      # Tratamiento --------------------------------------------------------
-      Derivación = ifelse(is.null(input$derivacion) || input$derivacion == "", NA, input$derivacion),
-      `Derivado de`= ifelse(is.null(input$derivado_de) || input$derivado_de == "", NA, input$derivado_de),
-      `Número de Tratamientos Previos` = ifelse(is.na(input$num_tratamientos_previos) || input$num_tratamientos_previos == "", NA, as.numeric(input$num_tratamientos_previos)),
-      `Lugar de Último Tratamiento` = ifelse(is.na(input$lugar_ultimo_tratamiento) || input$lugar_ultimo_tratamiento == "", NA, input$lugar_ultimo_tratamiento),
+      `Teléfono de Contacto 3` = ifelse(isTruthy(input$telefono_contacto_3), as.numeric(input$telefono_contacto_3), NA),
+      `Tipo de Vínculo con el Contacto 3` = ifelse(isTruthy(input$tipo_vinculo_contacto_3), input$tipo_vinculo_contacto_3, NA),
+      `Nombre del Contacto 3` = ifelse(isTruthy(input$nombre_contacto_3), input$nombre_contacto_3, NA),
       
       # Entrevista Psicólogo -----------------------------------------------
-      `Estado de la Entrevista con Psicológo` = ifelse(is.null(input$estado_psicologo) || input$estado_psicologo == "", NA, input$estado_psicologo),
-      `Fecha de la Entrevista con Psicológo` = ifelse(!isTruthy(input$fecha_entrevista_psiquiatra), NA, as.character(input$fecha_entrevista_psiquiatra)),
+      `Estado de la Entrevista con Psicológo` = ifelse(isTruthy(input$estado_psicologo), input$estado_psicologo, NA),
+      `Fecha de la Entrevista con Psicológo` = ifelse(isTruthy(input$fecha_entrevista_psiquiatra), as.character(input$fecha_entrevista_psiquiatra), NA),
       
       # Entrevista Psiquiatra -----------------------------------------------
-      `Estado de la Entrevista con Psiquiatra` = ifelse(is.null(input$estado_psiquiatra) || input$estado_psiquiatra == "", NA, input$estado_psiquiatra),
-      `Fecha de la Entrevista con Psiquiatra` = ifelse(!isTruthy(input$fecha_entrevista_psiquiatra), NA, as.character(input$fecha_entrevista_psiquiatra)),
+      `Estado de entrevista con Psiquiátra` = ifelse(isTruthy(input$estado_psiquiatra), input$estado_psiquiatra, NA),
+      `Fecha de la Entrevista con Psiquiátra` = ifelse(isTruthy(input$fecha_entrevista_psiquiatra), as.character(input$fecha_entrevista_psiquiatra), NA),
       
       # Entrevista trabajador social ----------------------------------------
-      `Estado de entrevista con Trabajador Social` = ifelse(is.null(input$estado_ts) || input$estado_ts == "", NA, input$estado_ts),
-      `Fecha de la Entrevista con Trabajador Social` = ifelse(!isTruthy(input$fecha_entrevista_ts), NA, as.character(input$fecha_entrevista_ts)),
+      `Estado de entrevista con Trabajador Social` = ifelse(isTruthy(input$estado_ts), input$estado_ts, NA),
+      `Fecha de la Entrevista con Trabajador Social` = ifelse(isTruthy(input$fecha_entrevista_ts), as.character(input$fecha_entrevista_ts), NA),
+      
+      # Inicio del consumo -------------------------------------------------
+      `Edad de Inicio de Cosumo` = ifelse(isTruthy(input$edad_inicio_consumo), as.numeric(input$edad_inicio_consumo), NA),
+      `Sustancia de inicio` = ifelse(isTruthy(input$sustancia_inicio_consumo), input$sustancia_inicio_consumo, NA),
+      `Inicio con Otras - Descripción` = ifelse(isTruthy(input$otra_sustancia), input$otra_sustancia, NA),
+     
+      # Consumo actual -----------------------------------------------------
+      `¿Consume actualmente?` = ifelse(isTruthy(input$persona_consume), input$persona_consume, NA),
+      `Consumo actual con Alcohol` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Alcohol" %in% input$sustancias_consumo_actual, "Alcohol", NA),
+      `Consumo actual con Cocaína` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Cocaína" %in% input$sustancias_consumo_actual, "Cocaína", NA),
+      `Consumo actual con Crack` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Crack" %in% input$sustancias_consumo_actual, "Crack", NA),
+      `Consumo actual con Marihuana` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Marihuana" %in% input$sustancias_consumo_actual, "Marihuana", NA),
+      `Consumo actual con Nafta Aspirada` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Nafta" %in% input$sustancias_consumo_actual, "Nafta", NA),
+      `Consumo actual con Pegamento` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Pegamento" %in% input$sustancias_consumo_actual, "Pegamento", NA),
+      `Consumo actual con Psicofármacos` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Psicofármacos" %in% input$sustancias_consumo_actual, "Psicofármacos", NA),
+      `Consumo actual con Otras` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Otra" %in% input$sustancias_consumo_actual, "Otra", NA),
+      `Consumo actual con Otras - Descripción` = ifelse(isTruthy(input$otra_sustancia_actual), input$otra_sustancia_actual, NA),
+      `Consumo actual con Policonsumo` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Policonsumo" %in% input$sustancias_consumo_actual, "Policonsumo", NA),
+      
+      # Tratamiento --------------------------------------------------------
+      Derivación = ifelse(isTruthy(input$derivacion), input$derivacion, NA),
+      `Derivado de`= ifelse(isTruthy(input$derivado_de), input$derivado_de, NA),
+      `Número de Tratamientos Previos` = ifelse(isTruthy(input$num_tratamientos_previos), as.numeric(input$num_tratamientos_previos), NA),
+      `Lugar de Último Tratamiento` = ifelse(isTruthy(input$lugar_ultimo_tratamiento), input$lugar_ultimo_tratamiento, NA),
+      `Tratamiento Elegido` = ifelse(isTruthy(input$tratamiento_elegido), input$tratamiento_elegido, NA),
       
       # Situación Socioeconómica, Jurídica y de Salud -----------------------
-      `Nivel Máximo Educativo Alcanzado` = ifelse(is.null(input$nivel_educativo_max) || input$nivel_educativo_max == "", NA, input$nivel_educativo_max),
-      CUD = ifelse(is.null(input$cud) || input$cud == "", NA, input$cud),
-      `Situación Habitacional Actual` = ifelse(is.null(input$situacion_habitacional_actual) || input$situacion_habitacional_actual == "", NA, input$situacion_habitacional_actual),
-      `Situación Habitacional Actual - Otra` = ifelse(is.na(input$otra_situacion_habitacional_actual) || input$otra_situacion_habitacional_actual == "", NA, input$otra_situacion_habitacional_actual),
-      `Situación Laboral Actual`  = ifelse(is.null(input$situacion_laboral_actual) || input$situacion_laboral_actual == "", NA, input$situacion_laboral_actual),
-      # poner la variable ingreso economico como variables binarios de si o no
-      `Situación Judicial` = ifelse(is.null(input$situacion_judicial) || input$situacion_judicial == "", NA, input$situacion_judicial),
-      # agregar la varaible de si hay otra situación judicial
-      
+      `Nivel Máximo Educativo Alcanzado` = ifelse(isTruthy(input$nivel_educativo_max), input$nivel_educativo_max, NA),
+      CUD = ifelse(isTruthy(input$cud), input$cud, NA),
+      `Situación Habitacional Actual` = ifelse(isTruthy(input$situacion_habitacional_actual), input$situacion_habitacional_actual, NA),
+      `Situación Habitacional Actual - Otra` = ifelse(isTruthy(input$otra_situacion_habitacional_actual), input$otra_situacion_habitacional_actual, NA),
+      `Situación Laboral Actual`  = ifelse(isTruthy(input$situacion_laboral_actual), input$situacion_laboral_actual, NA),
+      `Situación Laboral Actual - Otra` = ifelse(isTruthy(input$otra_situacion_laboral_actual), input$otra_situacion_laboral_actual, NA),
+      `Ingresos Económicos` = ifelse(isTruthy(input$ingreso_economico), paste(input$ingreso_economico, collapse = ", "), NA),
+      `Situación Judicial` = ifelse(isTruthy(input$situacion_judicial), input$situacion_judicial, NA),
+      `Situación Judicial - Otro` = ifelse(isTruthy(input$otra_situacion_judicial), input$otra_situacion_judicial, NA),
+    
       # Red de Apoyo y Referencias ------------------------------------------
-      # agregar la variable redes de apoyos como distintas variables binarias de si o no
-      `Referencia a APS` = ifelse(is.null(input$referencia_aps) || input$referencia_aps == "", NA, input$referencia_aps),
-      `Equipo de Referencia` = ifelse(is.na(input$equipo_referencia) || input$equipo_referencia == "", NA, input$equipo_referencia),
-
+      `Redes de Apoyo` = ifelse(isTruthy(input$redes_apoyo), paste(input$redes_apoyo, collapse = ", "), NA),
+      `Referencia a APS` = ifelse(isTruthy(input$referencia_aps), input$referencia_aps, NA),
+      `Equipo de Referencia` = ifelse(isTruthy(input$equipo_referencia), input$equipo_referencia, NA),
+      
       # Información Adicional -----------------------------------------------
-      Observaciones = ifelse(is.na(input$observaciones) || input$observaciones == "", NA, input$observaciones)
-
+      Observaciones = ifelse(isTruthy(input$observaciones), input$observaciones, NA),
+      check.names = FALSE
+      
     )
     
-    #fecha_registro_value <- ifelse(!isTruthy(input$fecha_registro), "No hay Fecha de registro", as.character(input$fecha_registro))
-    #apellido_nombre <- ifelse(is.null(input$apellido_nombre) || input$apellido_nombre == "", "No hay Apellido y nombre", input$apellido_nombre)
+    # Validaciones globales
+    iv <- InputValidator$new()
+    # Datos de la persona ------------------------------------------------------
     
-    # Muestra el valor en una caja de mensaje (modal)
-    if(iv_fecha_primer_registro$is_valid()
-    ) {
-      showModal(modalDialog(
-        title = "Registro",
-        print(nuevo_registro),
-        easyClose = TRUE
-      ))
-    } else {
-      showModal(modalDialog(
-        title = "Registro",
-        paste("No se cumplen las reglas"),
-        easyClose = TRUE
-      ))
+    # Recuerda DNI
+    iv$add_rule("recuerda_dni",
+                sv_required(
+                  tags$span("Campo obligatorio.", style = "font-size: 10px;")
+                ))
+    
+    # Apellido, Nombre
+    
+    iv$add_rule("apellido_nombre", 
+                sv_required(tags$span("Campo obligatorio.", 
+                                      style = "font-size: 10px;")
+                )
+    )
+    
+    # Edad 
+    
+    iv$add_rule("edad", function(value) {
+      if(!isTruthy(input$fecha_nacimiento)) {
+        if(length(as.numeric(input$edad)) == 0 | is.na(input$edad)) {
+          return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+        }
+      }
+    })
+  
+    
+    # Sexo biológico
+    
+    iv$add_rule("sexo_biologico",
+                sv_required(tags$span("Campo obligatorio.",
+                                      style = "font-size: 10px;")
+                ))
+    
+    
+    # Género
+    
+    iv$add_rule("genero",
+                sv_required(tags$span("Campo obligatorio.",
+                                      style = "font-size: 10px;")
+                ))
+    
+    # Provincia
+    
+    iv$add_rule("provincia", function(value) {
+      if(value == provincias[[1]][1]) {
+        return(tags$span("Campo obligatorio.",
+                         style = "font-size: 10px;"))
+      }
+    })
+    
+    # Contactos de referencia --------------------------------------------------
+    
+    # Contacto 1 - Teléfono
+    
+    iv$add_rule("telefono_contacto_1",
+                sv_required(tags$span("Campo obligatorio.",
+                                      style = "font-size: 10px;")
+                )
+    )
+    
+    iv$add_rule("telefono_contacto_1", function(value) {
+      if (nchar(as.character(value)) < 7) {
+        return(tags$span("El teléfono debe tener al menos 7 dígitos.", style = "font-size: 10px;"))
+      }
+      if (nchar(as.character(value)) > 10) {
+        return(tags$span("El teléfono debe tener menor de 10 dígitos.", style = "font-size: 10px;"))
+      }
+      if (!grepl("^[0-9]+$", as.character(value))) {
+        return(return(tags$span("Sólo se admiten números.", style = "font-size: 10px;")))
+      }
+      return(NULL)
+    })
+    validar_telefono <- function(value) {
+      if (is.null(value) || is.na(value)) {
+        return(NULL) 
+      }
+      value <- as.character(value)
+      
+      if (nchar(value) < 7) {
+        return(tags$span("El teléfono debe tener al menos 7 dígitos.", style = "font-size: 10px;"))
+      }
+      if (nchar(value) > 11) {
+        return(tags$span("El teléfono debe tener menos de 10 dígitos.", style = "font-size: 10px;"))
+      }
+      if (!grepl("^[0-9]+$", value)) {
+        return(tags$span("Solo se admiten números.", style = "font-size: 10px;"))
+      }
+      
+      return(NULL)
     }
+    
+    # Contacto 1 - Vinculo
+    
+    iv$add_rule("tipo_vinculo_contacto_1",
+                sv_required(tags$span("Campo obligatorio.",
+                                      style = "font-size: 10px;")
+                ))
+    
+    iv$add_rule("tipo_vinculo_contacto_1", function(value) {
+      opciones_validas <- c("", "Propio", "Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
+      if (value %in% opciones_validas) {
+        return(NULL)
+      }
+      
+      if (value != "") {
+        if (nchar(value) < 2) {
+          return("El campo debe tener al menos 2 caracteres.")
+        }
+        if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+          return("No se admiten caracteres especiales.")
+        }
+      }
+      
+      return(NULL)
+    })
+    
+    # Contacto 1 - Nombre
+    
+    iv$add_rule("nombre_contacto_1", function(value) {
+      if (input$tipo_vinculo_contacto_1 != "Propio") {
+        if (value == "") {
+          return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+        }
+      }
+      return(NULL)
+    })
+    
+    iv$add_rule("nombre_contacto_1", function(value) {
+      if (value != "") {
+        if (nchar(value) < 2) {
+          return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size: 10px;"))
+        }
+      }
+      return(NULL)
+    })
+    
+    iv$add_rule("nombre_contacto_1",function(value) {
+      esta <- input$tipo_vinculo_contacto_1 %in% c("","Propio","Papá/Mamá", "Hermano/a", "Hijo/a", "Amigo/a")
+      if (!esta) {
+        if(!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ /]+$", value)) {  # Incluye el símbolo '/'
+          return(tags$span("No se admiten caracteres especiales.", style = "font-size: 10px;"))
+        }
+      }
+    })
+    
+    # Entrevistas --------------------------------------------------------------
+    
+    # Entrevista psicologo - Estado
+    
+    iv$add_rule("estado_psicologo", sv_required(message = tags$span("Campo obligatorio", style = "font-size: 10px;")))
+    
+    # Entrevista psiquiatra - Estado
+    
+    iv$add_rule("estado_psiquiatra", sv_required(message = tags$span("Campo obligatorio", style = "font-size: 10px;")))
+    
+    # Entrevista ts - Estado
+    
+    iv$add_rule("estado_ts", sv_required(message = tags$span("Campo obligatorio", style = "font-size: 10px;")))
+    
+    # Inicio del consumo -------------------------------------------------------
+    
+    # Sustancia de inicio
+    
+    iv$add_rule("sustancia_inicio_consumo", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    iv$add_rule("otra_sustancia", function(value) {
+      if ("Otra" %in% input$sustancia_inicio_consumo) {
+        
+        if (is.null(value) || value == "") {
+          return(tags$span("Debe completar el campo si selecciona 'Otra'.", style = "font-size:10px;"))
+        } else if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+          return(tags$span("No se admiten caracteres especiales.", style = "font-size:10px;"))
+        }
+        
+      } else {
+        return(NULL)
+      }
+    })
+    
+    # Consumo actual -----------------------------------------------------------
+    
+    # Consumo actual
+    
+    iv$add_rule("persona_consume", sv_required(tags$span("Campo obligatorio.", style = "font-size: 10px;")))
+    
+    # Sustancia de consumo actual
+    
+    iv$add_rule("sustancias_consumo_actual", function(value) {
+      if(input$persona_consume == "Si") {
+        if(is.null(value) || length(value) == 0) {
+          return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+        }
+      }
+    })
+    
+    iv$add_rule("otra_sustancia_actual", function(value) {
+      if ("Otra" %in% input$sustancias_consumo_actual) {
+        
+        if (is.null(value) || value == "") {
+          return(tags$span("Debe completar el campo si selecciona 'Otra'.", style = "font-size:10px;"))
+        } else if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+          return(tags$span("No se admiten caracteres especiales.", style = "font-size:10px;"))
+        }
+        
+      } else {
+        return(NULL)
+      }
+    })
+    
+    # Tratamiento --------------------------------------------------------------
+    
+    # Derivación
+    iv$add_rule("derivacion", sv_required(tags$span("Campo obligatorio.",style = "font-size:10px;")))
+    
+    # Derivado de
+    
+    iv$add_rule("derivado_de", function(value) {
+      if(input$derivacion == "Si" & nchar(value) == 0) {
+        return(tags$span("Campo obligatorio.",style = "font-size:10px;"))
+        if (!is.null(input$derivacion) && input$derivacion == "Si") {
+          if (nchar(value) < 2 & nchar(value) > 0) {
+            return(tags$span("El campo debe tener al menos 2 caracteres.",style = "font-size:10px;"))
+          }
+          if (grepl("[^a-zA-Z0-9 ]", value)) {
+            return(tags$span("No se admiten caracteres especiales.",style = "font-size:10px;"))
+          }
+        }
+      } else if (input$derivacion %in% c("No","No informado")) {
+        if(value != "") {
+          return(tags$span("El campo debe estar vacío.",style = "font-size:10px;"))
+        }
+      }
+    })
+    
+    # Nº de tratameintos previos
+    
+    iv$add_rule("num_tratamientos_previos", function(value) {
+      if (value < 0 || value > 99) {
+        return(tags$span("El número debe estar entre 0 y 99.",style = "font-size:10px;"))
+      }
+    })
+    
+    # Lugar de último tratameinto
+    
+    iv$add_rule("lugar_ultimo_tratamiento", function(value) {
+      # Validar solo si "Número de Tratamientos previos" tiene un valor y es mayor que 0
+      if (!is.null(input$num_tratamientos_previos) && !is.na(input$num_tratamientos_previos) && input$num_tratamientos_previos > 0) {
+        if (nchar(value) < 2) {
+          return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size:10px;"))
+        }
+        if (grepl("[^a-zA-Z0-9 ]", value)) {
+          return(tags$span("No se admiten caracteres especiales.",style = "font-size:10px;"))
+        }
+      }
+      return(NULL)  # Sin errores
+    })
+    
+    # Tratameinto elegido
+    
+    iv$add_rule("tratamiento_elegido", sv_required("Campo obligatorio"))
+    iv$add_rule("tratamiento_elegido", function(value) {
+      if (is.null(value) || value == "") {
+        return(tags$span("Campo obligatorio.",style = "font-size:10px;"))
+      }
+      return(NULL)
+    })
+    
+    # Situación Socioeconómica, Jurídica y de Salud ----------------------------
+    
+    # Educación
+    
+    iv$add_rule("nivel_educativo_max", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    # CUD
+    
+    iv$add_rule("cud", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    # Situción habitacional
+    
+    iv$add_rule("situacion_habitacional_actual", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    iv$add_rule("otra_situacion_habitacional_actual", function(value) {
+      if (input$situacion_habitacional_actual == "Otra") {
+        if (is.null(value) || value == "") {
+          return(tags$span("Debe completar el campo si selecciona 'Otra'.",style = "font-size:10px;"))
+        }
+        if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+          return(tags$span("No se admiten caracteres especiales.",style="font-size:10px;"))
+        }
+      }
+      return(NULL)
+    })  
+    
+    # Situación laboral 
+    
+    iv$add_rule("situacion_laboral_actual", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    iv$add_rule("otra_situacion_laboral_actual", function(value) {
+      if (input$situacion_laboral_actual == "Otra") {
+        if (is.null(value) || value == "") {
+          return(tags$span("Debe completar el campo si selecciona 'Otra'.",style = "font-size:10px;"))
+        }
+        if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+          return(tags$span("No se admiten caracteres especiales.",style="font-size:10px;"))
+        }
+      }
+      return(NULL)
+    })
+    
+    # Ingreso económico
+    
+    iv$add_rule("ingreso_economico", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    iv$add_rule("otro_ingreso", function(value) {
+      if (any(c("Otro subsidio/plan social", "Otro tipo de pensión", "Otro tipo de ingreso") %in% input$ingreso_economico)) {
+        if (value == "") {
+          return(tags$span("Debe completar el campo si seleccionó 'Otro subsidio/plan social', 'Otro tipo de pensión' o 'Otro tipo de ingreso'.",style = "font-size: 10px;"))
+        }
+        if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
+          return(tags$span("No se admiten caracteres especiales.",style="font-size:10px;"))
+        }
+      }
+      return(NULL)
+    })
+    
+    # Situción judicial
+    
+    iv$add_rule("situacion_judicial", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    iv$add_rule("otra_situacion_judicial", function(value) {
+      if (input$situacion_judicial == "Otra" && (is.null(value) || value == "")) {
+        return(tags$span("Debe completar el campo si selecciona 'Otra'.",style = "font-size:10px;"))
+      }
+      return(NULL)
+    })
+    
+    # Red de Apoyo y Referencias -----------------------------------------------
+    
+    # Redes de apoyo
+    
+    iv$add_rule("redes_apoyo", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    # Referencias APS
+    
+    iv$add_rule("referencia_aps", sv_required(tags$span("Campo obligatorio.",style="font-size:10px;")))
+    
+    # Equipo de referencia
+    
+    iv$add_rule("equipo_referencia", function(value) {
+      if (input$referencia_aps %in% c("Referencia con seguimiento", "Referencia sin seguimiento")) {
+        if (is.null(value) || value == "") {
+          return("El campo es obligatorio.")
+        }
+      }
+      if (nchar(value) > 0) {
+        if (!grepl("^[a-zA-Z0-9 ]+$", value)) {
+          return("No se admiten caracteres especiales.")
+        }
+        if (nchar(value) < 3) {
+          return("El campo debe tener al menos 3 caracteres.")
+        }
+      }
+      if (input$referencia_aps %in% c("No está referenciado", "No informada") && value != "") {
+        return("El campo debe estar vacío si la referencia APS es 'No está referenciado' o 'No informada'.")
+      }
+      
+      return(NULL)
+    })
+    
+    iv$enable()  # Habilitar validaciones
+    
+    
+    # Guardar el nuevo registro directamente en el archivo "Base completa.xlsx" ----
+    if (iv$is_valid()) {
+      wb <- loadWorkbook("Base completa.xlsx")
+      datos_existentes <- read.xlsx(wb, sheet = 1)
+      
+      # Asegurar que los nombres de las columnas sean los mismos
+      colnames(datos_existentes) <- colnames(nuevo_registro)
+      
+      # Ahora puedes hacer el rbind sin problemas
+      datos_actualizados <- rbind(datos_existentes, nuevo_registro)
+      
+      # Guardar el archivo actualizado
+      writeData(wb, sheet = 1, datos_actualizados)
+      saveWorkbook(wb, "Base completa.xlsx", overwrite = TRUE)
+      
+      showNotification("Registro guardado con éxito.", type = "message")
+    } else {
+      showNotification("Por favor, complete todos los campos obligatorios.", type = "error")
+    }
+    
   })
+  
+  
 # PESTAÑA VISUALIZACION
   datos_filtrados <- reactive({
     if (input$anio == "Todos los años") {
