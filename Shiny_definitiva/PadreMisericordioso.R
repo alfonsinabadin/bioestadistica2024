@@ -1925,8 +1925,10 @@ server <- function(input, output, session) {
   
   ## Obligatorio
   iv_tratamientos_previos$add_rule("num_tratamientos_previos", function(value) {
-    if (value < 0 || value > 99) {
-      return(tags$span("El número debe estar entre 0 y 99.",style = "font-size:10px;"))
+    if(!is.na(value)) {
+      if (value < 0 || value > 99) {
+        return(tags$span("El número debe estar entre 0 y 99.",style = "font-size:10px;"))
+      }
     }
   })
   
