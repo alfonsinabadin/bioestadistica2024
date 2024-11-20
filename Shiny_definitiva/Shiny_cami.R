@@ -9,64 +9,33 @@ library(readxl)
 library(shinyjs)
 library(shinyvalidate)
 library(geoAr)
+library(tibble)
+library(writexl)
+library(kableExtra)
+library(tidyr)
+library(shinyWidgets)
 library(ggplot2)
-library(shinydashboard)
+library(ggthemes)
 library(DT)
 
-# Importar base
+# Importar base ----------------------------------------------------------------
 base <- function(){
   data <- read_excel("Base completa.xlsx")
 }
 data <- base()
 
-# NUEVO: Extraer años únicos de la columna de fecha sin modificarla
-anios <- unique(year(as.Date(data$`Fecha de registro`, format="%d-%m-%Y"))) 
-# Calcular la primera entrevista
-primera_entrevista <- data.frame(
-  mes = numeric(),
-  anio = numeric(),
-  mes_anio = character(),
-  Tratamiento = factor(),
-  frecuencia = numeric()
-)
-
-# Juntar fechas primeras entrevistas para el grafico
-for(i in 1:nrow(data)) {
-  fechas <- t(data[i, c(25, 27, 29)])  # Asegúrate de que los índices son correctos
-  fechas <- subset(fechas, !is.na(fechas))
-  primera_fecha <- ifelse(length(fechas) == 0, NA, format(as.Date(fechas), "%d/%m/%Y"))
-  
-  if (!is.na(primera_fecha)) {
-    primera_entrevista <- rbind(primera_entrevista, data.frame(
-      mes = format(as.Date(primera_fecha, "%d/%m/%Y"), "%m"),
-      anio = format(as.Date(primera_fecha, "%d/%m/%Y"), "%Y"),
-      mes_anio = format(as.Date(primera_fecha, "%d/%m/%Y"), "%m/%Y"),
-      Tratamiento = factor(ifelse(grepl("Internación", data$`Tratamiento Elegido`[i]), "Internación",
-                                  ifelse(grepl("Centro de día", data$`Tratamiento Elegido`[i]), "Centro de día",
-                                         ifelse(grepl("No finalizó el proceso", data$`Tratamiento Elegido`[i]), "Abandona",
-                                                ifelse(grepl("Rechaza", data$`Tratamiento Elegido`[i]), "Rechaza",
-                                                       ifelse(grepl("Derivado", data$`Tratamiento Elegido`[i]), "Derivado", NA))))),
-                           levels = c("Abandona", "Rechaza", "Internación", "Centro de día", "Derivado"),
-                           ordered = TRUE)
-    ))
-  }
-}
-
-# Filtrar y organizar los datos
-primera_entrevista <- primera_entrevista %>%
-  filter(!is.na(mes_anio)) %>%
-  filter(anio != "2021") %>%
-  filter(!is.na(Tratamiento)) %>%
-  group_by(anio, mes, Tratamiento) %>%
-  summarize(frecuencia = n(), .groups = 'drop') %>%
-  arrange(anio, mes, desc(Tratamiento)) %>%
-  group_by(anio, mes) %>%
-  mutate(label = cumsum(frecuencia))
-
-# Base de provincias y localidades
+# Base de provincias y localidades ---------------------------------------------
 provincias <- show_arg_codes()[2:25, 5]
 provincias[[1]][1] <- "CABA"
+provincia_vacia <- tibble(name_iso = " ")
+provincias <- bind_rows(provincia_vacia, provincias)
+colnames(provincias) <- "Provincias"
+
 localidades_por_provincia <- readRDS("localidades.rds")
+for (provincia in names(localidades_por_provincia)) {
+  localidades_por_provincia[[provincia]] <- c("", localidades_por_provincia[[provincia]])
+}
+
 ## User Interface --------------------------------------------------------------
 ui <- page_navbar(
   
@@ -78,45 +47,91 @@ ui <- page_navbar(
     fg = "black",
     primary = "#ec7e14",
     secondary = "#fbc91c",
-    success = "#009E73",
     base_font = font_google("Montserrat")
   ),
-  
   # Dejo seteados los tamaños de las tipografías de los títulos de cada campo
   tags$head(
     tags$style(HTML("
     input::placeholder {
-      font-size: 11px;
+      font-size: 12px;
     }
     .form-control {
-      font-size: 11px;
+      font-size: 12px;
     }
     .selectize-input {
-      font-size: 11px;
+      font-size: 12px;
     }
     .selectize-dropdown {
-      font-size: 11px;
+      font-size: 12px;
     }
-    
-     /* Ajuste del tamaño y la posición del icono dentro del valueBox */
-      .small-box {
-        position: relative; /* Asegura que el ícono se posicione en relación a la caja */
-        padding: 20px; /* Aumenta el padding para que haya espacio alrededor del ícono */
+    .checkbox-inline, .checkbox-label {
+      font-size: 12px;
+    }
+    .shiny-input-container {
+      font-size: 12px;
+    }
+    .checkbox-group-input {
+      margin-top: 10px;
+    }
+      /* Color naranja para la fila seleccionada y hover */
+    #search_results .dataTable tbody tr.selected {
+      background-color: #FFA500 !important;
+      color: white;
+    }
+    #search_results .dataTable tbody tr:hover,
+    #search_results .dataTable tbody tr:focus,
+    #search_results .dataTable tbody tr.active {
+      background-color: #FFA500 !important;
+      color: white !important;
+    }
+    /* Eliminar cualquier borde o fondo azul de la tabla */
+    #search_results .dataTable tbody tr.selected td,
+    #search_results .dataTable tbody tr.selected {
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    /* Estilo para todos los botones en la aplicación */
+      .btn {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
       }
-      
-      .small-box .icon-large {
-        position: absolute;
-        top: 50%;
-        right: 10px;
-        transform: translateY(-50%);
-        font-size: 60px; /* Cambia el tamaño del ícono según sea necesario */
-        opacity: 0.4; /* Ajusta la opacidad */
+      .btn:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
       }
-      
-      .small-box .inner {
-        text-align: left; 
-        position: relative; /* Posición relativa para ajustar la superposición */
-        z-index: 1; /* Asegura que el texto esté sobre el ícono */
+
+      /* Estilo específico para el botón 'Buscar' */
+      #search_button {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      #search_button:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
+      }
+
+      /* Estilo específico para el botón 'Modificar registro' */
+      #modify_button {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      #modify_button:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
+      }
+
+      /* Estilo específico para el botón 'Cancelar búsqueda' */
+      #cancel_search_button {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      #cancel_search_button:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
       }
   "))
   )
@@ -143,203 +158,563 @@ ui <- page_navbar(
   nav_panel(
     tags$span("Nuevo registro", style = "font-size: 14px;"),
     class = "bslib-page-dashboard",
-    icon = icon("user")
+    icon = icon("user"),
+  
   ),
+
   nav_panel(
     tags$span("Consulta y modificación de registros", style = "font-size: 14px;"),
-    class = "bslib-page-dashboard"
-  ),
-  
-  # NUEVO
-  nav_panel(
-    tags$span("Tablero de visualización", style = "font-size: 14px;"),
     class = "bslib-page-dashboard",
-    fluidRow(
-      column(2, selectInput("anio", "Seleccione un año:", choices = c("Todos los años", sort(anios)), selected = "Todos los años")),
-      column(2, valueBoxOutput("int_cristaleria")),
-      column(2, valueBoxOutput("int_bp_baigorria")),
-      column(2, valueBoxOutput("cdd_zeballos")),
-      column(2, valueBoxOutput("cdd_bp")),
-      column(2, valueBoxOutput("cdd_baigorria"))
-    ),
-    tags$head(
-      tags$style(HTML("
-      .dataTable th {
-        font-size: 12px; /* Cambia el tamaño de la fuente de los encabezados aquí */
-        color: white; /* Cambia el color de la letra si es necesario */
-        background-color: #EF8D16; /* Asegúrate de que el color de fondo sea consistente */
-        padding: 2px; /* Ajusta el padding para reducir la altura */
-      }
-      .dataTable td {
-        font-size: 11px; /* Cambia este valor para el contenido */
-        padding: 3px; /* Ajusta el padding de las celdas del cuerpo si es necesario */
-      }
-    "))
-    ),
-    fluidRow(
-      column(7,
-             plotlyOutput("grafico_interactivo")
+    icon = icon("pen-to-square"),
+    
+    fluidPage(
+      useShinyjs(),  # Habilitar shinyjs para usar las funciones de mostrar y ocultar elementos
+      
+      # Mensaje de éxito en verde (oculto inicialmente)
+      div(
+        id = "success_message",
+        style = "display: none; background-color: #4CAF50; color: white; padding: 10px; margin-bottom: 15px; text-align: center;",
+        "Modificaciones guardadas con éxito"
       ),
-      column(5,
-             plotOutput("grafico_serie")
-             ),
-      dataTableOutput("tabla_resumen")
+      
+      # Buscador de DNI o Nombre
+      textInput("search_input", "Buscar por DNI o Nombre", ""),
+      actionButton("search_button", "Buscar"),
+      
+      conditionalPanel(
+        condition = "output.showTable == true",
+        
+        # Tabla de resultados de búsqueda
+        dataTableOutput("search_results"),
+        
+        # Botones en la esquina inferior derecha de la tabla
+        tags$div(
+          style = "margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;",
+          actionButton("cancel_button", "Cancelar búsqueda", width = '150px'),
+          actionButton("modify_button", "Modificar registro", width = '150px')
+        )
+      )
     )
   ),
   
+  nav_panel(
+    tags$span("Tablero de visualización", style = "font-size: 14px;"),
+    class = "bslib-page-dashboard",
+  ),
   nav_item(
     input_dark_mode(id = "dark_mode", mode = "light")
   )
 )
 
-
-# NUEVO
 server <- function(input, output, session) {
   
-  filtered_data <- reactive({
-    req(input$anio)  
-    if (input$anio == "Todos los años") {
-      return(data)  #
-    } else {
-      return(data %>% filter(year(as.Date(`Fecha de registro`, format="%Y-%m-%d")) == input$anio))
+  # Cargar la base de datos
+  data <- base()
+  
+  # PESTAÑA MODIFICACIÓN DE REGISTRO---------------------------------------------------------
+  # Filtrar los resultados de la búsqueda
+  # Reactivo para almacenar los resultados de la búsqueda
+  search_results <- reactiveVal(NULL)
+  registro_seleccionado <- reactiveVal(NULL)
+  
+  # Realizar la búsqueda cuando se presiona el botón "Buscar"
+  observeEvent(input$search_button, {
+    if (input$search_input != "") {
+      resultados <- data %>%
+        filter(grepl(input$search_input, as.character(DNI)) |
+                 grepl(input$search_input, `Apellido, Nombre`, ignore.case = TRUE))
+      search_results(resultados)
     }
   })
   
-  output$int_bp_baigorria <- renderValueBox({
-    count_bp_baigorria <- sum(filtered_data()$`Tratamiento Elegido` == "Internación Buen Pastor / Baigorria", na.rm = TRUE)
+  output$search_results_ui <- renderUI({
+    req(search_results())  # Muestra solo si hay resultados en la tabla
     
-    valueBox(
-      count_bp_baigorria,
-      "Internación Buen Pastor / Baigorria",
-      icon = icon("hospital-user", class = "icon-large"), color = "yellow", width = 2
+    tags$div(
+      style = "position: relative;", # Posiciona los botones de manera relativa al contenedor
+      DTOutput("search_results"),
+      
+      # Botones de acciones en la esquina inferior derecha de la tabla
+      tags$div(
+        style = "position: absolute; bottom: 10px; right: 10px; display: flex; flex-direction: column; gap: 10px;",
+        actionButton("cancel_button", "Cancelar búsqueda", width = '15px'),
+        actionButton("modify_button", "Modificar registro", width = '15px')
+      )
     )
   })
   
-  output$int_cristaleria <- renderValueBox({
-    count_cristaleria <- sum(filtered_data()$`Tratamiento Elegido` == "Internación Cristalería", na.rm = TRUE)
-    valueBox(
-      count_cristaleria,
-      "Internación Cristalería",
-      icon = icon("hospital-user", class = "icon-large"), color = "yellow", width = 2
-    )
-  })
-  
-  output$cdd_zeballos <- renderValueBox({
-    count_cdd_zeballos <- sum(filtered_data()$`Tratamiento Elegido` == "Centro de día Zeballos", na.rm = TRUE)
-    valueBox(
-      count_cdd_zeballos ,
-      "Centro de día Zeballos",
-      icon = icon("warehouse", class = "icon-large"), color = "yellow", width = 2
-    )
-  })
-  
-  output$cdd_bp <- renderValueBox({
-    count_cdd_bp <- sum(filtered_data()$`Tratamiento Elegido` == "Centro de día Buen Pastor", na.rm = TRUE)
-    valueBox(
-      count_cdd_bp,
-      "Centro de día Buen Pastor",
-      icon = icon("warehouse", class = "icon-large"), color = "yellow", width = 2
-    )
-  })
-  
-  output$cdd_baigorria <- renderValueBox({
-    count_cdd_baigorria <- sum(filtered_data()$`Tratamiento Elegido` == "Centro de día Baigorria", na.rm = TRUE)
-    valueBox(
-      count_cdd_baigorria,
-      "Centro de día Baigorria",
-      icon = icon("warehouse", class = "icon-large"), color = "yellow", width = 2
-    )
-  })
-  # Grafico 1
-  datos_filtrados <- reactive({
-    data_filtrada <- primera_entrevista
+  output$search_results <- renderDataTable({
+    req(search_results()) 
     
-    # Filtrar por año si no es "Todos los años"
-    if (input$anio != "Todos los años") {
-      data_filtrada <- data_filtrada %>% filter(anio == input$anio)
-    }
-    
-    return(data_filtrada)
-  })
-  
-  output$grafico_interactivo <- renderPlotly({
-    # Verificar si hay datos filtrados
-    if (nrow(datos_filtrados()) == 0) {
-      # Si no hay datos, mostrar un mensaje en lugar del gráfico
-      return(plotly::plotly_empty() %>% 
-               layout(title = "No hay datos disponibles para esta selección."))
-    } 
-    
-    # Generar el gráfico con los datos filtrados
-    grafico <- ggplot(datos_filtrados()) +
-      geom_bar(aes(x = mes, y = frecuencia, fill = Tratamiento), stat = "identity") +
-      labs(title = "Casos y derivaciones según fecha de primera entrevista",
-           x = "Mes de la primera entrevista", y = "Frecuencia", fill = "Tratamiento") +
-      scale_fill_manual(values = c("#C57412","#EF8D16","#FBC91C","#BCBF1A","#5C8001")) +
-      theme_minimal()
-    
-    ggplotly(grafico) %>%
-      layout(barmode = "stack",
-             legend = list(itemclick = "toggleothers"))
-
-  })
-  # GRAFICO 2
-  output$grafico_serie <- renderPlot({
-    
-    data <- data %>%
-      mutate(`Fecha de registro` = as.Date(`Fecha de registro`, format = "%Y-%m-%d"))
-    
-    # Agrupar por año y mes para contar las admisiones
-    admisiones_por_mes <- data %>%
-      mutate(anio_mes = floor_date(`Fecha de registro`, "month")) %>% # Agrupar por mes
-      group_by(anio_mes) %>%
-      summarise(cantidad_admisiones = n()) %>%
-      ungroup()
-    # Crear el gráfico de serie de tiempo
-    ggplot(admisiones_por_mes, aes(x = anio_mes, y = cantidad_admisiones)) +
-      geom_line(color = "#FBC91C", size = 1) +   
-      geom_point(color = "#FBC91C", size = 2) + 
-      labs(title = "Cantidad de Admisiones por Mes",
-           x = "Fecha",
-           y = "Cantidad de Admisiones") +
-      theme_minimal() 
-  })
-  # Tabla resumen de datos
-  output$tabla_resumen <- renderDT({
-    # Formatear las fechas
-    data$`Fecha de registro` <- format(as.Date(data$`Fecha de registro`), "%d/%m/%Y")
-    data$`Fecha de Nacimiento` <- format(as.Date(data$`Fecha de Nacimiento`), "%d/%m/%Y")
-    data$`Primer fecha de registro` <- format(as.Date(data$`Primer fecha de registro`), "%d/%m/%Y")
-    data$`Fecha de la Entrevista con Psicológo` <- format(as.Date(data$`Fecha de la Entrevista con Psicológo`), "%d/%m/%Y")
-    data$`Fecha de la Entrevista con Psiquiátra` <- format(as.Date(data$`Fecha de la Entrevista con Psiquiátra`), "%d/%m/%Y")
-    data$`Fecha de la Entrevista con Trabajador Social` <- format(as.Date(data$`Fecha de la Entrevista con Trabajador Social`), "%d/%m/%Y")
+    # Agregar una columna de índice temporal para referencia
+    resultados_tabla <- search_results() %>%
+      mutate(`Temp_ID` = row_number()) %>%  # Crear un identificador temporal
+      arrange(desc(`Fecha de registro`)) %>%  # Ordenar por fecha
+      mutate(`Fecha de registro` = format(`Fecha de registro`, "%d/%m/%Y"))
     
     datatable(
-      data,
-      extensions = 'Scroller',
+      resultados_tabla,
+      selection = "single",  # Permite seleccionar una fila
+      rownames = FALSE,
       options = list(
-        lengthChange = TRUE,
+        paging = FALSE,
         scrollX = TRUE,
-        deferRender = TRUE,
-        scrollY = 150,
-        scroller = TRUE,
-        order = list(list(3, 'desc')),
-        columnDefs = list(list(width = '100px', targets = c(1:31))),
-        initComplete = JS(
-          "function(settings, json) {",
-          "$(this.api().table().header()).css({'background-color': '#EF8D16', 'color': 'white', 'font-size': '12px'});",
-          "$(this.api().table().body()).css({'font-size': '10px'});",  # Cambia el tamaño de la fuente aquí
-          "}"
-        ),
-        language = list(
-          url = "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json",
-          infoFiltered = "Todos" # supuestamente cambia el All por todos pero no anda
-        )
+        scrollY = "250px",
+        dom = 'ft',  # Elimina la barra de paginación (solo muestra el texto)
+        searching = FALSE,
+        columnDefs = list(list(className = 'dt-center', targets = "_all"))
       ),
-      style = "bootstrap",
-      #colnames = c(),
-      filter = "top"
+      class = "compact stripe hover",
+      caption = htmltools::tags$caption(
+        id = "table_caption",  # Asignar un ID para actualizarlo dinámicamente
+        style = 'caption-side: bottom; text-align: left; color: #ffb600;',
+        'Registros encontrados'  # Este será el texto inicial, que se actualizará
+      ),
+      callback = JS(
+      "
+  table.on('draw', function() {
+    var rowCount = table.rows({ filter: 'applied' }).count();  // Obtener la cantidad de filas visibles
+    $('#table_caption').text('Registros encontrados: ' + rowCount);  // Actualizar el texto del caption
+  });
+
+  table.on('click', 'tr', function() {
+    // Eliminar la clase 'selected' de todas las filas
+    table.$('tr').removeClass('selected');
+    
+    // Agregar la clase 'selected' a la fila clickeada
+    $(this).addClass('selected');
+  });
+
+  "
+      ) 
     )
+  })
+  # Indicador para mostrar la tabla y los botones solo si hay resultados
+  output$showTable <- reactive({
+    nrow(search_results()) > 0
+  })
+  outputOptions(output, "showTable", suspendWhenHidden = FALSE)
+  # Botón cancelar búsqueda
+  observeEvent(input$cancel_button, {
+    updateTextInput(session, "search_input", value = "")
+    search_results(NULL)
+  })
+  
+  # Botón modificar registro
+  observeEvent(input$modify_button, {
+    selected <- input$search_results_rows_selected  # Índice visual
+    
+    if (length(selected) > 0) {
+      # Extraer la tabla renderizada con Temp_ID
+      resultados_tabla <- search_results() %>%
+        mutate(`Temp_ID` = row_number()) %>%
+        arrange(desc(`Fecha de registro`))
+      
+      # Identificar el Temp_ID de la fila seleccionada
+      temp_id <- resultados_tabla$Temp_ID[selected]
+      
+      # Extraer el registro correspondiente del dataset original
+      registro <- search_results() %>% filter(row_number() == temp_id)
+      
+      # Mostrar el modal con los datos
+      showModal(modalDialog(
+        title = "Modificar Registro",
+        size = "xl",
+        style = "width: 100%; height: 100vh; max-width: 100%; max-height: 100vh; overflow: hidden; padding: 0; margin: 0;",
+        
+        div(
+          style = "height: 100%; display: flex; flex-direction: column; padding: 20px; overflow-y: auto;", # Permite scroll si el contenido es largo
+          
+          # Recuadro único para entrevistas ----------------------------------------
+          wellPanel(
+            style = "width: 100%; padding: 20px; margin-bottom: 20px;",  
+            div(
+              style = "display: flex; gap: 20px; flex-wrap: wrap;",  # Flexbox para columnas
+              # Columna para Entrevista con Psicólogo
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Entrevista con Psicólogo", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "Estado_de_Entrevista_Psicologo",
+                  label = tags$span("Estado", style = "font-size: 12px;"),
+                  choices = list("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada", ""),
+                  selected = registro$`Estado de la Entrevista con Psicológo`
+                ),
+                dateInput(
+                  inputId = "Fecha_de_Entrevista_Psicologo",
+                  label = tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de la Entrevista con Psicológo`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                )
+              ),
+              
+              # Columna para Entrevista con Psiquiatra
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Entrevista con Psiquiatra", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "Estado_de_Entrevista_Psiquiatra",
+                  label = tags$span("Estado", style = "font-size: 12px;"),
+                  choices = list("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada", ""),
+                  selected = registro$`Estado de la Entrevista con Psiquiátra`
+                ),
+                dateInput(
+                  inputId = "Fecha_de_Entrevista_Psiquiatra",
+                  label = tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de la Entrevista con Psiquiátra`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                )
+              ),
+              
+              # Columna para Entrevista con Trabajador Social
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Entrevista con Trabajador Social", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "Estado_de_Entrevista_Trabajador_Social",
+                  label = tags$span("Estado", style = "font-size: 12px;"),
+                  choices = list("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada", ""),
+                  selected = registro$`Estado de entrevista con Trabajador Social`
+                ),
+                dateInput(
+                  inputId = "Fecha_de_Entrevista_Trabajador_Social",
+                  label = tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de la Entrevista con Trabajador Social`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                )
+              ),
+              
+              # Columna para Tratamiento Elegido
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Tratamiento Elegido", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "Tratamiento_Elegido",
+                  label = tags$span("Tratamiento", style = "font-size: 12px;"),
+                  choices = c(
+                    "Cdd Baigorria", "Cdd Buen Pastor", "Centro de día Zeballos", "Derivado",
+                    "Internación B.P.", "Internación Baig.", "Internación Cristalería",
+                    "No finalizó admisión", "Rechaza tratamiento", "Seguimiento", ""
+                  ),
+                  selected = registro$`Tratamiento Elegido`
+                )
+              )
+            )
+          ),
+          
+          # Datos del Registro, Datos Personales y Contactos ---------------------------------
+          fluidRow(
+            # Columna para Datos del Registro
+            column(
+              width = 2,
+              wellPanel(
+                style = "min-height: 400px;", 
+                h4("Datos del Registro", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                textInput(inputId = "id_registro", 
+                          label = "ID de Registro", 
+                          value = registro$`ID de registro`),
+                dateInput(
+                  inputId = "Fecha_de_Registro",
+                  label = tags$span("Fecha de Registro", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de registro`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                ),
+                h4("Historial de Registro", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                textInput(inputId = "id_persona", 
+                          label = "ID de la persona", 
+                          value = registro$`ID de la persona`)
+              )
+            ),
+            
+            # Columna para Datos Personales
+            column(
+              width = 6,
+              wellPanel(
+                style = "min-height: 400px;", 
+                h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
+                fluidRow(
+                  # Campo recuerda DNI
+                  column(
+                    width = 4,
+                    selectInput(
+                      inputId = "recuerda_dni",
+                      label = tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
+                      choices = c("","Si", "No", "No tiene" = "S/D"),
+                      selected = registro$`Recuerda DNI`
+                    )
+                  ),
+                  
+                  # Campo DNI
+                  column(
+                    width = 3,
+                    numericInput(
+                      inputId = "dni",
+                      label = tags$span("DNI", style = "font-size: 12px;"),
+                      value = registro$DNI
+                    )
+                  ),
+                  
+                  # Apellido y Nombre
+                  column(
+                    width = 5,
+                    textInput(
+                      inputId = "apellido_nombre",
+                      label = tags$span("Apellido, Nombre (Apodo)", style = "font-size: 12px;"),
+                      value = registro$`Apellido, Nombre`
+                    )
+                  )
+                ),
+                
+                fluidRow(
+                  # Fecha de nacimiento
+                  column(
+                    width = 4,
+                    dateInput(
+                      inputId = "fecha_nacimiento",
+                      label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
+                      value = registro$`Fecha de Nacimiento`,
+                      format = "dd/mm/yyyy",  
+                      min = Sys.Date() - years(100),  # Limitar a 110 años atrás
+                      max = Sys.Date()  # Limitar a la fecha de hoy
+                    )
+                  ),
+                  
+                  # Edad
+                  column(
+                    width = 2,
+                    numericInput(
+                      "edad",
+                      tags$span("Edad", style = "font-size:10px;"),
+                      value = registro$`Edad del registro`
+                    )
+                  ),
+                  
+                  # Campo sexo biológico
+                  column(
+                    width = 3,
+                    selectInput(
+                      "sexo_biologico",
+                      label = tags$span("Sexo biológico", style = "font-size: 12px;"),
+                      choices = c("No informado","Femenino", "Masculino", ""), 
+                      selected = registro$`Sexo biológico`
+                    )
+                  ),
+                  
+                  # Campo género
+                  column(
+                    width = 3,
+                    selectInput(
+                      "genero",
+                      label = tags$span("Género", style = "font-size: 12px;"),
+                      choices = c("No informado","Mujer", "Hombre", "Trans (feminidades)", "Trans (masculinidades)", "Otro", ""),  
+                      selected = registro$Género
+                    )
+                  )
+                ),
+                
+                fluidRow(
+                  # Campo Provincia
+                  column(
+                    width = 4,
+                    selectInput(
+                      "provincia",
+                      label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
+                      choices = provincias,  # Lista de provincias inicial
+                      selected = registro$Provincia  # Valor seleccionado por defecto
+                    )
+                  ),
+                  
+                  # Campo localidad
+                  column(
+                    width = 4,
+                    selectInput(
+                      inputId = "localidad",
+                      label = tags$span("Localidad", style = "font-size: 12px;"),
+                      choices = localidades_por_provincia,  
+                      selected = registro$Localidad  # Valor seleccionado por defecto
+                    )
+                  ),
+                  
+                  # Campo barrio
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "barrio",
+                      label = tags$span("Barrio", style = "font-size: 12px;"),
+                      value = registro$Barrio
+                    )
+                  )
+                )
+              )
+            ),
+            # Columna para Datos de contacto
+            column(
+              width = 4,
+              wellPanel(
+                style = "min-height: 400px;", 
+                # Contacto 1
+                fluidRow(
+                  h4("Contacto 1", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  # Contacto 1 - Teléfono
+                  column(
+                    width = 4,
+                    numericInput(
+                      inputId = "telefono_contacto_1",
+                      label = tags$span("Teléfono", style = "font-size: 12px;"),
+                      value = registro$`Teléfono de Contacto 1`
+                    )
+                  ),
+                  
+                  # Contacto 1 - Tipo de vínculo
+                  column(
+                    width = 4,
+                    selectInput(
+                      "tipo_vinculo_contacto_1",
+                      label = tags$span("Vínculo", style = "font-size: 12px;"),
+                      choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                      selected = registro$`Tipo de Vínculo con el Contacto 1`
+                    )
+                  ),
+                  
+                  # Contacto 1 - Nombre
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "nombre1",
+                      label = tags$span("Nombre", style = "font-size: 12px;"),
+                      value = registro$`Nombre del Contacto 1`
+                    )
+                  )
+                )  ,              
+                # Contacto 2
+                fluidRow(
+                  h4("Contacto 2", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  # Contacto 2 - Teléfono
+                  column(
+                    width = 4,
+                    numericInput(
+                      inputId = "telefono_contacto_2",
+                      label = tags$span("Teléfono", style = "font-size: 12px;"),
+                      value = registro$`Teléfono de Contacto 2`
+                    )
+                  ),
+                  
+                  # Contacto 2 - Tipo de vínculo
+                  column(
+                    width = 4,
+                    selectInput(
+                      "tipo_vinculo_contacto_2",
+                      label = tags$span("Vínculo", style = "font-size: 12px;"),
+                      choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                      selected = registro$`Tipo de Vínculo con el Contacto 2`
+                    )
+                  ),
+                  
+                  # Contacto 2 - Nombre
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "nombre2",
+                      label = tags$span("Nombre", style = "font-size: 12px;"),
+                      value = registro$`Nombre del Contacto 2`
+                    )
+                  )
+                ),                
+                # Contacto 3
+                fluidRow(
+                  h4("Contacto 3", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  # Contacto 3 - Teléfono
+                  column(
+                    width = 4,
+                    numericInput(
+                      inputId = "telefono_contacto_3",
+                      label = tags$span("Teléfono", style = "font-size: 12px;"),
+                      value = registro$`Teléfono de Contacto 3`
+                    )
+                  ),
+                  
+                  # Contacto 3 - Tipo de vínculo
+                  column(
+                    width = 4,
+                    selectInput(
+                      "tipo_vinculo_contacto_3",
+                      label = tags$span("Vínculo", style = "font-size: 12px;"),
+                      choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", 
+                                  "Hijo","Hija", "Amigo", "Amiga"),
+                      selected = registro$`Tipo de Vínculo con el Contacto 3`
+                    )
+                  ),
+                  
+                  # Contacto 3 - Nombre
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "nombre3",
+                      label = tags$span("Nombre", style = "font-size: 12px;"),
+                      value = registro$`Nombre del Contacto 3`
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          # Datos del consumo -------------------------------------------------
+          wellPanel(
+            style = "height: auto; min-height: 400px; margin-top: 20px;", 
+            # Inicio del consumo
+            fluidRow(
+              h4("Inicio del consumo", style = "font-size: 15px; font-weight: bold;"),
+              column(
+                width = 6,
+                numericInput(
+                  inputId = "edad_inicio_consumo",
+                  label = tags$span("Edad de inicio de consumo", style = "font-size: 12px;"),
+                  value = registro$`Edad de Inicio de Cosumo`
+                )
+              ),
+              column(
+                width = 6,
+                selectInput(
+                  "sustancia_inicio_consumo",
+                  label = tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px;"),
+                  choices = c("NoAlcohol", "Cocaína", "Crack", "Marihuana", 
+                              "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra",""),
+                  selected = registro$`Sustancia de inicio`
+                )
+              )
+            ),
+            
+            # Consumo actual
+            fluidRow(
+              style = "margin-top: 20px;", # Espacio entre filas
+              h4("Consumo actual", style = "font-size: 15px; font-weight: bold;"),
+              column(
+                width = 6,
+                selectInput(
+                  "persona_consume",
+                  label = tags$span("¿Consume actualmente?", style = "font-size: 12px;"),
+                  choices = c("No informado","","Si","No"),
+                  selected = registro$`¿Consume actualmente?`
+                )
+              )
+            )
+          )
+        ),
+        
+        footer = tagList(
+          modalButton("Cancelar"),
+          actionButton("save_button", "Guardar cambios")
+        ),
+        easyClose = TRUE
+      ))
+
+      
+    } else {
+      showNotification("Por favor, seleccione un registro para modificar.", type = "warning")
+    }
   })
 }
 
