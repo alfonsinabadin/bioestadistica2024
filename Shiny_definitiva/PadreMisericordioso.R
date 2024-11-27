@@ -14,6 +14,7 @@ library(writexl)
 library(kableExtra)
 library(tidyr)
 library(openxlsx)
+library(shinyFeedback)
 
 # Importar base ----------------------------------------------------------------
 base <- function(){
