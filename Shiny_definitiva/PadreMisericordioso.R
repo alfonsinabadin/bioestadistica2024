@@ -1048,45 +1048,45 @@ ui <- page_navbar(
   nav_panel(
     tags$span("Tablero de visualización", style = "font-size: 14px;"),
     class = "bslib-page-dashboard",
-  sidebarLayout(
-    sidebarPanel(
-      h4("Menú de categorías"),
-      selectInput("anio", "Seleccione un año:", 
-                  choices = c("Todos los años", 
-                              sort(unique(format(data$`Fecha de registro`, "%Y")))), 
-                  selected = "Todos los años"),
-      tabsetPanel(
-        id = "menu_tabs",
-        tabPanel("Características Demográficas"),
-        tabPanel("Características Sociales y Económicas"),
-        tabPanel("Características de Consumo"),
-        tabPanel("Derivación y Tratamiento Asignado")
-      )
-    ),
-    mainPanel(
-      uiOutput("contenido_pestana"),
-      conditionalPanel(
-        condition = "input.menu_tabs == 'Características de Consumo'",
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("hist_edad_inicio")),
-        uiOutput("tabla_inicio_reg"),
-        uiOutput("tabla_s_inicio"),
-        uiOutput("tabla_s_actual"),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("acual_vs_inicio")),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("edad_sinicio")),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("educ_sustancia"))
+    sidebarLayout(
+      sidebarPanel(
+        h4("Menú de categorías"),
+        selectInput("anio", "Seleccione un año:", 
+                    choices = c("Todos los años", 
+                                sort(unique(format(data$`Fecha de registro`, "%Y")))), 
+                    selected = "Todos los años"),
+        tabsetPanel(
+          id = "menu_tabs",
+          tabPanel("Características Demográficas"),
+          tabPanel("Características Sociales y Económicas"),
+          tabPanel("Características de Consumo"),
+          tabPanel("Derivación y Tratamiento Asignado")
+        )
       ),
-      conditionalPanel(
-        condition = "input.menu_tabs == 'Derivación y Tratamiento Asignado'",
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_previos")),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_asignados")),
-        tags$div(style = "margin-bottom: 20px;", plotlyOutput("cons_vs_trat"))
+      mainPanel(
+        uiOutput("contenido_pestana"),
+        conditionalPanel(
+          condition = "input.menu_tabs == 'Características de Consumo'",
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("hist_edad_inicio")),
+          uiOutput("tabla_inicio_reg"),
+          uiOutput("tabla_s_inicio"),
+          uiOutput("tabla_s_actual"),
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("acual_vs_inicio")),
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("edad_sinicio")),
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("educ_sustancia"))
+        ),
+        conditionalPanel(
+          condition = "input.menu_tabs == 'Derivación y Tratamiento Asignado'",
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_previos")),
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("trat_asignados")),
+          tags$div(style = "margin-bottom: 20px;", plotlyOutput("cons_vs_trat"))
+        )
       )
+    )
+  ),
+  nav_item(
+    input_dark_mode(id = "dark_mode", mode = "light")
   )
-)
-),
-nav_item(
-  input_dark_mode(id = "dark_mode", mode = "light")
-)
 )
 
 server <- function(input, output, session) {
@@ -1346,7 +1346,7 @@ server <- function(input, output, session) {
   })
   
   iv_barrio$enable()
-
+  
   # Contacto 1 - Teléfono ------------------------------------------------------
   
   iv_telefono_1 <- InputValidator$new()
@@ -1925,8 +1925,10 @@ server <- function(input, output, session) {
   
   ## Obligatorio
   iv_tratamientos_previos$add_rule("num_tratamientos_previos", function(value) {
-    if (value < 0 || value > 99) {
-      return(tags$span("El número debe estar entre 0 y 99.",style = "font-size:10px;"))
+    if(!is.na(value)) {
+      if (value < 0 || value > 99) {
+        return(tags$span("El número debe estar entre 0 y 99.",style = "font-size:10px;"))
+      }
     }
   })
   
@@ -2292,7 +2294,7 @@ server <- function(input, output, session) {
       `Edad de Inicio de Cosumo` = ifelse(isTruthy(input$edad_inicio_consumo), as.numeric(input$edad_inicio_consumo), NA),
       `Sustancia de inicio` = ifelse(isTruthy(input$sustancia_inicio_consumo), input$sustancia_inicio_consumo, NA),
       `Inicio con Otras - Descripción` = ifelse(isTruthy(input$otra_sustancia), input$otra_sustancia, NA),
-     
+      
       # Consumo actual -----------------------------------------------------
       `¿Consume actualmente?` = ifelse(isTruthy(input$persona_consume), input$persona_consume, NA),
       `Consumo actual con Alcohol` = ifelse(isTruthy(input$sustancias_consumo_actual) && "Alcohol" %in% input$sustancias_consumo_actual, "Alcohol", NA),
@@ -2323,7 +2325,7 @@ server <- function(input, output, session) {
       `Ingresos Económicos` = ifelse(isTruthy(input$ingreso_economico), paste(input$ingreso_economico, collapse = ", "), NA),
       `Situación Judicial` = ifelse(isTruthy(input$situacion_judicial), input$situacion_judicial, NA),
       `Situación Judicial - Otro` = ifelse(isTruthy(input$otra_situacion_judicial), input$otra_situacion_judicial, NA),
-    
+      
       # Red de Apoyo y Referencias ------------------------------------------
       `Redes de Apoyo` = ifelse(isTruthy(input$redes_apoyo), paste(input$redes_apoyo, collapse = ", "), NA),
       `Referencia a APS` = ifelse(isTruthy(input$referencia_aps), input$referencia_aps, NA),
@@ -2362,7 +2364,7 @@ server <- function(input, output, session) {
         }
       }
     })
-  
+    
     
     # Sexo biológico
     
@@ -2733,7 +2735,7 @@ server <- function(input, output, session) {
   })
   
   
-# PESTAÑA VISUALIZACION
+  # PESTAÑA VISUALIZACION
   datos_filtrados <- reactive({
     if (input$anio == "Todos los años") {
       return(data)  # Devuelve todos los datos
