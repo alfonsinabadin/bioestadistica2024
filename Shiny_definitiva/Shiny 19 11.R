@@ -20,8 +20,26 @@ library(ggthemes)
 library(shinydashboard)
 library(showtext)
 library(leaflet) # para gráfico de mapa
-library(emojifont) # para icono de mujery hombre
+library(emojifont) # para icono de mujer y hombre
 font_add_google("Montserrat")
+library(shinymanager) #para usuario y contraseña
+
+# Usuario y contraseña
+set_labels(
+  language = "en",
+  "Please authenticate" = "Gestión de registros - Padre misericordioso",
+  "Username:" = "Nombre de usuario:",
+  "Password:" = "Contraseña:"
+)
+
+credentials <- data.frame(
+  user = c("registroPM", "adminPM"), # mandatory
+  password = c("Rosario24", "Estadistica24"), # mandatory
+  admin = c(FALSE, TRUE),
+  comment = "Simple and secure authentification mechanism 
+  for single ‘Shiny’ applications.",
+  stringsAsFactors = FALSE
+)
 
 # Importar base ----------------------------------------------------------------
 base <- function(){
@@ -67,6 +85,8 @@ provincias_df <- data.frame(
 
 ## User Interface --------------------------------------------------------------
 ui <- page_navbar(
+  
+  verbatimTextOutput("auth_output"),
   
   useShinyjs(),
   
@@ -1075,7 +1095,11 @@ ui <- page_navbar(
   nav_panel(
     tags$span("Modificación de registros", style = "font-size: 14px;"),
     class = "bslib-page-dashboard",
-    icon = icon("pen-to-square")
+    icon = icon("pen-to-square"),
+    
+    fluidRow(
+      uiOutput("admin_button"),
+    )
   ),
   
   nav_menu(
@@ -1383,7 +1407,21 @@ ui <- page_navbar(
   )
 )
 
+ui <- secure_app(ui,
+                 timeout = 30,
+                 theme = shinythemes::shinytheme("flatly"),
+                 background  = "linear-gradient(rgba(225,225,225, 0.5),
+                 rgba(225,225,225,0.5)));")
+
 server <- function(input, output, session) {
+  
+  res_auth <- secure_server(
+    check_credentials = check_credentials(credentials)
+  )
+  
+  output$auth_output <- renderPrint({
+    reactiveValuesToList(res_auth)
+  })
   
   # Cargar la base de datos
   data <- base()
@@ -3380,6 +3418,12 @@ output$donut.cud <- renderPlotly({
       borderpad = 5,
       align = "center"
     )
+})
+
+  output$admin_button <- renderUI({
+    if (res_auth$admin) { # Verificar si el usuario es administrador
+      actionButton("descarga", "Descargar base de datos", icon = icon("download"))
+    }
 })
 }
 
