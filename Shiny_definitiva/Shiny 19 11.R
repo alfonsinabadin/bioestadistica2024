@@ -1116,8 +1116,8 @@ ui <- page_navbar(
                        checkboxGroupInput(
                          "edad_filter",
                          label = tags$span("Categoría de edad:", style = "font-size:15px;"),
-                         choices = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
-                         selected = c("0 a 12", "13 a 17", "18 a 29", "30 a 60")),
+                         choices = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60"),
+                         selected = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60")),
                        
                        # Filtro Sexo
                        checkboxGroupInput(
@@ -1221,8 +1221,8 @@ ui <- page_navbar(
                        checkboxGroupInput(
                          "edad_filter_2",
                          label = tags$span("Categoría de edad:", style = "font-size:15px;"),
-                         choices = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
-                         selected = c("0 a 12", "13 a 17", "18 a 29", "30 a 60")),
+                         choices = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60"),
+                         selected = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60")),
                        
                        # Filtro año
                        pickerInput(
@@ -1330,6 +1330,50 @@ ui <- page_navbar(
                                   height = "280px")
                    )
                  )
+               )
+             )
+    ),
+    
+    tabPanel(HTML("<span style='font-size:14px'>Análisis de consumo</span>"),
+             
+             fluidRow(
+               column(
+                 width = 3,
+                 wellPanel(
+                   
+                   style = "min-height: 390px;",
+                   
+                   h4("Filtros", style = "font-size: 15px; font-weight: bold;"), 
+                   
+                   fluidRow(
+                     div(
+                       
+                       # Filtro año
+                       pickerInput(
+                         "year_filter_3",
+                         label = tags$span("Año del registro:", style = "font-size:15px;"),
+                         choices = NULL,  # Los años se actualizarán en el server
+                         selected = NULL,
+                         multiple = TRUE,
+                         options = pickerOptions(
+                           actionsBox = TRUE,   # Para seleccionar/deseleccionar todo
+                           #live-search = TRUE,    # Permite buscar dentro del selector
+                           selectAllText = "Todos",
+                           deselectAllText = "Ninguno",
+                           noneSelectedText = "Seleccione"
+                         )
+                       )
+                   )
+                 )
+               ),
+               
+               column(
+                 width = 9,
+                 
+                 h2("Análisis demográfico", style = "font-size: 20px; font-weight: bold;"),
+                 
+                 fluidRow()
+               )
                )
              )
     )
@@ -2608,8 +2652,10 @@ observeEvent(input$guardar_registro, {
   
 })
 
-
+# ------------------------------------------------------------------------------
 # PESTAÑA VISUALIZACION
+# ------------------------------------------------------------------------------
+
 # Cargar datos sacando los registros personales repetidos 
 data <- base() %>%
   group_by(`ID de la persona`) %>%
@@ -2620,8 +2666,9 @@ data <- base() %>%
       ifelse(`Edad del registro` >= 0 & `Edad del registro` <= 12, "0 a 12",
              ifelse(`Edad del registro` >= 13 & `Edad del registro` <= 17, "13 a 17",
                     ifelse(`Edad del registro` >= 18 & `Edad del registro` <= 29, "18 a 29",
-                           ifelse(`Edad del registro` >= 30 & `Edad del registro` <= 60, "30 a 60", NA)))),
-      levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60"),
+                           ifelse(`Edad del registro` >= 30 & `Edad del registro` <= 60, "30 a 60", 
+                                  ifelse(`Edad del registro` >= 61, "+ 60", NA))))),
+      levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60"),
       ordered = TRUE
     ),
     `Nivel Máximo Educativo Alcanzado` = factor(`Nivel Máximo Educativo Alcanzado`,
@@ -2686,7 +2733,7 @@ data <- base() %>%
 # Extraer los años únicos de la base y actualizar el filtro de años
 observe({
   years <- unique(year(data$`Fecha de registro`))
-  years <- years[!is.na(years)]
+  years <- sort(years[!is.na(years)])
   updatePickerInput(session, "year_filter", choices = rev(years))
 })
 
@@ -2700,7 +2747,7 @@ filtered_data <- reactive({
 # Extraer los años únicos de la base y actualizar el filtro de años
 observe({
   years <- unique(year(data$`Fecha de registro`))
-  years <- years[!is.na(years)]
+  years <- sort(years[!is.na(years)])
   updatePickerInput(session, "year_filter_2", choices = rev(years))
 })
 
@@ -2712,6 +2759,19 @@ filtered_data_2 <- reactive({
            is.null(input$nivel_educativo_filter) | `Nivel Máximo Educativo Alcanzado` %in% c(input$nivel_educativo_filter,NA),
            is.null(input$sit_laboral_filter) | `Situación Laboral Actual` %in% c(input$sit_laboral_filter,NA)
     )
+})
+
+# Extraer los años únicos de la base y actualizar el filtro de años
+observe({
+  years <- unique(year(data$`Fecha de registro`))
+  years <- sort(years[!is.na(years)])
+  updatePickerInput(session, "year_filter_3", choices = rev(years))
+})
+
+# Crear el data frame reactivo filtrado
+filtered_data_3 <- reactive({
+  data %>%
+    filter(is.null(input$year_filter_3) | year(`Fecha de registro`) %in% input$year_filter)
 })
 
 # Boxplot + histograma + tabla
@@ -2731,14 +2791,14 @@ output$histbox.edad <- renderPlotly({
     geom_histogram(aes(x = `Edad del registro`, 
                        y = (..count..),
                        text = paste(
-                         "Edad:", ..x..,
+                         "Edad:", ..x.. -1, "a", ..x.. +1,
                          "\nFrecuencia:", ..count..)
     ),
     position = "identity", binwidth = 2,
     fill = "#ff8800", color = "grey1") +
     labs(x = "Edad de registro", 
          y = "Frecuencia", 
-         title = "Distribución de la edad de registro",
+         title = "Distribución de la edad al momento de la admisión",
          subtitle = conteo_na) +
     scale_x_continuous(limits = c(0, 60), breaks = seq(0, 60, 10)) +
     theme_fivethirtyeight() + 
@@ -2746,7 +2806,7 @@ output$histbox.edad <- renderPlotly({
   
   hist_plotly <- ggplotly(hist, tooltip = "text") %>%
     layout(title = list(y = 0.95,
-                        text = "Distribución de la edad de registro",
+                        text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
            xaxis = list(title = list(text = "Edad de registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
@@ -2780,7 +2840,7 @@ output$histbox.edad <- renderPlotly({
                         fillcolor = "#ff8800") %>%
     add_boxplot(hoverinfo = "x") %>%
     layout(title = list(y = 0.95,
-                        text = "Distribución de la edad de registro",
+                        text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
            xaxis = list(title = list(text = "Edad de registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
@@ -2796,10 +2856,12 @@ output$histbox.edad <- renderPlotly({
     group_by(EdadCategorica) %>%
     summarise(conteo = n()) %>%
     complete(EdadCategorica)%>%
+    filter(!is.na(EdadCategorica),
+           EdadCategorica != "+ 60") %>%
     mutate(conteo = ifelse(is.na(conteo),0,conteo),
-           pos = c(12/2,12+(17-12)/2,17+(29-17)/2,29+(60-29)/2),
+           pos = c(12/2,13+(17-13)/2,18+(29-18)/2,30+(60-30)/2),
            cantmax = c(12,17,29,60),
-           cantmin = c(0,12,17,29))
+           cantmin = c(0,13,18,30))
   
   tabla_edades <- ggplot(edades, aes(text = paste("Categoría de SEDONAR:", EdadCategorica, "\nCantidad:", conteo))) +
     geom_rect(aes(xmin = cantmin, xmax = cantmax, ymin = 0, ymax = 2, 
@@ -2807,8 +2869,9 @@ output$histbox.edad <- renderPlotly({
     geom_text(aes(x = pos, y = 1, label = paste(EdadCategorica,paste("n:",conteo),sep = "\n")), color = "grey1", size = 3) +
     scale_fill_manual(values = c("#FBC91C", "#EC7E14", "#4C443C","#F9EDCC")) +
     scale_color_manual(values = c("#FBC91C", "#EC7E14", "#4C443C","#F9EDCC")) +
-    labs(title = "Distribución de la edad de registro") +
-    scale_y_continuous(breaks = c(0,60)) +
+    labs(title = "Distribución de la edad al momento de la admisión") +
+    scale_x_continuous(breaks = seq(0,60,10)) +
+    scale_y_continuous(breaks = c(0,2)) +
     theme_fivethirtyeight() + 
     theme(legend.position = "none",
           axis.title = element_blank(),
@@ -2820,7 +2883,7 @@ output$histbox.edad <- renderPlotly({
   
   tabla_edades_plotly <- ggplotly(tabla_edades, tooltip = "text") %>%
     layout(title = list(y = 0.95,
-                        text = "Distribución de la edad de registro",
+                        text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
            xaxis = list(title = list(text = "Edad de registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
