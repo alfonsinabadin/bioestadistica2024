@@ -1,557 +1,1198 @@
+# Librerías --------------------------------------------------------------------
 library(shiny)
-library(plotly)
+library(bslib)
 library(dplyr)
+library(lubridate)
+library(plotly)
+library(rlang)
+library(readxl)
+library(shinyjs)
+library(shinyvalidate)
+library(geoAr)
+library(tibble)
+library(writexl)
+library(kableExtra)
+library(tidyr)
+library(shinyWidgets)
+library(ggplot2)
+library(ggthemes)
+library(DT)
+library(shinyFeedback)
+library(openxlsx)
+library(RSQLite)
+library(DBI)
 
-# Suponiendo que tu base ya está cargada como `Base_completa`
-# Aquí te muestro un ejemplo para cargar la base, ajusta según corresponda
-# Base_completa <- read.csv("ruta/a/tu/archivo.csv")
+# Importar base ----------------------------------------------------------------
+base <- function(){
+  data <- read_excel("Base completa.xlsx")
+  return(data)
+}
+data <- base()
 
-# Interfaz de usuario
-ui <- fluidPage(
-  titlePanel("Análisis de Datos"),
+# Base de provincias y localidades ---------------------------------------------
+provincias <- show_arg_codes()[2:25, 5]
+provincias[[1]][1] <- "CABA"
+provincia_vacia <- tibble(name_iso = " ")
+provincias <- bind_rows(provincia_vacia, provincias)
+colnames(provincias) <- "Provincias"
+
+localidades_por_provincia <- readRDS("localidades.rds")
+for (provincia in names(localidades_por_provincia)) {
+  localidades_por_provincia[[provincia]] <- c("", localidades_por_provincia[[provincia]])
+}
+
+## User Interface --------------------------------------------------------------
+ui <- page_navbar(
   
-  sidebarLayout(
-    # Barra lateral con el menú de navegación
-    sidebarPanel(
-      h4("Menú de categorías"),
-      tabsetPanel(
-        id = "menu_tabs",
-        tabPanel("Características Demográficas"),
-        tabPanel("Características Sociales y Económicas"),
-        tabPanel("Características de Consumo"),
-        tabPanel("Derivación y Tratamiento Asignado")
-      )
-    ),
-    
-    # Panel principal donde se muestran los gráficos de acuerdo con la categoría seleccionada
-    mainPanel(
-      uiOutput("contenido_pestana"),  
-      conditionalPanel(
-        condition = "input.menu_tabs == 'Derivación y Tratamiento Asignado'",
-        plotlyOutput("trat_previos"),
-        plotlyOutput("trat_asignados"),
-        plotlyOutput("cons_vs_trat")
-      ),
-      conditionalPanel(
-        condition = "input.menu_tabs == 'Características de Consumo'",
-        uiOutput("tabla_s_inicio"),
-        uiOutput("tabla_s_actual"),
-        plotlyOutput("acual_vs_inicio"),
-        plotlyOutput("edad_sinicio"),
-        plotlyOutput("educ_sustancia")
+  useShinyjs(),
+  
+  # Tema con función bs_theme()
+  theme = bs_theme(
+    bg = "#e1e1e1",
+    fg = "black",
+    primary = "#ec7e14",
+    secondary = "#fbc91c",
+    base_font = font_google("Montserrat")
+  ),
+  # Dejo seteados los tamaños de las tipografías de los títulos de cada campo
+  tags$head(
+    tags$style(HTML("
+    input::placeholder {
+      font-size: 12px;
+    }
+    .form-control {
+      font-size: 12px;
+    }
+    .selectize-input {
+      font-size: 12px;
+    }
+    .selectize-dropdown {
+      font-size: 12px;
+    }
+    .checkbox-inline, .checkbox-label {
+      font-size: 12px;
+    }
+    .shiny-input-container {
+      font-size: 12px;
+    }
+    .checkbox-group-input {
+      margin-top: 10px;
+    }
+      /* Color naranja para la fila seleccionada y hover */
+    #search_results .dataTable tbody tr.selected {
+      background-color: #FFA500 !important;
+      color: white;
+    }
+    #search_results .dataTable tbody tr:hover,
+    #search_results .dataTable tbody tr:focus,
+    #search_results .dataTable tbody tr.active {
+      background-color: #FFA500 !important;
+      color: white !important;
+    }
+    /* Eliminar cualquier borde o fondo azul de la tabla */
+    #search_results .dataTable tbody tr.selected td,
+    #search_results .dataTable tbody tr.selected {
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    /* Estilo para todos los botones en la aplicación */
+      .btn {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      .btn:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
+      }
 
+      /* Estilo específico para el botón 'Buscar' */
+      #search_button {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      #search_button:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
+      }
+
+      /* Estilo específico para el botón 'Modificar registro' */
+      #modify_button {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      #modify_button:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
+      }
+
+      /* Estilo específico para el botón 'Cancelar búsqueda' */
+      #cancel_search_button {
+        background-color: #ec7e14 !important;
+        border-color: #ec7e14 !important;
+        color: white !important;
+      }
+      #cancel_search_button:hover {
+        background-color: #d96a0f !important;
+        border-color: #d96a0f !important;
+      }
+      .modal-dialog {
+      width: 95% !important;
+      max-width: 95% !important;
+    }
+    .modal-content {
+      height: 90vh;
+      overflow: hidden;
+    }
+  "))
+  )
+  ,
+  
+  lang = "en",
+  
+  # Título de la shiny (encabezado)
+  title = tags$span(
+    style = "align-items: center;",
+    tags$img(
+      src = "pmlogo.png",
+      width = "30px",
+      height = "auto",
+      style = "margin-bottom: 5px;"
+    ),
+    tags$span("Gestión de registros - Padre misericodioso", style = "font-size: 18px;color:#ec7e14;")
+  ),
+  
+  # Espacio en la barra de arriba (en el encabezado)
+  nav_spacer(),
+  
+  # Pestaña nuevo registro 
+  nav_panel(
+    tags$span("Nuevo registro", style = "font-size: 14px;"),
+    class = "bslib-page-dashboard",
+    icon = icon("user"),
+    
+  ),
+  
+  nav_panel(
+    tags$span("Consulta y modificación de registros", style = "font-size: 14px;"),
+    class = "bslib-page-dashboard",
+    icon = icon("pen-to-square"),
+    
+    fluidPage(
+      useShinyjs(),  # Habilitar shinyjs para usar las funciones de mostrar y ocultar elementos
+      
+      # Mensaje de éxito en verde (oculto inicialmente)
+      div(
+        id = "success_message",
+        style = "display: none; background-color: #4CAF50; color: white; padding: 10px; margin-bottom: 15px; text-align: center;",
+        "Modificaciones guardadas con éxito"
+      ),
+      
+      # Buscador de DNI o Nombre
+      textInput("search_input", "Buscar por DNI o Nombre", ""),
+      actionButton("search_button", "Buscar"),
+      
+      conditionalPanel(
+        condition = "output.showTable == true",
+        
+        # Tabla de resultados de búsqueda
+        dataTableOutput("search_results"),
+        
+        # Botones en la esquina inferior derecha de la tabla
+        tags$div(
+          style = "margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;",
+          actionButton("cancel_button", "Cancelar búsqueda", width = '150px'),
+          actionButton("modify_button", "Modificar registro", width = '150px')
+        )
       )
     )
+  ),
+  
+  nav_panel(
+    tags$span("Tablero de visualización", style = "font-size: 14px;"),
+    class = "bslib-page-dashboard",
+  ),
+  nav_item(
+    input_dark_mode(id = "dark_mode", mode = "light")
   )
 )
 
-# Servidor
-server <- function(input, output) {
+server <- function(input, output, session) {
   
-  # Características Demográficas -----------------------------------------------
+  # Cargar la base de datos
+  data <- base()
   
-  # Gráfico de Distribución de Edad
+  # PESTAÑA MODIFICACIÓN DE REGISTRO---------------------------------------------------------
+  # Filtrar los resultados de la búsqueda
+  # Reactivo para almacenar los resultados de la búsqueda
+  search_results <- reactiveVal(NULL)
+  registro_seleccionado <- reactiveVal(NULL)
   
-  output$dist_plot <- renderPlotly({
-    edad <- Base_completa_copia$`Edad del primer registro` %>% na.omit() %>% .[. > 0]
-    
-    promedio <- mean(edad, na.rm = TRUE)
-    desvio <- sd(edad, na.rm = TRUE)
-    n <- length(na.omit(edad))
-    
-    fig <- plot_ly()
-    
-    fig <- fig %>%
-      add_histogram(x = ~edad, name = "Histograma", yaxis = "y1", marker = list(color = "#ec7e14")) %>%
-      layout(
-        yaxis = list(title = "Frecuencia", range = c(0, 60)),
-        xaxis = list(title = "Edad"),
-        title = "Distribución de la Edad al Ingreso",
-        annotations = list(
-          text = paste("Promedio:", round(promedio, 2), "<br>",
-                       "Desvío estándar:", round(desvio, 2), "<br>",
-                       "n =", n),
-          x = 0.95, y = 0.95, xref = "paper", yref = "paper",
-          showarrow = FALSE,
-          font = list(size = 12, color = "black")
-        )
-      )
-    
-    fig <- fig %>%
-      add_boxplot(x = ~edad, name = "Boxplot", yaxis = "y2", boxpoints = FALSE, 
-                  line = list(color = "#fbc91c"),
-                  fillcolor = "rgba(251, 201, 28, 0.5)")%>%
-      layout(
-        yaxis2 = list(title = "", overlaying = "y", side = "right", showgrid = FALSE)
-      )
-    
-    fig
-    
-  })
-  
-  # Gráfico de Distribución por Género
-  
-  output$gender_pie <- renderPlotly({
-    genero_data <- Base_completa %>%
-      filter(!is.na(Género)) %>%  
-      count(Género) %>%
-      mutate(porcentaje = n / sum(n) * 100) 
-    
-    fig <- plot_ly(genero_data, labels = ~Género, values = ~n, type = 'pie',
-                   textinfo = 'label+percent', insidetextorientation = 'radial',
-                   marker = list(colors = c("#ec7e14", "#fbc91c")))%>%
-      layout(
-        title = "Distribución por Género",
-        showlegend = TRUE
-      )
-    
-    fig
-  })
-  
-  # Características Sociales y Económicas --------------------------------------
-  
-  output$educacion_bar <- renderPlotly({
-    educacion_data <- Base_completa %>%
-      filter(!is.na(`Nivel Máximo Educativo Alcanzado`)) %>%  
-      count(`Nivel Máximo Educativo Alcanzado`)
-    
-    fig <- plot_ly(educacion_data, x = ~`Nivel Máximo Educativo Alcanzado`, y = ~n, type = 'bar',
-                   marker = list(color = "#ec7e14")) %>%
-      layout(
-        title = "Distribución del Máximo Nivel Educativo Alcanzado",
-        xaxis = list(title = "Nivel Educativo"),
-        yaxis = list(title = "Frecuencia")
-      )
-    
-    fig
-  })
-  
-  # Gráfico de Situación Laboral
-  
-  output$situacion_laboral_pie <- renderPlotly({
-    situacion_laboral_data <- Base_completa %>%
-      filter(!is.na(`Situación Laboral Actual`)) %>%
-      count(`Situación Laboral Actual`)
-    
-    fig <- plot_ly(situacion_laboral_data, labels = ~`Situación Laboral Actual`, values = ~n, type = 'pie',
-                   textinfo = 'label+percent', insidetextorientation = 'radial',
-                   marker = list(colors = c("#ec7e14", "#009E73", "#fbc91c"))) %>%
-      layout(
-        title = "Situación Laboral al Momento de la Entrevista",
-        showlegend = TRUE
-      )
-    
-    fig
-  })
-  
-  # Gráfico de Barras del Tipo de Ingreso
-  
-  output$tipo_ingreso_bar <- renderPlotly({
-    ingreso_data <- Base_completa %>%
-      filter(!is.na(`Ingreso Económico`)) %>%
-      count(`Ingreso Económico`)
-    
-    fig <- plot_ly(ingreso_data, x = ~`Ingreso Económico`, y = ~n, type = 'bar',
-                   marker = list(color = "#ec7e14")) %>%
-      layout(
-        title = "Tipo de Ingreso Económico al Momento de la Entrevista",
-        xaxis = list(title = "Tipo de Ingreso"),
-        yaxis = list(title = "Frecuencia")
-      )
-    
-    fig
-  })
-  
-  # Gráfico de Barras de Situación Habitacional
-  
-  output$situacion_habitacional_bar <- renderPlotly({
-    habitacion_data <- Base_completa %>%
-      filter(!is.na(`Situación Habitacional Actual`)) %>%
-      count(`Situación Habitacional Actual`)
-    
-    fig <- plot_ly(habitacion_data, x = ~`Situación Habitacional Actual`, y = ~n, type = 'bar',
-                   marker = list(color = "#ec7e14")) %>%
-      layout(
-        title = "Situación Habitacional al Momento de la Entrevista",
-        xaxis = list(title = "Situación Habitacional"),
-        yaxis = list(title = "Frecuencia")
-      )
-    
-    fig
-  })
-  
-  # Gráfico de Red de Apoyo
-  
-  output$red_apoyo_pie <- renderPlotly({
-    red_apoyo_data <- Base_completa %>%
-      filter(!is.na(`Redes de Apoyo`)) %>%
-      count(`Redes de Apoyo`)
-    
-    fig <- plot_ly(red_apoyo_data, labels = ~`Redes de Apoyo`, values = ~n, type = 'pie',
-                   textinfo = 'label+percent', insidetextorientation = 'radial',
-                   marker = list(colors = c("#56B4E9", "#fbc91c", "#009E73", "#0072B2","#CC79A7","#D55E00","#F0E442","#ec7e14","#999999"))) %>%
-      layout(
-        title = "Red de Apoyo",
-        showlegend = TRUE
-      )
-    
-    fig
-  })
-  
-  # Gráfico de barras de situación judicial
-  
-  output$grafico_situacion_judicial <- renderPlotly({
-    habitacion_data <- Base_completa %>%
-      filter(!is.na(`Situación Judicial`)) %>%
-      count(`Situación Judicial`)
-    
-    fig <- plot_ly(habitacion_data, x = ~`Situación Judicial`, y = ~n, type = 'bar',
-                   marker = list(color = "#ec7e14")) %>%
-      layout(
-        title = "Situación Judicial al Momento de la Entrevista",
-        xaxis = list(title = "Situación Judicial"),
-        yaxis = list(title = "Frecuencia")
-      )
-    
-    fig
-  })
-  
-  
-  # Gráfico de sectores de certificado de discapacidad
-  
-  output$grafico_cud <- renderPlotly({
-    referencias_data <- Base_completa %>%
-      filter(!is.na(CUD)) %>%
-      count(CUD)
-    
-    fig <- plot_ly(referencias_data, labels = ~CUD, values = ~n, type = 'pie',
-                   textinfo = 'label+percent', insidetextorientation = 'radial',
-                   marker = list(colors = c("#ec7e14", "#fbc91c"))) %>%
-      layout(
-        title = "Certificado de Discapacidad (CUD)",
-        showlegend = TRUE
-      )
-    
-    fig
-  })
-  
-  # Gráfico de Referencias de APS
-  
-  output$referencias_pie <- renderPlotly({
-    referencias_data <- Base_completa %>%
-      filter(!is.na(`Referencia a APS`)) %>%
-      count(`Referencia a APS`)
-    
-    fig <- plot_ly(referencias_data, labels = ~`Referencia a APS`, values = ~n, type = 'pie',
-                   textinfo = 'label+percent', insidetextorientation = 'radial',
-                   marker = list(colors = c("#fbc91c", "#ec7e14", "#009E73", "#CC79A7"))) %>%
-      layout(
-        title = "Referencias APS",
-        showlegend = TRUE
-      )
-    
-    fig
-  })
-  
-  output$contenido_pestana <- renderUI({
-    if (input$menu_tabs == "Características Demográficas") {
-      tagList(
-        plotlyOutput("dist_plot"),
-        tags$div(style = "margin-top: 80px;"),  # Espacio entre gráficos
-        plotlyOutput("gender_pie")
-      )
-    } 
-    
-    else if (input$menu_tabs == "Características Sociales y Económicas") {
-      tagList(
-        plotlyOutput("educacion_bar"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("situacion_laboral_pie"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("tipo_ingreso_bar"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("situacion_habitacional_bar"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("red_apoyo_pie"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("grafico_situacion_judicial"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("grafico_cud"),
-        tags$div(style = "margin-top: 80px;"),
-        plotlyOutput("referencias_pie")
-      )
-    } 
-    
-    else if (input$menu_tabs == "Características de Consumo") {
-      h4("Contenido de Características de Consumo")
-      # Aquí puedes añadir otros gráficos relacionados con esta categoría
-    } else if (input$menu_tabs == "Derivación y Tratamiento Asignado") {
-      h4("Contenido de Derivación y Tratamiento Asignado")
-      # Aquí puedes añadir otros gráficos relacionados con esta categoría
+  # Realizar la búsqueda cuando se presiona el botón "Buscar"
+  observeEvent(input$search_button, {
+    if (input$search_input != "") {
+      resultados <- data %>%
+        filter(grepl(input$search_input, as.character(DNI)) |
+                 grepl(input$search_input, `Apellido, Nombre`, ignore.case = TRUE))
+      
+      if (nrow(resultados) == 0) {
+        # Mostrar cartel emergente si no hay resultados
+        showNotification("No hay resultados para tu búsqueda.", type = "warning")
+        search_results(data.frame()) # Borra resultados previos
+      } else {
+        search_results(resultados) # Actualiza los resultados
+      }
     }
   })
-  # Caracteristicas de consumo ------------------------------------------------
-    # Tabla sustancia de inicio
-  output$tabla_s_inicio <- renderText({
-    tabla_s_inicio <- data %>%
-      group_by(`ID de la persona`) %>%
-      filter(row_number() == n()) %>%
-      ungroup() %>%
-      select(starts_with("Inicio con")) %>%
-      pivot_longer(
-        cols = starts_with("Inicio con"),
-        names_to = "Sustancia",
-        values_to = "Inicio"
-      ) %>%
-      filter(Inicio %in% c("Si", "No")) %>%
-      group_by(Sustancia, Inicio) %>%
-      summarize(conteo = n(), .groups = 'drop') %>%
-      pivot_wider(names_from = Inicio, values_from = conteo, values_fill = 0) %>%
-      mutate(
-        Total = Si + No,
-        Porcentaje = paste0(round((Si / Total) * 100, 2), "%")
+  
+  output$search_results_ui <- renderUI({
+    req(search_results())  # Muestra solo si hay resultados en la tabla
+    
+    tags$div(
+      style = "position: relative;", # Posiciona los botones de manera relativa al contenedor
+      DTOutput("search_results"),
+      
+      # Botones de acciones en la esquina inferior derecha de la tabla
+      tags$div(
+        style = "position: absolute; bottom: 10px; right: 10px; display: flex; flex-direction: column; gap: 10px;",
+        actionButton("cancel_button", "Cancelar búsqueda", width = '15px'),
+        actionButton("modify_button", "Modificar registro", width = '15px')
       )
-    
-    kable(tabla_s_inicio, format = "html", table.attr = "style='width:100%;'") %>%
-      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
-      row_spec(0, background = "#ffb600", color = "white") %>%
-      add_header_above(c("Sustancia de inicio" = 5)) %>%
-      column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;") %>%
-      as.character()  # Convertir la tabla a cadena de texto HTML
-  })
-    # Tabla sustancia actual
-  output$tabla_s_actual <- renderText({
-    tabla_s_actual <- data %>%
-      group_by(`ID de la persona`) %>%
-      filter(row_number() == n()) %>%
-      ungroup() %>%
-      select(starts_with("Consumo actual con")) %>%
-      pivot_longer(
-        cols = starts_with("Consumo actual con"),
-        names_to = "Sustancia",
-        values_to = "Consumo"
-      ) %>%
-      filter(Consumo %in% c("Si", "No")) %>%  
-      group_by(Sustancia, Consumo) %>%
-      summarize(conteo = n(), .groups = 'drop') %>%
-      pivot_wider(names_from = Consumo, values_from = conteo, values_fill = 0) %>%
-      mutate(
-        Total = Si + No,                   
-        Porcentaje = round((Si / Total) * 100,2),
-        Porcentaje = paste0(Porcentaje, "%"))
-    
-    kable(tabla_s_actual, format = "html", table.attr = "style='width:100%;'") %>%
-      kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive")) %>%
-      row_spec(0, background = "#ffb600", color = "white") %>%
-      add_header_above(if(ncol(tabla_s_actual) == 5) c("Sustancia actual" = 5) else NULL) %>%
-      column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;")
-  })
-    # Sustancia Actual vs Sustancia de Inicio
-  output$acual_vs_inicio <- renderPlotly({
-    df <- data %>%
-      group_by(`ID de la persona`) %>%
-      filter(row_number() == n()) %>%
-      ungroup() %>%
-      select(starts_with("Consumo actual con"), starts_with("Inicio con")) %>%
-      pivot_longer(cols = starts_with("Consumo actual con"),
-                   names_to = "Sustancia_Consumo_Actual",
-                   values_to = "Consumo_Actual") %>%
-      pivot_longer(cols = starts_with("Inicio con"),
-                   names_to = "Sustancia_Inicio",
-                   values_to = "Inicio") %>%
-      filter(Consumo_Actual == "Si" & Inicio == "Si") %>%  
-      group_by(Sustancia_Consumo_Actual, Sustancia_Inicio) %>%
-      summarize(conteo = n(), .groups = 'drop') %>%
-      group_by(Sustancia_Consumo_Actual) %>%  
-      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>%
-      ungroup()
-    
-    g <- ggplot(df, aes(x = porcentaje, y = Sustancia_Consumo_Actual, fill = Sustancia_Inicio)) +
-      geom_bar(stat = "identity", position = "stack", 
-               aes(text = paste("Sustancia:", `Sustancia_Inicio`, 
-                                "<br>Porcentaje:", round(porcentaje, 2), "%",
-                                "<br>Conteo:", conteo))) +
-      
-      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
-                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
-      labs(x = "Porcentaje", y = "Sustancia de consumo actual", 
-           title = "Distribución de Sustancia actual por Sustancia al inicio") +
-      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
-      theme_grey() +
-      theme(legend.position = "right")
-    
-    ggplotly(g, tooltip = 'text')
-  })
-    # Edad vs Sustancia de Inicio
-  output$edad_sinicio <- renderPlotly({
-    data <- data %>%
-      mutate(edad_inicio_cat = cut(
-        `Edad de Inicio de Cosumo`,
-        breaks = c(-Inf, 12, 17, 29, 60, Inf),  
-        labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
-        right = FALSE  
-      ))
-    df <- data %>%
-      group_by(`ID de la persona`) %>%
-      filter(row_number() == n()) %>%
-      ungroup() %>%
-      select(`edad_inicio_cat`, starts_with("Inicio con")) %>%
-      pivot_longer(cols = starts_with("Inicio con"),
-                   names_to = "Sustancia",
-                   values_to = "Inicio") %>%
-      filter(Inicio == "Si", !is.na(`edad_inicio_cat`)) %>%
-      group_by(Sustancia, `edad_inicio_cat`) %>%
-      summarize(conteo = n(), .groups = 'drop') %>%
-      group_by(`edad_inicio_cat`) %>%  
-      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>% 
-      ungroup()
-    g <- ggplot(df, aes(x = porcentaje, y = `edad_inicio_cat`, fill = Sustancia)) +
-      geom_bar(stat = "identity", position = "stack", 
-               aes(text = paste("Sustancia:", `Sustancia`, 
-                                "<br>Porcentaje:", round(porcentaje, 2), "%",
-                                "<br>Conteo:", conteo))) +
-      
-      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
-                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
-      labs(x = "Porcentaje", y = "Edad de inicio", 
-           title = "Distribución de Edad  por Sustancia de Consumo al inicio") +
-      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
-      theme_grey() +
-      theme(legend.position = "right")
-    
-    ggplotly(g, tooltip = 'text')
-  })
-    # Nivel Educativo vs Sustancia de inicio
-  output$educ_sustancia <- renderPlotly({
-    df <- data %>%
-      group_by(`ID de la persona`) %>%
-      filter(row_number() == n()) %>%
-      ungroup() %>%
-      select(`Nivel Máximo Educativo Alcanzado`, starts_with("Inicio con")) %>%
-      pivot_longer(cols = starts_with("Inicio con"),
-                   names_to = "Sustancia",
-                   values_to = "Inicio") %>%
-      filter(Inicio == "Si", !is.na(`Nivel Máximo Educativo Alcanzado`)) %>%
-      group_by(Sustancia, `Nivel Máximo Educativo Alcanzado`) %>%
-      summarize(conteo = n(), .groups = 'drop') %>%
-      group_by(`Nivel Máximo Educativo Alcanzado`) %>%  
-      mutate(porcentaje = (conteo / sum(conteo)) * 100) %>% 
-      ungroup()
-    
-    g <- ggplot(df, aes(x = porcentaje, y = `Nivel Máximo Educativo Alcanzado`, fill = Sustancia)) +
-      geom_bar(stat = "identity", position = "stack", 
-               aes(text = paste("Sustancia:", `Sustancia`, 
-                                "<br>Porcentaje:", round(porcentaje, 2), "%",
-                                "<br>Conteo:", conteo))) +
-      
-      scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100",
-                                   "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00" )) +
-      labs(x = "Porcentaje", y = "Nivel Máximo Educativo Alcanzado", 
-           title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
-      scale_x_continuous(breaks = seq(0, 100, by = 10)) +
-      theme_grey() +
-      theme(legend.position = "right")
-    
-    ggplotly(g, tooltip = 'text')
+    )
   })
   
-  # Derivacion y tratamiento asignado
-    # Cantidad de tratamientos Previos
-    output$trat_previos <- renderPlotly({
-      data$`Número de Tratamientos Previos` <- as.factor(data$`Número de Tratamientos Previos`)
+  output$search_results <- renderDataTable({
+    req(search_results()) 
     
-      conteo_na <- sum(is.na(data$`Número de Tratamientos Previos`))
+    # Agregar una columna de índice temporal para referencia
+    resultados_tabla <- search_results() %>%
+      mutate(`Temp_ID` = row_number()) %>%  # Crear un identificador temporal
+      arrange(desc(`Fecha de registro`)) %>%  # Ordenar por fecha
+      mutate(`Fecha de registro` = format(`Fecha de registro`, "%d/%m/%Y"))
     
-      data_summary <- data %>%
-         filter(!is.na(`Número de Tratamientos Previos`)) %>%
-         group_by(`Número de Tratamientos Previos`) %>%
-         summarise(conteo = n(), .groups = 'drop') %>%
-         complete(`Número de Tratamientos Previos`, fill = list(conteo = 0))  # Completa con ceros donde no hay tratamientos
+    datatable(
+      resultados_tabla,
+      selection = "single",  # Permite seleccionar una fila
+      rownames = FALSE,
+      options = list(
+        paging = FALSE,
+        scrollX = TRUE,
+        scrollY = "250px",
+        dom = 'ft',  # Elimina la barra de paginación (solo muestra el texto)
+        searching = FALSE,
+        columnDefs = list(list(className = 'dt-center', targets = "_all"))
+      ),
+      class = "compact stripe hover",
+      caption = htmltools::tags$caption(
+        id = "table_caption",  # Asignar un ID para actualizarlo dinámicamente
+        style = 'caption-side: bottom; text-align: left; color: #ffb600;',
+        'Registros encontrados'  # Este será el texto inicial, que se actualizará
+      ),
+      callback = JS(
+        "
+  table.on('draw', function() {
+    var rowCount = table.rows({ filter: 'applied' }).count();  // Obtener la cantidad de filas visibles
+    $('#table_caption').text('Registros encontrados: ' + rowCount);  // Actualizar el texto del caption
+  });
+
+  table.on('click', 'tr', function() {
+    // Eliminar la clase 'selected' de todas las filas
+    table.$('tr').removeClass('selected');
     
-      total_count <- sum(data_summary$conteo)
-      data_summary <- data_summary %>%
-      mutate(porcentaje = (conteo / total_count) * 100)
-    
-      g <- ggplot(data_summary, aes(x = porcentaje, y = reorder(`Número de Tratamientos Previos`, conteo))) +
-        geom_bar(stat = "identity", fill = "#ec7e14", 
-               aes(text = paste("Número de Tratamientos Previos:", `Número de Tratamientos Previos`, 
-                                "<br>Conteo:", conteo, 
-                                "<br>Porcentaje:", round(porcentaje, 2), "%"))) +
-        labs(x = "Porcentaje", y = "Número de Tratamientos Previos", title = "Porcentaje por Número de Tratamientos Previos") +
-        scale_x_continuous(breaks = seq(0, 100, by = 10)) +  # Espaciado en porcentajes
-        theme_grey() +
-        theme(legend.position = 'none') +
-        annotate("text", x = max(data_summary$porcentaje) * 0.8, y = 1, 
-               label = paste("Datos faltantes =", conteo_na), 
-               size = 5, color = "black", hjust = 0)
-    
-      ggplotly(g, tooltip = 'text')
+    // Agregar la clase 'selected' a la fila clickeada
+    $(this).addClass('selected');
+  });
+
+  "
+      ) 
+    )
   })
+  # Indicador para mostrar la tabla y los botones solo si hay resultados
+  output$showTable <- reactive({
+    nrow(search_results()) > 0
+  })
+  outputOptions(output, "showTable", suspendWhenHidden = FALSE)
+  # Botón cancelar búsqueda
+  observeEvent(input$cancel_button, {
+    updateTextInput(session, "search_input", value = "")
+    search_results(NULL)
+  })
+  
+  # Botón modificar registro
+  observeEvent(input$modify_button, {
+    selected <- input$search_results_rows_selected  # Índice visual
     
-    # Tratamiento Asignado
-    output$trat_asignados <- renderPlotly({
-      data$`Tratamiento Elegido` <- as.factor(data$`Tratamiento Elegido`)
+    if (length(selected) > 0) {
+      # Extraer la tabla renderizada con Temp_ID
+      resultados_tabla <- search_results() %>%
+        mutate(`Temp_ID` = row_number()) %>%
+        arrange(desc(`Fecha de registro`))
       
-      df <- data %>%
-        group_by(`ID de la persona`) %>%
-        filter(row_number() == n()) %>% 
-        ungroup() %>%
-        group_by(`Tratamiento Elegido`) %>%
-        summarize(conteo = n(), .groups = 'drop') %>%
-        complete(`Tratamiento Elegido`, fill = list(conteo = 0)) %>%  
-        filter(!is.na(`Tratamiento Elegido`))  
+      # Identificar el Temp_ID de la fila seleccionada
+      temp_id <- resultados_tabla$Temp_ID[selected]
       
-      total_conteo <- sum(df$conteo)
+      # Extraer el registro correspondiente del dataset original
+      registro <- search_results() %>% filter(row_number() == temp_id)
       
-      df <- df %>%
-        mutate(porcentaje = (conteo / total_conteo) * 100)
-      
-      g <- ggplot(df, aes(x = porcentaje, y = reorder(`Tratamiento Elegido`, conteo))) +
-        geom_bar(stat = "identity", fill = "#ec7e14", 
-                 aes(text = paste("Tratamiento:", `Tratamiento Elegido`, 
-                                  "<br>Conteo:", conteo, 
-                                  "<br>Porcentaje:", round(porcentaje, 2), "%"))) +  
-        labs(x = "Porcentaje", y = "Tratamiento Elegido", title = "Porcentaje por Tratamiento Elegido") +
-        scale_x_continuous(breaks = seq(0, 100, by = 10)) +  
-        theme_grey() +
-        theme(legend.position = 'none')
-      
-      ggplotly(g, tooltip = 'text')
-    })
-    
-    # Consumo actual vs Tratamiento elegido
-    output$cons_vs_trat <- renderPlotly({
-      df <- data %>%
-        group_by(`ID de la persona`) %>%
-        filter(row_number() == n()) %>%
-        ungroup() %>%
-        select(`Tratamiento Elegido`, starts_with("Consumo actual con")) %>%
-        pivot_longer(cols = starts_with("Consumo actual con"),
-                     names_to = "Sustancia",
-                     values_to = "Consumo") %>%
-        filter(Consumo == "Si", !is.na(`Tratamiento Elegido`)) %>%
-        group_by(Sustancia, `Tratamiento Elegido`) %>%
-        summarize(conteo = n(), .groups = 'drop') %>%
-        group_by(Sustancia) %>%
-        mutate(porcentaje = (conteo / sum(conteo)) * 100)
-      
-      g <- ggplot(df, aes(x = porcentaje, y = Sustancia, fill = `Tratamiento Elegido`)) +
-        geom_bar(stat = "identity", position = "stack", 
-                 aes(text = paste("Tratamiento:", `Tratamiento Elegido`, 
-                                  "<br>Porcentaje:", round(porcentaje, 2), "%",
-                                  "<br>Conteo:", conteo))) +
-        scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100","#ffec51",
-                                     "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00", "#f28f3b" )) +
-        labs(x = "Porcentaje", y = "Sustancia de Consumo Actual", 
-             title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
-        scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+      # Mostrar el modal con los datos
+      showModal(modalDialog(
+        title = "Modificar Registro",
+        size = "l",
+        style = "width: 100%; height: 100vh; max-width: 100%; max-height: 100vh; overflow: hidden; padding: 0; margin: 0;",
         
-        theme_grey() +
-        theme(legend.position = "right")
+        div(
+          style = "height: 100%; display: flex; flex-direction: column; padding: 20px; overflow-y: auto;", # Permite scroll si el contenido es largo
+          
+          # Recuadro único para entrevistas ----------------------------------------
+          wellPanel(
+            style = "width: 100%; padding: 20px; margin-bottom: 20px;",  
+            div(
+              style = "display: flex; gap: 20px; flex-wrap: wrap;",  # Flexbox para columnas
+              # Columna para Entrevista con Psicólogo
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Entrevista con Psicólogo", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "estado_psicologo1",
+                  label = tags$span("Estado", style = "font-size: 12px;"),
+                  choices = list("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada", ""),
+                  selected = registro$`Estado de la Entrevista con Psicólogo`
+                ),
+                dateInput(
+                  inputId = "fecha_entrevista_psicologo1",
+                  label = tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de la Entrevista con Psicólogo`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                )
+              ),
+              
+              # Columna para Entrevista con Psiquiatra
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Entrevista con Psiquiatra", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "estado_psiquiatra1",
+                  label = tags$span("Estado", style = "font-size: 12px;"),
+                  choices = list("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada", ""),
+                  selected = registro$`Estado de la Entrevista con Psiquiátra`
+                ),
+                dateInput(
+                  inputId = "fecha_entrevista_psiquiatra1",
+                  label = tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de la Entrevista con Psiquiátra`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                )
+              ),
+              
+              # Columna para Entrevista con Trabajador Social
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Entrevista con Trabajador Social", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "estado_ts1",
+                  label = tags$span("Estado", style = "font-size: 12px;"),
+                  choices = list("Presente", "Ausente", "Pendiente", "No necesaria", "No asignada", ""),
+                  selected = registro$`Estado de la Entrevista con Trabajador Social`
+                ),
+                dateInput(
+                  inputId = "fecha_entrevista_ts1",
+                  label = tags$span("Fecha de la entrevista", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de la Entrevista con Trabajador Social`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                )
+              ),
+              
+              # Columna para Tratamiento Elegido
+              div(
+                style = "flex: 1; min-width: 300px;",
+                h4("Tratamiento Elegido", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                selectInput(
+                  inputId = "tratamiento_elegido1",
+                  label = tags$span("Tratamiento", style = "font-size: 12px;"),
+                  choices = c(
+                    "Cdd Baigorria", "Cdd Buen Pastor", "Centro de día Zeballos", "Derivado",
+                    "Internación B.P.", "Internación Baig.", "Internación Cristalería",
+                    "No finalizó admisión", "Rechaza tratamiento", "Seguimiento", ""
+                  ),
+                  selected = registro$`Tratamiento Elegido`
+                )
+              )
+            )
+          ),
+          
+          # Datos del Registro, Datos Personales y Contactos ---------------------------------
+          fluidRow(
+            # Columna para Datos del Registro
+            column(
+              width = 2,
+              wellPanel(
+                style = "min-height: 400px; padding-right: 5px;", 
+                h4("Datos del Registro", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                # Campo no editable: ID de Registro
+                textInput(
+                  inputId = "id_registro1", 
+                  label = "ID de Registro", 
+                  value = registro$`ID de registro`
+                ),
+                tags$script('$("#id_registro1").prop("readonly", true);'), # Hacerlo no editable
+                
+                # Campo no editable: Fecha de Registro
+                dateInput(
+                  inputId = "fecha_registro1",
+                  label = tags$span("Fecha de Registro", style = "font-size: 12px; white-space: nowrap;"),
+                  value = as.Date(registro$`Fecha de registro`, format = "%Y-%m-%d"),
+                  format = "dd/mm/yyyy"
+                ),
+                tags$script('$("#fecha_registro1").parent().find("input").prop("readonly", true);'), # Hacerlo no editable
+                
+                h4("Historial de Registro", style = "font-size: 15px; font-weight: bold; margin-bottom: 10px;"),
+                
+                # Campo no editable: ID de la persona
+                textInput(
+                  inputId = "id_persona1", 
+                  label = "ID de la persona", 
+                  value = registro$`ID de la persona`
+                ),
+                tags$script('$("#id_persona1").prop("readonly", true);') # Hacerlo no editable
+              )
+            ),
+            
+            # Columna para Datos Personales
+            column(
+              width = 6,
+              wellPanel(
+                style = "min-height: 400px;", 
+                h4("Datos de la persona", style = "font-size: 15px; font-weight: bold;"),
+                fluidRow(
+                  # Campo recuerda DNI
+                  column(
+                    width = 3,
+                    selectInput(
+                      inputId = "recuerda_dni1",
+                      label = tags$span("¿Recuerda el DNI?", style = "font-size: 12px;"),
+                      choices = c("","Si", "No", "No tiene" = "S/D"),
+                      selected = registro$`Recuerda DNI`
+                    )
+                  ),
+                  
+                  # Campo DNI
+                  column(
+                    width = 3,
+                    numericInput(
+                      inputId = "dni1",
+                      label = tags$span("DNI", style = "font-size: 12px;"),
+                      value = registro$DNI
+                    )
+                  ),
+                  
+                  # Apellido y Nombre
+                  column(
+                    width = 6,
+                    textInput(
+                      inputId = "apellido_nombre1",
+                      label = tags$span("Apellido, Nombre (Apodo)", style = "font-size: 12px;"),
+                      value = registro$`Apellido, Nombre`
+                    )
+                  )
+                ),
+                
+                fluidRow(
+                  # Fecha de nacimiento
+                  column(
+                    width = 3,
+                    dateInput(
+                      inputId = "fecha_nacimiento1",
+                      label = tags$span("Fecha de nacimiento", style = "font-size: 12px;"),
+                      value = registro$`Fecha de Nacimiento`,
+                      format = "dd/mm/yyyy",  
+                      min = Sys.Date() - years(100),  # Limitar a 110 años atrás
+                      max = Sys.Date()  # Limitar a la fecha de hoy
+                    )
+                  ),
+                  
+                  # Edad
+                  column(
+                    width = 3,
+                    numericInput(
+                      "edad1",
+                      tags$span("Edad", style = "font-size:10px;"),
+                      value = registro$`Edad del registro`
+                    )
+                  ),
+                  
+                  # Campo sexo biológico
+                  column(
+                    width = 3,
+                    selectInput(
+                      "sexo_biologico1",
+                      label = tags$span("Sexo biológico", style = "font-size: 12px;"),
+                      choices = c("No informado","Femenino", "Masculino", ""), 
+                      selected = registro$`Sexo biológico`
+                    )
+                  ),
+                  
+                  # Campo género
+                  column(
+                    width = 3,
+                    selectInput(
+                      "genero1",
+                      label = tags$span("Género", style = "font-size: 12px;"),
+                      choices = c("No informado","Mujer", "Hombre", "Trans (feminidades)", "Trans (masculinidades)", "Otro", ""),  
+                      selected = registro$Género
+                    )
+                  )
+                ),
+                
+                fluidRow(
+                  column(
+                    width = 4,
+                    selectInput(
+                      "provincia1",
+                      label = tags$span("Provincia de residencia", style = "font-size: 12px;"),
+                      choices = provincias,  # Lista de provincias inicial
+                      selected = registro$Provincia  # Valor seleccionado por defecto
+                    )
+                  ),
+                  column(
+                    width = 4,
+                    selectInput(
+                      inputId = "localidad1",
+                      label = tags$span("Localidad", style = "font-size: 12px;"),
+                      choices = NULL,  # Inicialmente vacío
+                      selected = registro$Localidad  # Valor seleccionado por defecto
+                    )
+                  ),
+                  
+                  # Campo barrio
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "barrio1",
+                      label = tags$span("Barrio", style = "font-size: 12px;"),
+                      value = registro$Barrio
+                    )
+                  )
+                )
+              )
+            ),
+            # Columna para Datos de contacto
+            column(
+              width = 4,
+              wellPanel(
+                style = "min-height: 400px;", 
+                # Contacto 1
+                fluidRow(
+                  h4("Contacto 1", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  # Contacto 1 - Teléfono
+                  column(
+                    width = 4,
+                    numericInput(
+                      inputId = "telefono_contacto_11",
+                      label = tags$span("Teléfono", style = "font-size: 12px;"),
+                      value = registro$`Teléfono de Contacto 1`
+                    )
+                  ),
+                  
+                  # Contacto 1 - Tipo de vínculo
+                  column(
+                    width = 4,
+                    selectInput(
+                      "tipo_vinculo_contacto_11",
+                      label = tags$span("Vínculo", style = "font-size: 12px;"),
+                      choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                      selected = registro$`Tipo de Vínculo con el Contacto 1`
+                    )
+                  ),
+                  
+                  # Contacto 1 - Nombre
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "nombre_contacto_11",
+                      label = tags$span("Nombre", style = "font-size: 12px;"),
+                      value = registro$`Nombre del Contacto 1`
+                    )
+                  )
+                )  ,              
+                # Contacto 2
+                fluidRow(
+                  h4("Contacto 2", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  # Contacto 2 - Teléfono
+                  column(
+                    width = 4,
+                    numericInput(
+                      inputId = "telefono_contacto_21",
+                      label = tags$span("Teléfono", style = "font-size: 12px;"),
+                      value = registro$`Teléfono de Contacto 2`
+                    )
+                  ),
+                  
+                  # Contacto 2 - Tipo de vínculo
+                  column(
+                    width = 4,
+                    selectInput(
+                      "tipo_vinculo_contacto_21",
+                      label = tags$span("Vínculo", style = "font-size: 12px;"),
+                      choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", "Hijo","Hija", "Amigo", "Amiga"),
+                      selected = registro$`Tipo de Vínculo con el Contacto 2`
+                    )
+                  ),
+                  
+                  # Contacto 2 - Nombre
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "nombre_contacto_21",
+                      label = tags$span("Nombre", style = "font-size: 12px;"),
+                      value = registro$`Nombre del Contacto 2`
+                    )
+                  )
+                ),                
+                # Contacto 3
+                fluidRow(
+                  h4("Contacto 3", style = "font-size: 15px; font-weight: bold;"),
+                  
+                  # Contacto 3 - Teléfono
+                  column(
+                    width = 4,
+                    numericInput(
+                      inputId = "telefono_contacto_31",
+                      label = tags$span("Teléfono", style = "font-size: 12px;"),
+                      value = registro$`Teléfono de Contacto 3`
+                    )
+                  ),
+                  
+                  # Contacto 3 - Tipo de vínculo
+                  column(
+                    width = 4,
+                    selectInput(
+                      "tipo_vinculo_contacto_31",
+                      label = tags$span("Vínculo", style = "font-size: 12px;"),
+                      choices = c("","Propio","Papá","Mamá", "Hermano","Hermana", 
+                                  "Hijo","Hija", "Amigo", "Amiga"),
+                      selected = registro$`Tipo de Vínculo con el Contacto 3`
+                    )
+                  ),
+                  
+                  # Contacto 3 - Nombre
+                  column(
+                    width = 4,
+                    textInput(
+                      inputId = "nombre_contacto_31",
+                      label = tags$span("Nombre", style = "font-size: 12px;"),
+                      value = registro$`Nombre del Contacto 3`
+                    )
+                  )
+                )
+              )
+            )
+          ),
+          wellPanel(
+            style = "min-height: 460px; margin-top: 20px;", 
+            
+            # Inicio del consumo
+            fluidRow(
+              h4("Inicio del consumo", style = "font-size: 15px; font-weight: bold;"),
+              column(
+                width = 4,
+                numericInput(
+                  inputId = "edad_inicio_consumo1",
+                  label = tags$span("Edad de inicio de consumo", style = "font-size: 12px;"),
+                  value = registro$`Edad de Inicio de Consumo`
+                )
+              ),
+              # Campo sustancia de inicio
+              column(
+                width = 4,
+                style = "",
+                selectInput(
+                  inputId = "sustancia_inicio_consumo1",
+                  label = tags$span("Sustancia de Inicio de Consumo", style = "font-size: 12px; white-space: nowrap;"),
+                  choices = c("No informado", "Alcohol", "Crack", "Cocaína", "Marihuana", 
+                              "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra", ""),
+                  selected = ifelse(registro$`Sustancia de inicio` == "Otra", "Otra", registro$`Sustancia de inicio`)
+                )
+              ),
+              
+              # Campo emergente de texto para "Otra" opción
+              column(
+                style = "",
+                width = 4,  
+                conditionalPanel(
+                  condition = "input.sustancia_inicio_consumo1 == 'Otra'", # Se activa si se selecciona 'Otra'
+                  textInput(
+                    inputId = "otra_sustancia1",
+                    label = tags$span("Especifique la sustancia", style = "font-size: 12px;"),
+                    value = ifelse(registro$`Sustancia de inicio` == "Otra", registro$`Inicio con Otras - Descripción`, "")
+                  )
+                )
+              )
+            ),
+            
+            # Consumo actual
+            fluidRow(
+              style = "margin-top: 20px;", # Espacio entre filas
+              h4("Consumo actual", style = "font-size: 15px; font-weight: bold;"),
+              column(
+                width = 8,
+                selectInput(
+                  "persona_consume1",
+                  label = tags$span("¿Consume actualmente?", style = "font-size: 12px;"),
+                  choices = c("No informado", "", "Si", "No"),
+                  selected = registro$`¿Consume actualmente?`
+                )
+              )
+            ),
+            
+            # Sustancias de consumo actual
+            fluidRow(
+              column(
+                width = 8,
+                tags$div(
+                  style = "margin-bottom: 10px;",
+                  tags$span("Sustancia/s de Consumo Actual", style = "font-size: 12px; white-space: nowrap;")
+                ),
+                tags$div(
+                  style = "column-count: 3; column-gap: 50px; margin-top: 10px;",
+                  checkboxGroupInput(
+                    inputId = "sustancias_consumo_actual1",
+                    label = NULL,
+                    choices = c("Alcohol", "Crack", "Cocaína", "Marihuana", "Nafta",
+                                "Pegamento", "Psicofármacos", "Otra"),
+                    selected = {
+                      sustancias_seleccionadas <- c()
+                      if (!is.null(registro$`Consumo actual con Cocaína`) && !is.na(registro$`Consumo actual con Cocaína`) && registro$`Consumo actual con Cocaína` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Cocaína")
+                      if (!is.null(registro$`Consumo actual con Alcohol`) && !is.na(registro$`Consumo actual con Alcohol`) && registro$`Consumo actual con Alcohol` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Alcohol")
+                      if (!is.null(registro$`Consumo actual con Marihuana`) && !is.na(registro$`Consumo actual con Marihuana`) && registro$`Consumo actual con Marihuana` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Marihuana")
+                      if (!is.null(registro$`Consumo actual con Crack`) && !is.na(registro$`Consumo actual con Crack`) && registro$`Consumo actual con Crack` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Crack")
+                      if (!is.null(registro$`Consumo actual con Nafta Aspirada`) && !is.na(registro$`Consumo actual con Nafta Aspirada`) && registro$`Consumo actual con Nafta Aspirada` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Nafta")
+                      if (!is.null(registro$`Consumo actual con Pegamento`) && !is.na(registro$`Consumo actual con Pegamento`) && registro$`Consumo actual con Pegamento` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Pegamento")
+                      if (!is.null(registro$`Consumo actual con Psicofármacos`) && !is.na(registro$`Consumo actual con Psicofármacos`) && registro$`Consumo actual con Psicofármacos` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Psicofármacos")
+                      if (!is.null(registro$`Consumo actual con Otras`) && !is.na(registro$`Consumo actual con Otras`) && registro$`Consumo actual con Otras` == "Si") sustancias_seleccionadas <- c(sustancias_seleccionadas, "Otra")
+                      sustancias_seleccionadas
+                    }
+                  )
+                )
+              ),
+              
+              # Campo emergente para "Otra"
+              column(
+                width = 4,
+                style = "margin-top: 10px;",
+                conditionalPanel(
+                  condition = "input.sustancias_consumo_actual1.includes('Otra')", # Mostrar el campo si se selecciona "Otra"
+                  textInput(
+                    inputId = "otra_sustancia_actual1",
+                    label = tags$span("Especifique la sustancia", style = "font-size: 12px;"),
+                    value = ifelse(!is.null(registro$`Consumo actual con Otras - Descripción`) && 
+                                     !is.na(registro$`Consumo actual con Otras - Descripción`), 
+                                   registro$`Consumo actual con Otras - Descripción`, 
+                                   "") # Precarga el valor si está disponible
+                  )
+                )
+              )
+            ),
+            
+            # Tratamientos previos
+            fluidRow(
+              style = "margin-top: 20px;",
+              h4("Tratamiento", style = "font-size: 15px; font-weight: bold;"),
+              
+              # Campo de derivación
+              column(
+                width = 3,
+                selectInput(
+                  "derivacion1",
+                  label = tags$span("Derivación", style = "font-size: 12px;"),
+                  choices = c("No informado", "", "Si", "No"),
+                  selected = registro$Derivación
+                )
+              ),
+              
+              # Campo de derivado de
+              column(
+                width = 3,
+                textInput(
+                  inputId = "derivado_de1",
+                  label = tags$span("Derivado de", style = "font-size: 12px;"),
+                  placeholder = "",
+                  value = registro$`Derivado de`
+                )
+              ),
+              
+              # Campo de número de tratamientos previos
+              column(
+                width = 3,
+                numericInput(
+                  inputId = "num_tratamientos_previos1",
+                  label = tags$span("Nº de Tratamientos Previos", style = "font-size: 12px;"),
+                  value = registro$`Número de Tratamientos Previos`,
+                  min = 0,
+                  max = 99
+                )
+              ),
+              
+              # Campo emergente de texto para Número de tratamientos > 0
+              column(
+                width = 3,
+                style = "margin-bottom: 10px;", 
+                conditionalPanel(
+                  condition = "input.num_tratamientos_previos1 > 0",  # Activo si el número de tratamientos es mayor que 0
+                  textInput(
+                    inputId = "lugar_ultimo_tratamiento",
+                    label = tags$span("Lugar de Último Tratamiento", style="font-size: 12px;"),
+                    value = ifelse(!is.null(registro$`Lugar de Último Tratamiento`) && 
+                                     !is.na(registro$`Lugar de Último Tratamiento`), 
+                                   registro$`Lugar de Último Tratamiento`, 
+                                   "")  # Precarga el valor si está disponible
+                  )
+                )
+              )
+            )
+          ),
+          # Situación Socioeconómica, Jurídica y de Salud ------------------------------------------------------------
+          wellPanel(
+            style = "min-height: 520px; margin-top: 20px;",
+            
+            fluidRow(
+              h4("Situación Socioeconómica, Jurídica y de Salud", style = "font-size: 15px; font-weight: bold;"),
+              
+              column(
+                width = 6,
+                selectInput(
+                  inputId = "nivel_educativo_max1",
+                  tags$span("Máximo Nivel educativo alcanzado", style = "font-size: 12px;"),
+                  choices = list( 
+                    "No informado",
+                    "Sin instrucción formal", 
+                    "Primario incompleto", 
+                    "Primario en curso", 
+                    "Primario completo", 
+                    "Secundario incompleto", 
+                    "Secundario en curso", 
+                    "Secundario completo", 
+                    "Nivel superior incompleto", 
+                    "Nivel superior en curso", 
+                    "Nivel superior completo",
+                    ""
+                  ),
+                  selected = registro$`Nivel Máximo Educativo Alcanzado`)
+              ),
+              column(
+                width = 6,
+                selectInput(
+                  inputId = "cud1",
+                  tags$span("CUD", style = "font-size: 12px;"),
+                  choices = list(
+                    "No informado",
+                    "Si", 
+                    "No", 
+                    ""
+                  ),
+                  selected = registro$CUD)
+              )
+            ),
+            fluidRow(
+              # Campo principal: Situación Habitacional Actual
+              column(
+                width = 6,
+                selectInput(
+                  inputId = "situacion_habitacional_actual1",
+                  label = tags$span("Situación Habitacional Actual", style = "font-size: 12px;"),
+                  choices = list(
+                    "No informada",
+                    "Casa/Departamento alquilado", 
+                    "Casa/Departamento cedido", 
+                    "Casa/Departamento propio", 
+                    "Institución de salud mental", 
+                    "Institución penal", 
+                    "Institución terapéutica", 
+                    "Pensión", 
+                    "Refugio", 
+                    "Situación de calle", 
+                    "Otra", 
+                    ""
+                  ),
+                  selected = registro$`Situación Habitacional Actual` # Precarga el valor registrado
+                )
+              ),
+              
+              # Campo emergente: Especificar si selecciona "Otra"
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.situacion_habitacional_actual1 == 'Otra'",  # Verifica si selecciona "Otra"
+                  textInput(
+                    inputId = "otra_situacion_habitacional_actual",
+                    label = tags$span("Especifique la situación habitacional", style = "font-size: 12px;"),
+                    value = ifelse(
+                      !is.null(registro$`Situación Habitacional Actual - Otra`) && !is.na(registro$`Situación Habitacional Actual - Otra`),
+                      registro$`Situación Habitacional Actual - Otra`,  
+                      ""  
+                    )
+                  ) 
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                selectInput(
+                  inputId = "situacion_laboral_actual1",
+                  tags$span("Situación Laboral Actual", style = "font-size: 12px;"),
+                  choices = list( 
+                    "No informado",
+                    "Estable", 
+                    "Esporádico", 
+                    "No tiene",
+                    ""
+                  ),
+                  selected = registro$`Situación Laboral Actual`)
+              )
+            ),
+            fluidRow(
+              column(
+                width = 12,
+                tags$div(
+                  style = "margin-bottom: 5px;",
+                  tags$span("Ingreso Económico", style = "font-size: 12px; white-space: nowrap;")
+                ),
+                tags$div(
+                  style = "column-count: 3; column-gap: 50px; margin-top: 10px;",  # Espacio entre columnas y margen superior
+                  checkboxGroupInput(
+                    inputId = "ingreso_economico1",
+                    label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
+                    choices = c(
+                      "No informado",
+                      "AlimentAR",
+                      "AUH",
+                      "AUHD",
+                      "Jubilación",
+                      "PNC nacional",
+                      "PNC provincial",
+                      "Salario formal", 
+                      "Salario informal", 
+                      "Sin ingresos", 
+                      "Otro subsidio/plan social", 
+                      "Otro tipo de pensión", 
+                      "Otro tipo de ingreso"),
+                    selected = registro$`Ingresos Económicos`)
+                  
+                )
+              )
+            ),
+            fluidRow(
+              style = "margin-top: 20px;",
+              column(
+                width = 4,
+                selectInput(
+                  "situacion_judicial1",
+                  label = tags$span("Situación Judicial", style = "font-size: 12px;"),
+                  choices = c(
+                    "Sin causas", 
+                    "Con causa cerrada", 
+                    "Con causa abierta", 
+                    "Desconoce", 
+                    "No informada", 
+                    "Otra",
+                    ""
+                  ),
+                  selected = registro$`Situación Judicial`
+                )
+              )
+            )
+          ),
+          # Red de apoyo y referencia
+          wellPanel(
+            style = "min-height: 300px; margin-top: 20px;",
+            h4("Red de Apoyo y Referencias", style = "font-size: 15px; font-weight: bold;"),
+            fluidRow(
+              
+              # Campo redes de apoyo
+              column(
+                width = 12,
+                tags$div(
+                  style = "margin-bottom: 5px;",
+                  tags$span("Redes de Apoyo", style = "font-size: 12px; white-space: nowrap;")
+                ),
+                tags$div(
+                  style = "column-count: 2; column-gap: 50px; margin-top: 10px;",  # Espacio entre columnas y margen superior
+                  checkboxGroupInput(
+                    inputId = "redes_apoyo1",
+                    label = NULL,  # No mostramos la etiqueta aquí porque ya está arriba
+                    choices = c("No informado",
+                                "Familiares", 
+                                "Amistades", 
+                                "Institucionalidades",
+                                "Sin vínculos actualmente"),
+                    selected = registro$`Redes de Apoyo`
+                  )
+                )
+              )
+            ),
+            fluidRow(
+              # Campo referencias APS
+              column(
+                width = 12,  # Cambiado a 12 para que ocupe toda la fila
+                style = "margin-top: 10px;",  # Ajusta el valor según el espacio que desees
+                selectInput(
+                  inputId = "referencia_aps1",
+                  tags$span("Referencia APS", style = "font-size: 12px;"),
+                  choices = list(
+                    "Referencia con seguimiento", 
+                    "Referencia sin seguimiento", 
+                    "No está referenciado", 
+                    "No informada",
+                    ""
+                  ),
+                  selected = registro$`Referencia a APS`
+                )
+              )
+            ),
+            fluidRow(
+              # Campo equipo de referencia
+              column(
+                width = 12,  # Cambiado a 12 para que ocupe toda la fila
+                textInput(
+                  inputId = "equipo_referencia1",
+                  label = tags$span("Equipo de Referencia", style = "font-size: 12px;"),
+                  value = registro$`Equipo de Referencia`
+                )
+              )
+            )
+          ),
+          # Informacion Adicional
+          wellPanel(
+            style = "min-height: 160px; margin-top: 20px;",
+            
+            h4("Información Adicional", style = "font-size: 15px; font-weight: bold;"),
+            
+            fluidRow(
+              # Campo de Observaciones
+              column(
+                width = 12,  # Cambia el ancho según sea necesario
+                textAreaInput(
+                  inputId = "observaciones1",
+                  label = tags$span("Observaciones", style = "font-size: 12px;"),
+                  value = registro$Observaciones,
+                  width = "100%",
+                  height = "80px"  # Ajusta la altura según sea necesario
+                )
+              )
+            )
+          )
+        ),
+        
+        footer = tagList(
+          modalButton("Cancelar"),
+          actionButton("save_button", "Guardar cambios")
+        ),
+        easyClose = TRUE
+      ))
       
-      ggplotly(g, tooltip = 'text')
-    })
+      observeEvent(input$provincia1, {
+        localidades <- localidades_por_provincia[[input$provincia1]]
+        updateSelectInput(
+          session,
+          inputId = "localidad1",
+          choices = localidades,
+          selected = registro$Localidad  # Mantiene el valor seleccionado por defecto
+        )
+      })
+      
+      
+    } else {
+      showNotification("Por favor, seleccione un registro para modificar.", type = "warning")
+    }
+  }) 
+  
+  # Boton para actualizar
+  observeEvent(input$save_button, {
+    # Verifica si hay un registro seleccionado
+    selected <- input$search_results_rows_selected
+    
+    if (length(selected) > 0) {
+      
+      # Extrae los datos actuales de la base de datos reactiva
+      data_modificada <- base()
+      
+      # Obtener el ID del registro seleccionado
+      id_seleccionado <- data_modificada[selected, "ID de registro"]
+      
+      # Eliminar el registro con ese ID
+      data_modificada <- data_modificada[data_modificada$`ID de registro` != id_seleccionado, ]
+      
+      # Crear una nueva fila con los campos modificados y el mismo ID de registro
+      nueva_fila <- data.frame(
+        `ID de registro` = id_seleccionado,
+        `Estado de la Entrevista con Psicólogo` = input$estado_psicologo1,
+        `Fecha de la Entrevista con Psicólogo` = as.Date(input$fecha_entrevista_psicologo1, format="%Y-%m-%d"),
+        `Estado de la Entrevista con Psiquiátra` = input$estado_psiquiatra1,
+        `Fecha de la Entrevista con Psiquiátra` = as.Date(input$fecha_entrevista_psiquiatra1, format="%Y-%m-%d"),
+        `Estado de la Entrevista con Trabajador Social` = input$estado_ts1,
+        `Fecha de la Entrevista con Trabajador Social` = as.Date(input$fecha_entrevista_ts1, format="%Y-%m-%d"),
+        `Tratamiento Elegido` = input$tratamiento_elegido1,
+        `Recuerda DNI` = input$recuerda_dni1,
+        `Apellido, Nombre` = input$apellido_nombre1,
+        `Sexo biológico` = input$sexo_biologico1,
+        `Género` = input$genero1,
+        `Provincia` = input$provincia1,
+        `Localidad` = input$localidad1,
+        `Barrio` = input$barrio1,
+        `Tipo de Vínculo con el Contacto 1` = input$tipo_vinculo_contacto_11,
+        `Nombre del Contacto 1` = input$nombre_contacto_11,
+        `Tipo de Vínculo con el Contacto 2` = input$tipo_vinculo_contacto_21,
+        `Nombre del Contacto 2` = input$nombre_contacto_21,
+        `Tipo de Vínculo con el Contacto 3` = input$tipo_vinculo_contacto_31,
+        `Nombre del Contacto 3` = input$nombre_contacto_31,
+        `Sustancia de inicio` = input$sustancia_inicio_consumo1,
+        `Inicio con Otras - Descripción` = input$otra_sustancia1,
+        `¿Consume actualmente?` = input$persona_consume1,
+        `Consumo actual con Otras - Descripción` = input$otra_sustancia_actual1,
+        `Derivación` = input$derivacion1,
+        `Derivado de` = input$derivado_de1,
+        `Lugar de Último Tratamiento` = input$lugar_ultimo_tratamiento,
+        `Nivel Máximo Educativo Alcanzado` = input$nivel_educativo_max1,
+        `CUD` = input$cud1,
+        `Situación Habitacional Actual` = input$situacion_habitacional_actual1,
+        `Situación Habitacional Actual - Otra` = input$otra_situacion_habitacional_actual,
+        `Situación Laboral Actual` = input$situacion_laboral_actual1,
+        `Ingresos Económicos` = paste(input$ingreso_economico1, collapse = ", "),
+        `Situación Judicial` = input$situacion_judicial1,
+        `Redes de Apoyo` = paste(input$redes_apoyo1, collapse = ", "),
+        `Referencia a APS` = input$referencia_aps1,
+        `Equipo de Referencia` = input$equipo_referencia1,
+        `Observaciones` = input$observaciones1
+      )
+      
+      # Cargar el archivo Excel
+      wb <- loadWorkbook("Base completa.xlsx")
+      datos_existentes <- read.xlsx(wb, sheet = 1)
+      
+      # Asegurar que los nombres de las columnas sean los mismos
+      colnames(datos_existentes) <- colnames(data_modificada)
+      
+      # Añadir la nueva fila con el mismo ID de registro
+      data_modificada <- rbind(data_modificada, nueva_fila)
+      
+      # Guardar el archivo actualizado
+      writeData(wb, sheet = 1, data_modificada)
+      saveWorkbook(wb, "Base completa.xlsx", overwrite = TRUE)
+      
+      # Cerrar el modal y mostrar mensaje de éxito
+      removeModal()
+      showNotification("El registro ha sido actualizado correctamente en el archivo Excel.", type = "message")
+    } else {
+      showNotification("No se pudo guardar el registro. Seleccione un registro válido.", type = "error")
+    }
+  })
+  
+  
 }
 
-# Ejecuta la app
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
+
