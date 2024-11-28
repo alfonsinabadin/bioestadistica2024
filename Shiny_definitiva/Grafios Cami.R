@@ -18,24 +18,24 @@ df <- data %>%
   group_by(`ID de la persona`) %>%
   filter(row_number() == n()) %>%
   ungroup() %>%
-  filter(!is.na(`Edad de Inicio de Cosumo`))
+  filter(!is.na(`Edad de Inicio de Consumo`))
 
 # Medidas descriptivas
-media_edad <- mean(df$`Edad de Inicio de Cosumo`, na.rm = TRUE)
-desviacion_edad <- sd(df$`Edad de Inicio de Cosumo`, na.rm = TRUE)
-n <- sum(!is.na(df$`Edad de Inicio de Cosumo`))
+media_edad <- mean(df$`Edad de Inicio de Consumo`, na.rm = TRUE)
+desviacion_edad <- sd(df$`Edad de Inicio de Consumo`, na.rm = TRUE)
+n <- sum(!is.na(df$`Edad de Inicio de Consumo`))
 
 # Gráfico de histograma
-g <- ggplot(df, aes(x = `Edad de Inicio de Cosumo`)) +
+g <- ggplot(df, aes(x = `Edad de Inicio de Consumo`)) +
   geom_histogram(fill = "#ec7e14", binwidth = 1, color = "black") +
   labs(x = "Edad de Inicio", y = "Frecuencia", title = "Distribución por Edad de Inicio") +
-  scale_x_continuous(breaks = seq(min(df$`Edad de Inicio de Cosumo`), 
-                                  max(df$`Edad de Inicio de Cosumo`), by = 1)) +
+  scale_x_continuous(breaks = seq(min(df$`Edad de Inicio de Consumo`), 
+                                  max(df$`Edad de Inicio de Consumo`), by = 1)) +
   theme_grey() +
   theme(legend.position = 'none') +
   annotate("text",
-           x = max(df$`Edad de Inicio de Cosumo`) * 0.95,
-           y = max(table(df$`Edad de Inicio de Cosumo`)) * 0.95,  
+           x = max(df$`Edad de Inicio de Consumo`) * 0.95,
+           y = max(table(df$`Edad de Inicio de Consumo`)) * 0.95,  
            label = paste("Media:", round(media_edad, 1),
                          "\nDesvío:", round(desviacion_edad, 1),
                          "\nn:", n),
@@ -45,7 +45,7 @@ ggplotly(g, tooltip = 'text')
 # Edad inicio y Edad de registro
 data <- data %>%
   mutate(edad_inicio_cat = cut(
-    `Edad de Inicio de Cosumo`,
+    `Edad de Inicio de Consumo`,
     breaks = c(-Inf, 12, 17, 29, 60, Inf),  
     labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "Mayor de 60"),
     right = FALSE  

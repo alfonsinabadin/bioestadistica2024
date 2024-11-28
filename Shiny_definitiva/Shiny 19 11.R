@@ -1099,9 +1099,7 @@ ui <- page_navbar(
     icon = icon("pen-to-square"),
     
     fluidRow(
-      uiOutput("admin_button"),
-      
-      calendarOutput("calendar")
+      uiOutput("admin_button")
     )
   ),
   
@@ -1411,12 +1409,13 @@ ui <- page_navbar(
                      
                      style = "margin-top:10px;",
                    
-                   plotlyOutput("matriz.edades", height = "250px")
+                     uiOutput("tabla_inicio_reg")
                    )
                    ),
                  
                  column(
                    width = 2,
+                   style = "margin-left: 10px;",
                    tableOutput("sustancias")
                  )
                  )
@@ -1424,6 +1423,15 @@ ui <- page_navbar(
                )
              )
     ),
+  nav_panel(
+    "",
+    class = "bslib-page-dashboard",
+    icon = icon("calendar-days"),
+    
+    fluidRow(
+      calendarOutput("calendar")
+    )
+  ),
   nav_item(
     input_dark_mode(id = "dark_mode", mode = "light")
   )
@@ -3458,11 +3466,15 @@ output$histbox.edadinicio <- renderPlotly({
   
   # Conteo de registros sin información de edad
   conteo_na <- sum(is.na(df$`Edad de Inicio de Consumo`))
-  conteo_na <- paste("Hay",conteo_na,"de",nrow(df),"registros\npersonales sin información")
+  conteo_na <- paste("Hay",conteo_na,"de",nrow(df),"registros personales sin información")
   
   # Filtrar edades no nulas y preparar los datos para el histograma
   edad_data <- df %>%
     filter(!is.na(`Edad de Inicio de Consumo`))
+  
+  mean <- mean(edad_data$`Edad de Inicio de Consumo`)
+  sd <- round(sd(edad_data$`Edad de Inicio de Consumo`),2)
+  tooltip <- paste(conteo_na,"\nMedia:",mean,"\nDesvío:",sd)
   
   hist <- ggplot(edad_data) +
     geom_histogram(aes(x = `Edad de Inicio de Consumo`, 
@@ -3496,11 +3508,11 @@ output$histbox.edadinicio <- renderPlotly({
                                          style = "italic", textcase = "word caps"))
     ) %>%
     add_annotations(
-      text = conteo_na,
+      text = tooltip,
       x = 0.95, y = 0.95,
       xref = "paper", yref = "paper",
       showarrow = FALSE,
-      font = list(family = "Montserrat", size = 12, color = "white"),
+      font = list(family = "Montserrat", size = 10, color = "white"),
       bgcolor = "grey",
       bordercolor = "grey",
       borderwidth = 2,
@@ -3533,43 +3545,46 @@ output$histbox.edadinicio <- renderPlotly({
           shareX = TRUE, titleX = TRUE, titleY = TRUE, margin = 0)
 })
 
-output$matriz.edades <- renderPlotly({
+output$tabla_inicio_reg <- renderText({
+  df <- filtered_data_3()
   
-  df <- filtered_data_3() %>%
-    group_by(EdadCategorica, EdadInicioCategorica, .drop =TRUE) %>%
-    summarise(conteo = ifelse(is.na(n()),0,n()), .groups = "drop") %>%
-    filter(!is.na(EdadCategorica),!is.na(EdadInicioCategorica)) %>%
-    complete(EdadCategorica, EdadInicioCategorica) %>%
-    mutate(conteo = ifelse(is.na(conteo),0,conteo))
+  tabla_cruzada <- df %>%
+    filter(!is.na(EdadCategorica) & !is.na(EdadInicioCategorica)) %>%
+    count(EdadCategorica, EdadInicioCategorica, .drop = FALSE) %>% 
+    pivot_wider(
+      names_from = EdadCategorica, 
+      values_from = n, 
+      values_fill = 0  
+    ) %>%
+    ungroup() %>%
+    rename("Inicio \\ Actual" = EdadInicioCategorica) 
   
-  g <- ggplot(df, aes(x = EdadCategorica, y = EdadInicioCategorica, fill = conteo)) +
-    geom_tile(aes(text = paste(
-      "Edad de inicio:", EdadInicioCategorica,
-      "<br>Edad:", EdadCategorica, 
-      "<br>Conteo:", conteo))) +
-    scale_fill_gradient(low = "#f0f0f0", high = "#ec7e14") + # probar min y max
-    labs(title = "Relación entre edad al inicio del consumo y edad al momento del registro",
-         fill = "Conteo") +
-    theme_fivethirtyeight() +
-    theme(legend.text = element_text(size = 5),
-          legend.title = element_text(size = 8))
+  tabla_cruzada <- tabla_cruzada %>%
+    mutate(Total_Fila = rowSums(select(., -`Inicio \\ Actual`)))
   
-  ggplotly(g, tooltip = 'text')  %>%
-    layout(title = list(y = 0.95, title_x=0.5,
-                        automargin = list(yref='container'),
-                        text = paste("Relación entre edades registradas"),
-                        font = list(family = "Montserrat", size = 15, color = "grey1")),
-           xaxis = list(title = list(text = paste0("Conteo por Edad"),
-                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
-                        #tickvals = seq(0, max(df$conteo)+50, 50),
-                        tickfont = list(family = "Montserrat", size = 10, color = "grey")),
-           yaxis = list(title = list(text = "",
-                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
-                        tickfont = list(family = "Montserrat", size = 12, color = "grey")),
-           hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
-                                         style = "italic", textcase = "word caps"))
-    )
   
+  totales_columna <- tabla_cruzada %>%
+    summarise(across(starts_with("0 a 12"):ends_with("+ 60"), sum, na.rm = TRUE))
+  
+  tabla_cruzada <- bind_rows(tabla_cruzada, c(`Inicio \\ Actual` = "Total_Columna", totales_columna))
+  
+  suma_total <- sum(tabla_cruzada$Total_Fila, na.rm = TRUE)
+  
+  tabla_cruzada <- tabla_cruzada %>%
+    add_row(`Inicio \\ Actual` = "Total", !!!totales_columna, Total_Fila = suma_total)
+  
+  tabla_cruzada <- tabla_cruzada %>%
+    filter(`Inicio \\ Actual` != "Total_Columna") %>%
+    rename("Total" = Total_Fila) 
+  
+  kable(tabla_cruzada, format = "html", table.attr = "style='width:100%;'") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                  font_size = 10) %>%
+    add_header_above(c("Edad de inicio de consumo vs edad registrada" = ncol(tabla_cruzada))) %>%  
+    column_spec(1, bold = TRUE, width = "150px", background = "#ffb600", color = "white") %>%  
+    row_spec(0, background = "#ffb600", color = "white") %>%
+    row_spec(nrow(tabla_cruzada), bold = TRUE)%>%  
+    column_spec(7, bold = TRUE)
 })
 
 output$sustancias <- renderTable({
@@ -3627,6 +3642,11 @@ na = 0)
       ) %>%
       select(calendarId = `ID de registro`, title = `Apellido, Nombre`, Entrevista, start = Fecha) %>%
       mutate(
+        short_entrev = case_when(
+          Entrevista == "Psicólogo" ~ "Psic",
+          Entrevista == "Psiquiátra" ~ "Psiq",
+          Entrevista == "Trabajador Social" ~ "TS"),
+        title = paste(short_entrev, "|",title),
         end = start, # Para que el evento sea de un solo día
         body = NA,
         recurrenceRule = NA,
@@ -3650,7 +3670,7 @@ na = 0)
           Entrevista == "Trabajador Social" ~ "#4C443C"
         )
       ) %>%
-      select(-Entrevista)
+      select(-Entrevista, short_entrev)
       
     
     
