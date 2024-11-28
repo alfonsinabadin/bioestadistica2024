@@ -23,6 +23,7 @@ library(leaflet) # para gráfico de mapa
 library(emojifont) # para icono de mujer y hombre
 font_add_google("Montserrat")
 library(shinymanager) #para usuario y contraseña
+library(toastui)
 
 # Usuario y contraseña
 set_labels(
@@ -1099,6 +1100,8 @@ ui <- page_navbar(
     
     fluidRow(
       uiOutput("admin_button"),
+      
+      calendarOutput("calendar")
     )
   ),
   
@@ -1389,19 +1392,38 @@ ui <- page_navbar(
                        )
                    )
                  )
+               )
                ),
                
                column(
                  width = 9,
                  
-                 h2("Análisis demográfico", style = "font-size: 20px; font-weight: bold;"),
+                 h2("Análisis de consumo", style = "font-size: 20px; font-weight: bold;"),
+                 fluidRow(
+                 column(
+                   width = 9,
+                   fluidRow(
+                   
+                   plotlyOutput("histbox.edadinicio", height = "250px")
+                   ),
+                   
+                   fluidRow(
+                     
+                     style = "margin-top:10px;",
+                   
+                   plotlyOutput("matriz.edades", height = "250px")
+                   )
+                   ),
                  
-                 fluidRow()
-               )
+                 column(
+                   width = 2,
+                   tableOutput("sustancias")
+                 )
+                 )
+                 )
                )
              )
-    )
-  ),
+    ),
   nav_item(
     input_dark_mode(id = "dark_mode", mode = "light")
   )
@@ -2492,7 +2514,7 @@ observeEvent(input$dni, {
       barrio <- last(dni_existente$Barrio)
       updateSelectInput(session, "barrio", selected = barrio)
       
-      edad_inicio_consumo <- last(dni_existente$`Edad de Inicio de Cosumo`)
+      edad_inicio_consumo <- last(dni_existente$`Edad de Inicio de Consumo`)
       updateTextInput(session, "edad_inicio_consumo", value = edad_inicio_consumo)
       
       sustancia_inicio_consumo <- ifelse(is.na(last(dni_existente$`Sustancia de inicio`)), "No informado", last(dni_existente$`Sustancia de inicio`))
@@ -2604,19 +2626,19 @@ observeEvent(input$guardar_registro, {
     `Nombre del Contacto 3` = ifelse(isTruthy(input$nombre_contacto_3), input$nombre_contacto_3, NA),
     
     # Entrevista Psicólogo -----------------------------------------------
-    `Estado de la Entrevista con Psicológo` = ifelse(isTruthy(input$estado_psicologo), input$estado_psicologo, NA),
+    `Estado de la Entrevista con Psicólogo` = ifelse(isTruthy(input$estado_psicologo), input$estado_psicologo, NA),
     `Fecha de la Entrevista con Psicológo` = ifelse(isTruthy(input$fecha_entrevista_psiquiatra), as.character(input$fecha_entrevista_psiquiatra), NA),
     
     # Entrevista Psiquiatra -----------------------------------------------
-    `Estado de entrevista con Psiquiátra` = ifelse(isTruthy(input$estado_psiquiatra), input$estado_psiquiatra, NA),
+    `Estado de la Entrevista con Psiquiátra` = ifelse(isTruthy(input$estado_psiquiatra), input$estado_psiquiatra, NA),
     `Fecha de la Entrevista con Psiquiátra` = ifelse(isTruthy(input$fecha_entrevista_psiquiatra), as.character(input$fecha_entrevista_psiquiatra), NA),
     
     # Entrevista trabajador social ----------------------------------------
-    `Estado de entrevista con Trabajador Social` = ifelse(isTruthy(input$estado_ts), input$estado_ts, NA),
+    `Estado de la Entrevista con Trabajador Social` = ifelse(isTruthy(input$estado_ts), input$estado_ts, NA),
     `Fecha de la Entrevista con Trabajador Social` = ifelse(isTruthy(input$fecha_entrevista_ts), as.character(input$fecha_entrevista_ts), NA),
     
     # Inicio del consumo -------------------------------------------------
-    `Edad de Inicio de Cosumo` = ifelse(isTruthy(input$edad_inicio_consumo), as.numeric(input$edad_inicio_consumo), NA),
+    `Edad de Inicio de Consumo` = ifelse(isTruthy(input$edad_inicio_consumo), as.numeric(input$edad_inicio_consumo), NA),
     `Sustancia de inicio` = ifelse(isTruthy(input$sustancia_inicio_consumo), input$sustancia_inicio_consumo, NA),
     `Inicio con Otras - Descripción` = ifelse(isTruthy(input$otra_sustancia), input$otra_sustancia, NA),
     
@@ -2765,7 +2787,16 @@ data <- base() %>%
                  levels = c("No informado",
                             "Si", 
                             "No"),
-                 ordered = TRUE)
+                 ordered = TRUE),
+    EdadInicioCategorica = factor(
+      ifelse(`Edad de Inicio de Consumo` >= 0 & `Edad de Inicio de Consumo` <= 12, "0 a 12",
+             ifelse(`Edad de Inicio de Consumo` >= 13 & `Edad de Inicio de Consumo` <= 17, "13 a 17",
+                    ifelse(`Edad de Inicio de Consumo` >= 18 & `Edad de Inicio de Consumo` <= 29, "18 a 29",
+                           ifelse(`Edad de Inicio de Consumo` >= 30 & `Edad de Inicio de Consumo` <= 60, "30 a 60", 
+                                  ifelse(`Edad de Inicio de Consumo` >= 61, "+ 60", NA))))),
+      levels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60"),
+      ordered = TRUE
+    )
   )
 
 # Extraer los años únicos de la base y actualizar el filtro de años
@@ -3420,11 +3451,222 @@ output$donut.cud <- renderPlotly({
     )
 })
 
+# Boxplot + histograma + tabla
+output$histbox.edadinicio <- renderPlotly({
+  # Cargar base reactiva
+  df <- filtered_data_3()
+  
+  # Conteo de registros sin información de edad
+  conteo_na <- sum(is.na(df$`Edad de Inicio de Consumo`))
+  conteo_na <- paste("Hay",conteo_na,"de",nrow(df),"registros\npersonales sin información")
+  
+  # Filtrar edades no nulas y preparar los datos para el histograma
+  edad_data <- df %>%
+    filter(!is.na(`Edad de Inicio de Consumo`))
+  
+  hist <- ggplot(edad_data) +
+    geom_histogram(aes(x = `Edad de Inicio de Consumo`, 
+                       y = (..count..),
+                       text = paste(
+                         "Edad:", ..x.. -1, "a", ..x.. +1,
+                         "\nFrecuencia:", ..count..)
+    ),
+    position = "identity", binwidth = 2,
+    fill = "#ff8800", color = "grey1") +
+    labs(x = "Edad de inicio de consumo", 
+         y = "Frecuencia", 
+         title = "Distribución de la edad de inicio de consumo",
+         subtitle = conteo_na) +
+    scale_x_continuous(limits = c(0, 60), breaks = seq(0, 60, 10)) +
+    theme_fivethirtyeight() + 
+    theme(axis.title = element_text())
+  
+  hist_plotly <- ggplotly(hist, tooltip = "text") %>%
+    layout(title = list(y = 0.95,
+                        text = "Distribución de la edad de inicio de consumo",
+                        font = list(family = "Montserrat", size = 15, color = "grey1")),
+           xaxis = list(title = list(text = "Edad de inicio de consumo",
+                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
+                        tickvals = seq(0, 60, 10),
+                        tickfont = list(family = "Montserrat", size = 10, color = "grey")),
+           yaxis = list(title = list(text = "Frecuencia",
+                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
+                        tickfont = list(family = "Montserrat", size = 10, color = "grey")),
+           hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
+                                         style = "italic", textcase = "word caps"))
+    ) %>%
+    add_annotations(
+      text = conteo_na,
+      x = 0.95, y = 0.95,
+      xref = "paper", yref = "paper",
+      showarrow = FALSE,
+      font = list(family = "Montserrat", size = 12, color = "white"),
+      bgcolor = "grey",
+      bordercolor = "grey",
+      borderwidth = 2,
+      borderpad = 10,
+      align = "center"
+    )
+  
+  # Generar boxplot
+  
+  box_plotly <- plot_ly(edad_data, x = ~`Edad de Inicio de Consumo`, type = "box",
+                        jitter = 0.1,
+                        marker = list(color = "grey10"),
+                        line = list(color = "grey10"),
+                        fillcolor = "#ff8800") %>%
+    add_boxplot(hoverinfo = "x") %>%
+    layout(title = list(y = 0.95,
+                        text = "Distribución de la edad de inicio de consumo",
+                        font = list(family = "Montserrat", size = 15, color = "grey1")),
+           xaxis = list(title = list(text = "Edad de inicio de consumo",
+                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
+                        tickvals = seq(0, 60, 10),
+                        tickfont = list(family = "Montserrat", size = 10, color = "grey"),
+                        hoverformat = ".2f"),
+           yaxis = list(showticklabels = FALSE),
+           hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
+                                         style = "italic")))
+  
+  # Combinar histogram y boxplot
+  subplot(box_plotly, hist_plotly, nrows = 2, heights = c(0.3, 0.7), 
+          shareX = TRUE, titleX = TRUE, titleY = TRUE, margin = 0)
+})
+
+output$matriz.edades <- renderPlotly({
+  
+  df <- filtered_data_3() %>%
+    group_by(EdadCategorica, EdadInicioCategorica, .drop =TRUE) %>%
+    summarise(conteo = ifelse(is.na(n()),0,n()), .groups = "drop") %>%
+    filter(!is.na(EdadCategorica),!is.na(EdadInicioCategorica)) %>%
+    complete(EdadCategorica, EdadInicioCategorica) %>%
+    mutate(conteo = ifelse(is.na(conteo),0,conteo))
+  
+  g <- ggplot(df, aes(x = EdadCategorica, y = EdadInicioCategorica, fill = conteo)) +
+    geom_tile(aes(text = paste(
+      "Edad de inicio:", EdadInicioCategorica,
+      "<br>Edad:", EdadCategorica, 
+      "<br>Conteo:", conteo))) +
+    scale_fill_gradient(low = "#f0f0f0", high = "#ec7e14") + # probar min y max
+    labs(title = "Relación entre edad al inicio del consumo y edad al momento del registro",
+         fill = "Conteo") +
+    theme_fivethirtyeight() +
+    theme(legend.text = element_text(size = 5),
+          legend.title = element_text(size = 8))
+  
+  ggplotly(g, tooltip = 'text')  %>%
+    layout(title = list(y = 0.95, title_x=0.5,
+                        automargin = list(yref='container'),
+                        text = paste("Relación entre edades registradas"),
+                        font = list(family = "Montserrat", size = 15, color = "grey1")),
+           xaxis = list(title = list(text = paste0("Conteo por Edad"),
+                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
+                        #tickvals = seq(0, max(df$conteo)+50, 50),
+                        tickfont = list(family = "Montserrat", size = 10, color = "grey")),
+           yaxis = list(title = list(text = "",
+                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
+                        tickfont = list(family = "Montserrat", size = 12, color = "grey")),
+           hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
+                                         style = "italic", textcase = "word caps"))
+    )
+  
+})
+
+output$sustancias <- renderTable({
+  # Calcular el conteo por provincia en el dataframe `filtered_data()`
+  df <- filtered_data() %>%
+    group_by(`Sustancia de inicio`) %>%
+    summarise(Casos = n()) %>%
+    filter(!is.na(`Sustancia de inicio`)) %>%
+    select(`Sustancia de inicio`, Casos) %>%
+    complete(`Sustancia de inicio`) %>%
+    arrange(desc(Casos))
+  
+  if(nrow(df) == 0) {
+    df <- data.frame(
+      `Sustancia de inicio`= c(""),
+      Casos = c("")
+    )
+  }
+  
+  df  # Mostrar la tabla
+},
+colnames = TRUE,
+spacing = "s",
+na = 0)
+
   output$admin_button <- renderUI({
     if (res_auth$admin) { # Verificar si el usuario es administrador
       actionButton("descarga", "Descargar base de datos", icon = icon("download"))
     }
 })
+  
+  result <- reactive({
+    
+    df <- base() %>%
+      select(`ID de registro`, `Apellido, Nombre`,
+             `Estado de la Entrevista con Psicólogo`, `Fecha de la Entrevista con Psicólogo`,
+             `Estado de la Entrevista con Psiquiátra`, `Fecha de la Entrevista con Psiquiátra`,
+             `Estado de la Entrevista con Trabajador Social`, `Fecha de la Entrevista con Trabajador Social`)
+    
+    result <- df %>%
+      pivot_longer(
+        cols = c("Fecha de la Entrevista con Psicólogo", 
+                 "Fecha de la Entrevista con Psiquiátra", 
+                 "Fecha de la Entrevista con Trabajador Social"),
+        names_to = "Entrevista",
+        values_to = "Fecha"
+      ) %>%
+      filter(!is.na(Fecha)) %>% # Filtrar solo las filas con fecha
+      mutate(
+        Entrevista = case_when(
+          Entrevista == "Fecha de la Entrevista con Psicólogo" ~ "Psicólogo",
+          Entrevista == "Fecha de la Entrevista con Psiquiátra" ~ "Psiquiátra",
+          Entrevista == "Fecha de la Entrevista con Trabajador Social" ~ "Trabajador Social"
+        )
+      ) %>%
+      select(calendarId = `ID de registro`, title = `Apellido, Nombre`, Entrevista, start = Fecha) %>%
+      mutate(
+        end = start, # Para que el evento sea de un solo día
+        body = NA,
+        recurrenceRule = NA,
+        start = as.Date(start), # Asegurarnos de que la fecha esté en formato Date
+        end = as.Date(end), # Asegurarnos de que la fecha esté en formato Date
+        category = "allday",
+        location = NA,
+        backgroundColor = case_when(
+          Entrevista == "Psicólogo" ~ "#FBC91C",
+          Entrevista == "Psiquiátra" ~ "#EC7E14",
+          Entrevista == "Trabajador Social" ~ "#4C443C"
+        ),
+        color = case_when(
+          Entrevista == "Psicólogo" ~ "black",
+          Entrevista == "Psiquiátra" ~ "white",
+          Entrevista == "Trabajador Social" ~ "white"
+        ),
+        borderColor = case_when(
+          Entrevista == "Psicólogo" ~ "#FBC91C",
+          Entrevista == "Psiquiátra" ~ "#EC7E14",
+          Entrevista == "Trabajador Social" ~ "#4C443C"
+        )
+      ) %>%
+      select(-Entrevista)
+      
+    
+    
+    result
+  })
+  
+  # Renderizar el calendario
+  output$calendar <- renderCalendar({
+    calendar(result(), navigation = TRUE, defaultDate = Sys.Date()) %>%
+      cal_month_options(
+        startDayOfWeek  = 0, 
+        daynames = c("Dom","Lun","Mar","Mié","Jue","Vie","Sáb"),
+        narrowWeekend = FALSE
+      ) %>% 
+      cal_props(cal_demo_props())
+  })
 }
 
 shinyApp(ui, server)
