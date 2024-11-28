@@ -185,23 +185,26 @@ ui <- page_navbar(
         id = "success_message",
         style = "display: none; background-color: #4CAF50; color: white; padding: 10px; margin-bottom: 15px; text-align: center;",
         "Modificaciones guardadas con éxito"
-      ),
+      ), # ver
       
       # Buscador de DNI o Nombre
-      textInput("search_input", "Buscar por DNI o Nombre", ""),
+      textInput("search_input", "Buscar por DNI, Nombre o Apellido", ""),
       actionButton("search_button", "Buscar"),
       
       conditionalPanel(
         condition = "output.showTable == true",
         
         # Tabla de resultados de búsqueda
-        dataTableOutput("search_results"),
+        div(dataTableOutput("search_results"),
+            style = "font-size:12px"),
         
         # Botones en la esquina inferior derecha de la tabla
         tags$div(
           style = "margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;",
           actionButton("cancel_button", "Cancelar búsqueda", width = '150px'),
-          actionButton("modify_button", "Modificar registro", width = '150px')
+          actionButton("modify_button", "Modificar registro", width = '150px'),
+          # solo manager?
+          actionButton("delete_button", "Eliminar registro", width = '150px')
         )
       )
     )
@@ -276,7 +279,7 @@ server <- function(input, output, session) {
       options = list(
         paging = FALSE,
         scrollX = TRUE,
-        scrollY = "250px",
+        scrollY = "200px",
         dom = 'ft',  # Elimina la barra de paginación (solo muestra el texto)
         searching = FALSE,
         columnDefs = list(list(className = 'dt-center', targets = "_all"))
