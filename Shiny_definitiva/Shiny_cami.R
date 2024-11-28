@@ -219,7 +219,7 @@ ui <- page_navbar(
 server <- function(input, output, session) {
   
   # Cargar la base de datos
-  data <- reactiveVal(base()) 
+  data <- base() 
   
   # PESTAÑA MODIFICACIÓN DE REGISTRO---------------------------------------------------------
   # Filtrar los resultados de la búsqueda
