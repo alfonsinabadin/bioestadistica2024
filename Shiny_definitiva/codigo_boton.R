@@ -1,6 +1,7 @@
 observeEvent(input$save_button, {
   # Obtener el registro seleccionado
   selected <- input$search_results_rows_selected
+  
   if (length(selected) > 0) {
     resultados_tabla <- search_results() %>%
       mutate(`Temp_ID` = row_number()) %>%
@@ -155,3 +156,10 @@ observeEvent(input$save_button, {
     showNotification("No se pudo guardar el registro. Seleccione un registro válido.", type = "error")
   }
 })
+
+
+,
+`Fecha de Nacimiento` = format(`Fecha de registro`, "%d/%m/%Y"),
+`Fecha de la Entrevista con Psicológo` = format(`Fecha de registro`, "%d/%m/%Y"),
+`Fecha de la Entrevista con Psiquiátra` = format(`Fecha de registro`, "%d/%m/%Y"),
+`Fecha de la Entrevista con Trabajador Social` = format(`Fecha de registro`, "%d/%m/%Y")

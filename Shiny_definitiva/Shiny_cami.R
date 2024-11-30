@@ -268,6 +268,7 @@ server <- function(input, output, session) {
       mutate(`Temp_ID` = row_number()) %>%  # Crear un identificador temporal
       arrange(desc(`Fecha de registro`)) %>%  # Ordenar por fecha
       mutate(`Fecha de registro` = format(`Fecha de registro`, "%d/%m/%Y"))
+    # ponerle formato a todas las fechas para que se vean bien
     
     datatable(
       resultados_tabla,
