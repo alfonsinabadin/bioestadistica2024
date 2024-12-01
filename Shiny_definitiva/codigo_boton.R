@@ -158,8 +158,40 @@ observeEvent(input$save_button, {
 })
 
 
-,
-`Fecha de Nacimiento` = format(`Fecha de registro`, "%d/%m/%Y"),
-`Fecha de la Entrevista con Psicológo` = format(`Fecha de registro`, "%d/%m/%Y"),
-`Fecha de la Entrevista con Psiquiátra` = format(`Fecha de registro`, "%d/%m/%Y"),
-`Fecha de la Entrevista con Trabajador Social` = format(`Fecha de registro`, "%d/%m/%Y")
+# Función para limpiar solo "No informado" y "No informada"
+limpiar_no_informado <- function(valor) {
+  if (is.null(valor) || valor %in% c("No informado", "No informada")) {
+    return("")  # Limpiar si es "No informado" o "No informada"
+  }
+  return(valor)  # Mantener el valor original si no es "No informado"
+}
+
+observe({
+  # Asegúrate de que el registro esté cargado correctamente
+  registro <- registro_reactivo()
+  
+  if (!is.null(registro)) {
+    # Actualizar campos con la lógica de limpieza de "No informado"
+    updateTextInput(session, "sexo_biologico1", value = limpiar_no_informado(registro$`Sexo Biológico`))
+    updateTextInput(session, "genero1", value = limpiar_no_informado(registro$`Género`))
+    updateTextInput(session, "sustancia_inicio_consumo1", value = limpiar_no_informado(registro$`Sustancia de inicio`))
+    updateTextInput(session, "persona_consume1", value = limpiar_no_informado(registro$`¿Consume actualmente?`))
+    updateTextInput(session, "derivacion1", value = limpiar_no_informado(registro$`Derivación`))
+    updateTextInput(session, "nivel_educativo_max1", value = limpiar_no_informado(registro$`Nivel Máximo Educativo Alcanzado`))
+    updateTextInput(session, "situacion_habitacional_actual1", value = limpiar_no_informado(registro$`Situación Habitacional Actual`))
+    updateTextInput(session, "cud1", value = limpiar_no_informado(registro$`CUD`))
+    updateTextInput(session, "situacion_laboral_actual1", value = limpiar_no_informado(registro$`Situación Laboral Actual`))
+    updateTextInput(session, "referencia_aps1", value = limpiar_no_informado(registro$`Referencia a APS`))
+    updateTextInput(session, "situacion_judicial1", value = limpiar_no_informado(registro$`Situación Judicial`))
+    
+    # Actualizar checkboxes de ingreso económico (solo eliminar "No informado" si está seleccionado)
+    ingreso_limpio <- registro$`Ingresos Económicos`
+    ingreso_limpio <- ingreso_limpio[!ingreso_limpio %in% c("No informado", "No informada")]
+    updateCheckboxGroupInput(session, "ingreso_economico1", selected = ingreso_limpio)
+    
+    # Actualizar checkboxes de redes de apoyo (solo eliminar "No informado" si está seleccionado)
+    redes_limpias <- registro$`Redes de Apoyo`
+    redes_limpias <- redes_limpias[!redes_limpias %in% c("No informado", "No informada")]
+    updateCheckboxGroupInput(session, "redes_apoyo1", selected = redes_limpias)
+  }
+})
