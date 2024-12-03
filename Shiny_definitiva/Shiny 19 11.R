@@ -1173,8 +1173,16 @@ ui <- page_navbar(
       useShinyjs(),
     
       # Buscador de DNI o Nombre
-      textInput("search_input", "Buscar por DNI o Nombre", ""),
-      actionButton("search_button", "Buscar"),
+      fluidRow(
+      textInput("search_input", 
+                tags$span("Buscar por DNI o Nombre",style = "fontsize: 12px;"), 
+                width = 250),
+      actionButton("search_button", 
+                   tags$span("Buscar",style = "fontsize: 12px;"),
+                   icon = icon("search"),
+                   style = "height: 36px; line-height: 20px; font-size: 12px; margin-top: 24px;", 
+                   width = 120)
+      ),
       
       conditionalPanel(
         condition = "output.showTable == true",
@@ -1186,12 +1194,11 @@ ui <- page_navbar(
         # Botones en la esquina inferior derecha de la tabla
         tags$div(
           style = "margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;",
-          actionButton("cancel_button", tags$span("Cancelar búsqueda",style = "font-size: 12px;"), 
-                       width = '180px'),
-          actionButton("modify_button", tags$span("Modificar registro",style = "font-size: 12px;"), 
-                       width = '180px'),
-          # solo manager?
           actionButton("delete_button", tags$span("Eliminar registro",style = "font-size: 12px;"), 
+                       icon = icon("trash"), width = 180),
+          actionButton("modify_button", tags$span("Consultar o modificar registro",style = "font-size: 12px;"), 
+                       width = '250px'),
+          actionButton("cancel_button", tags$span("Cancelar búsqueda",style = "font-size: 12px;"), 
                        width = '180px')
         )
       ),  
@@ -2697,7 +2704,7 @@ validadores <- list(iv_fecha_registro, iv_fecha_primer_registro, iv_recuerda_dni
 
 observeEvent(input$guardar_registro, {
   
-  nuevo_registro <- data.frame(
+  nuevo_registro <- list(
     
     # Datos de registro --------------------------------------------------
     `ID de registro` = ifelse(isTruthy(input$id_registro), as.numeric(input$id_registro), NA),
@@ -2790,14 +2797,20 @@ observeEvent(input$guardar_registro, {
     
   )
   
+  nuevo_registro <- as.data.frame(lapply(nuevo_registro, function(col) {
+    if (length(col) == 0) {
+      return(NA)  # Si la columna está vacía, asigna NA
+    } else {
+      return(col)  # Mantén el valor original si tiene longitud válida
+    }
+  }), stringsAsFactors = FALSE)
+  colnames(nuevo_registro) <- colnames(data)
+  
   todos_validos <- all(sapply(validadores, function(iv) iv$is_valid()))
   
   # Guardar el nuevo registro directamente en el archivo "Base completa.xlsx" ----
   if (todos_validos) {
     data <- base()
-    
-    # Asegurar que los nombres de las columnas sean los mismos
-    colnames(nuevo_registro) <- colnames(data)
     
     # Ahora puedes hacer el rbind sin problemas
     datos_actualizados <- rbind(data, nuevo_registro)
@@ -3710,7 +3723,9 @@ na = 0)
 
   output$admin_button <- renderUI({
     if (res_auth$admin) { # Verificar si el usuario es administrador
-      actionButton("descarga", "Descargar base de datos", icon = icon("download"))
+      actionButton("descarga", 
+                   tags$span("Descargar base de datos",style = "font-size: 12px"),
+                   icon = icon("download"))
     }
 })
   
@@ -4834,7 +4849,10 @@ na = 0)
       mutate(`Temp_ID` = row_number()) %>%  # Crear un identificador temporal
       arrange(desc(`Fecha de registro`)) %>%  # Ordenar por fecha
       mutate(`Fecha de registro` = format(`Fecha de registro`, "%d/%m/%Y"),
-             `Fecha de Nacimiento` = format(`Fecha de Nacimiento`, "%d/%m/%Y"))
+             `Fecha de Nacimiento` = format(`Fecha de Nacimiento`, "%d/%m/%Y")) %>%
+      select(`ID de registro`,	`Fecha de registro`,	`ID de la persona`, 
+             `DNI`,	`Apellido, Nombre`,	`Fecha de Nacimiento`, `Provincia`,
+             `Localidad`,`¿Consume actualmente?`)
     
     
     
@@ -4845,7 +4863,6 @@ na = 0)
       options = list(
         paging = FALSE,
         scrollX = TRUE,
-        scrollY = "200px",
         dom = 'ft',  # Elimina la barra de paginación (solo muestra el texto)
         searching = FALSE,
         columnDefs = list(list(className = 'dt-center', targets = "_all"))
@@ -4888,7 +4905,6 @@ na = 0)
   
   # Botón modificar registro
   observeEvent(input$modify_button, {
-    selected <- input$search_results_rows_selected  # Índice visual
     
     selected <- input$search_results_rows_selected  # Índice visual
     
@@ -5187,8 +5203,8 @@ na = 0)
                     selectizeInput(
                       "tipo_vinculo_contacto_11",
                       label = tags$span("Vínculo", style = "font-size: 12px;"),
-                      choices = unique(registro$`Tipo de Vínculo con el Contacto 1`),
-                      selected = registro$`Tipo de Vínculo con el Contacto 1`,
+                      choices = c(unique(registro$`Tipo de Vínculo con el Contacto 1`),""),
+                      selected = ifelse(!is.na(registro$`Tipo de Vínculo con el Contacto 1`),registro$`Tipo de Vínculo con el Contacto 1`,""),
                       options = list(create = TRUE)
                     )
                   ),
@@ -5223,8 +5239,8 @@ na = 0)
                     selectizeInput(
                       "tipo_vinculo_contacto_21",
                       label = tags$span("Vínculo", style = "font-size: 12px;"),
-                      choices = unique(registro$`Tipo de Vínculo con el Contacto 2`),
-                      selected = registro$`Tipo de Vínculo con el Contacto 2`,
+                      choices = c(unique(registro$`Tipo de Vínculo con el Contacto 2`),""),
+                      selected = ifelse(!is.na(registro$`Tipo de Vínculo con el Contacto 2`),registro$`Tipo de Vínculo con el Contacto 2`,""),
                       options = list(create = TRUE)
                     )
                   ),
@@ -5259,8 +5275,8 @@ na = 0)
                     selectizeInput(
                       "tipo_vinculo_contacto_31",
                       label = tags$span("Vínculo", style = "font-size: 12px;"),
-                      choices = unique(registro$`Tipo de Vínculo con el Contacto 3`),
-                      selected = registro$`Tipo de Vínculo con el Contacto 3`,
+                      choices = c(unique(registro$`Tipo de Vínculo con el Contacto 3`),""),
+                      selected = ifelse(!is.na(registro$`Tipo de Vínculo con el Contacto 3`),registro$`Tipo de Vínculo con el Contacto 3`,""),
                       options = list(create = TRUE)
                     )
                   ),
@@ -5730,9 +5746,9 @@ na = 0)
         ),
         
         footer = tagList(
-          modalButton("Cancelar"),
-          actionButton("save_button", "Guardar cambios",
-                       icon = icon("save"))
+          actionButton("save_button", tags$span("Guardar cambios",style = "font-size:12px"),
+                       icon = icon("save"), width = 200),
+          modalButton(tags$span("Cancelar",style = "font-size:12px"))
         ),
         easyClose = TRUE
       ))
@@ -5913,6 +5929,21 @@ observeEvent(input$save_button, {
                      type = "error", 
                      duration = 5)
   }
+})
+
+# Botón modificar registro
+observeEvent(input$delete_button, {
+  showModal(
+    modalDialog(
+      title = "Confirmar eliminación",
+      "¿Estás seguro de que deseas eliminar este registro?",
+      footer = tagList(
+        modalButton("No"), # Cierra el modal
+        actionButton("confirm_delete", "Sí", class = "btn btn-danger") # Botón de confirmación
+      ),
+      size = "s"
+    )
+  )
 })
 
 }
