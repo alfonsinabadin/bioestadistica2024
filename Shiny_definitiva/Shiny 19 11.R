@@ -5940,8 +5940,7 @@ observeEvent(input$delete_button, {
       footer = tagList(
         modalButton("No"), # Cierra el modal
         actionButton("confirm_delete", "Sí", class = "btn btn-danger") # Botón de confirmación
-      ),
-      size = "s"
+      )
     )
   )
 })
