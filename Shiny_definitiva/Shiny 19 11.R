@@ -793,18 +793,11 @@ ui <- page_navbar(
               selectInput(
                 inputId = "tratamiento_elegido",
                 label = "",
-                choices = c(
-                  "Seguimiento","Cdd Baigorria",
-                  "Cdd Buen Pastor",
-                  "Centro de día Zeballos",
-                  "Derivado",
-                  "Internación B.P.",
-                  "Internación Baig.",
-                  "Internación Cristalería",
-                  "No finalizó admisión",
-                  "Rechaza tratamiento",
-                  
-                  ""
+                choices = c("Seguimiento",
+                            "Cdd Baigorria","Cdd Buen Pastor","Cdd Zeballos",
+                            "Internación Buen Pastor","Internación Baigorria",
+                            "Internación Critalería","No finalizó admisión",
+                            "Derivado","Rechaza tratamiento", ""
                 ),
                 selected = ""
               )
@@ -1420,7 +1413,7 @@ ui <- page_navbar(
                  h2("Análisis de consumo", style = "font-size: 20px; font-weight: bold;"),
                  fluidRow(
                    column(
-                     width = 7,
+                     width = 8,
                        plotlyOutput("histbox.edadinicio", height = "260px")
                    ),
                    column(
@@ -1431,24 +1424,85 @@ ui <- page_navbar(
                  
                  fluidRow(
                    style = "margin-top:10px;",
+                   column(
+                     width = 6,
                    uiOutput("tabla_inicio_reg")
                    ),
-                 
-                 fluidRow(
                    column(
                      width = 6,
                      plotlyOutput("barras_sustancias",
-                                  height = "300px")
-                   ),
+                                  height = "320px")
+                   )
+                 ),
+                 
+                 fluidRow(
+                   style = "margin-top:10px;",
                    column(
                      width = 6,
                      plotlyOutput("barras_edad_sustancias",
-                                  height = "300px")
+                                  height = "320px")
+                   ),
+                   column(
+                     width = 6,
+                     plotlyOutput("barras_educ_sustancias",
+                                  height = "320px")
                    )
                  )
                  )
                )
+             ),
+    
+    tabPanel(HTML("<span style='font-size:14px'>Análisis de tratamientos</span>"),
+             
+             fluidRow(
+               column(
+                 width = 2,
+                 wellPanel(
+                   
+                   style = "min-height: 390px;",
+                   
+                   h4("Filtros", style = "font-size: 15px; font-weight: bold;"), 
+                   
+                   fluidRow(
+                     div(
+                       
+                       # Filtro año
+                       selectInput(
+                         "year_filter_4",
+                         label = tags$span("Año del registro:", style = "font-size:15px;"),
+                         choices = c("Seleccione el año" = ""), # Texto indicativo inicial
+                         selected = "", # Inicia con el texto indicativo seleccionado
+                         multiple = TRUE
+                       )
+                     )
+                   )
+                 )
+               ),
+               
+               column(
+                 width = 10,
+                 
+                 h2("Análisis de tratamiento", style = "font-size: 20px; font-weight: bold;"),
+                 fluidRow(
+                   column(
+                     width = 4,
+                     plotlyOutput("bastones_trat")
+                   ),
+                   column(
+                     width = 8,
+                     plotlyOutput("tratamiento_asignado")
+                   )
+                 ),
+                 fluidRow(
+                   column(
+                     width = 12,
+                   style ="margin-top:10px",
+                   plotlyOutput("consumo_tratamiento")
+                   )
+                 )
+               )
              )
+    )
     ),
   nav_panel(
     "",
@@ -4987,7 +5041,7 @@ observeEvent(input$save_button, {
     # Guardar el archivo actualizado
     wb <- createWorkbook()
     addWorksheet(wb,"Registros")
-    writeData(wb,"Registro",data)
+    writeData(wb,"Registros",data)
     saveWorkbook(wb, "Registros", "Base completa.xlsx", overwrite = TRUE)
     
     showNotification("El registro ha sido actualizado con éxito.", 
@@ -5175,7 +5229,10 @@ datagraf <- data %>%
     `Sustancia de inicio`= factor(`Sustancia de inicio`,
                                   levels = c("Alcohol", "Crack", "Cocaína", "Marihuana",
                                              "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra"),
-                                  ordered = TRUE)
+                                  ordered = TRUE),
+    `Tratamiento Elegido` = factor(`Tratamiento Elegido`,
+                                   levels=c("Cdd Baigorria","Cdd Buen Pastor","Cdd Zeballos","Internación Buen Pastor","Internación Baigorria","Internación Critalería","No finalizó admisión","Derivado","Rechaza tratamiento", "Seguimiento"),
+                                   ordered = TRUE)
   )
 
 # Extraer los años únicos de la base y actualizar el filtro de años
@@ -5222,7 +5279,21 @@ observe({
 # Crear el data frame reactivo filtrado
 filtered_data_3 <- reactive({
   datagraf %>%
-    filter(is.null(input$year_filter_3) | year(`Fecha de registro`) %in% input$year_filter)
+    filter(is.null(input$year_filter_3) | year(`Fecha de registro`) %in% input$year_filter_3)
+})
+
+# Extraer los años únicos de la base y actualizar el filtro de años
+observe({
+  years <- unique(year(datagraf$`Fecha de registro`)) # Extraer años únicos
+  years <- sort(years[!is.na(years)]) # Ordenar y eliminar NAs
+  choices <- c("Seleccione el año" = "", years) # Agregar texto indicativo
+  updateSelectInput(session, "year_filter_4", choices = choices)
+})
+
+# Crear el data frame reactivo filtrado
+filtered_data_4 <- reactive({
+  datagraf %>%
+    filter(is.null(input$year_filter_4) | year(`Fecha de registro`) %in% input$year_filter_4)
 })
 
 # Boxplot + histograma + tabla
@@ -5951,7 +6022,7 @@ output$tabla_inicio_reg <- renderText({
     filter(`Inicio \\ Actual` != "Total_Columna") %>%
     rename("Total" = Total_Fila) 
   
-  kable(tabla_cruzada, format = "html", table.attr = "style='width:100%;'") %>%
+  kable(tabla_cruzada, format = "html", table.attr = "style='width:100%;height:320;'") %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
                   font_size = 12) %>%
     add_header_above(c("Edad de inicio de consumo vs edad registrada" = ncol(tabla_cruzada))) %>%  
@@ -5970,9 +6041,9 @@ output$sustancias <- renderText({
     select(`Sustancia de inicio`) %>%
     filter(!is.na(`Sustancia de inicio`)) %>%  
     group_by(`Sustancia de inicio`) %>%
-    summarize(conteo = n(), .groups = 'drop') %>%
+    summarize(Conteo = n(), .groups = 'drop') %>%
     mutate(
-      Porcentaje = round((conteo / sum(conteo)) * 100, 2)
+      Porcentaje = round((Conteo / sum(Conteo)) * 100, 2)
     ) %>%
     ungroup() 
   
@@ -6024,7 +6095,6 @@ output$barras_sustancias <- renderPlotly({
                                                "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra"),
                                     ordered = TRUE)
     ) %>%
-    select(`ID de registro`, Sustancia, `Sustancia de inicio`) %>%
     group_by(`Sustancia de inicio`,Sustancia)%>%
     summarise(conteo = n(), .groups = "drop") %>%
     filter(!is.na(Sustancia),!is.na(`Sustancia de inicio`)) %>%
@@ -6078,7 +6148,8 @@ output$barras_sustancias <- renderPlotly({
           text = "Sustancia de Inicio", # Texto del título de la leyenda
           font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
         ),
-        font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+        font = list(family = "Montserrat", size = 10, color = "grey"), # Estilo del texto de la leyenda
+        tracegroupgap = 5 # Reduce el espacio entre los grupos de trazas (categorías) # Estilo del texto de la leyenda
       ),
       hoverlabel = list(
         font = list(
@@ -6096,11 +6167,11 @@ output$barras_edad_sustancias <- renderPlotly({
   df <- filtered_data_3()
   
   df <- df %>%
-    select(EdadCategorica,`Sustancia de inicio`) %>%
     group_by(EdadCategorica,`Sustancia de inicio`) %>%
     summarise(conteo = n()) %>%
     ungroup() %>%
-    filter(!is.na(EdadCategorica)) %>%
+    filter(!is.na(EdadCategorica),
+           !is.na(`Sustancia de inicio`)) %>%
     complete(EdadCategorica, `Sustancia de inicio`, fill = list(conteo = 0))
   
   g <- ggplot(df, aes(x = conteo, y = EdadCategorica, fill = `Sustancia de inicio`,
@@ -6151,8 +6222,9 @@ output$barras_edad_sustancias <- renderPlotly({
           text = "Sustancia de Inicio", # Texto del título de la leyenda
           font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
         ),
-        font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
-      ),
+        font = list(family = "Montserrat", size = 10, color = "grey"), # Estilo del texto de la leyenda
+        tracegroupgap = 5 # Reduce el espacio entre los grupos de trazas (categorías)
+        ),
       hoverlabel = list(
         font = list(
           family = "Montserrat",
@@ -6166,6 +6238,281 @@ output$barras_edad_sustancias <- renderPlotly({
   
 })
 
+output$barras_educ_sustancias <- renderPlotly({
+  df <- filtered_data_3()
+  
+  df <- df %>%
+    group_by(`Nivel Máximo Educativo Alcanzado`,`Sustancia de inicio`) %>%
+    summarise(conteo = n()) %>%
+    ungroup() %>%
+    filter(!is.na(`Nivel Máximo Educativo Alcanzado`),
+           !is.na(`Sustancia de inicio`)) %>%
+    complete(`Nivel Máximo Educativo Alcanzado`, `Sustancia de inicio`, fill = list(conteo = 0))
+  
+  g <- ggplot(df, aes(x = conteo, y = `Nivel Máximo Educativo Alcanzado`, 
+                      fill = `Sustancia de inicio`,
+                      text = paste(
+                        "\nSustancia de inicio:", ..fill..,
+                        "\nFrecuencia:", x))) +
+    geom_bar(stat = "identity", position = "stack") + # Usa "stack" para apilar, "dodge" para barras lado a lado
+    labs(
+      x = "Frecuencia",
+      y = "Máximo nivel educativo alcanzado",
+      fill = "Sustancia de Inicio",
+      title = "Nivel educativo alcanzado según sustancia de inicio"
+    )+
+    scale_fill_manual(values = c("#FBC91C", "#828a00", "#274001", "#EC7E14", "#4d8584", "#a62f03", "#400d01", "#4C443C")) +
+    theme_fivethirtyeight() +
+    theme(
+      legend.position = "right",
+      legend.title.position = "top",
+      legend.title = element_text(hjust = 0.5),      # Centrar el título de la leyenda
+      axis.text.y = element_text(size = 10),
+      axis.text.x = element_text(size = 10),
+      plot.title = element_text(hjust = 0.5)
+    )
+  ggplotly(g, tooltip = "text") %>%
+    layout(
+      title = list(
+        y = 0.93,
+        title_x = 0.2,
+        font = list(family = "Montserrat", size = 15, color = "grey1"),
+        pad = list(l = -80)
+      ),
+      xaxis = list(
+        title = list(
+          text = "Frecuencia",
+          font = list(family = "Montserrat", size = 12, color = "grey1")
+        ),
+        tickfont = list(family = "Montserrat", size = 10, color = "grey")
+      ),
+      yaxis = list(
+        title = list(
+          text = "",
+          font = list(family = "Montserrat", size = 12, color = "grey1")
+        ),
+        tickfont = list(family = "Montserrat", size = 12, color = "grey")
+      ),
+      legend = list(
+        title = list(
+          text = "Sustancia de Inicio", # Texto del título de la leyenda
+          font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+        ),
+        font = list(family = "Montserrat", size = 10, color = "grey"), # Estilo del texto de la leyenda
+        tracegroupgap = 5 # Reduce el espacio entre los grupos de trazas (categorías)
+        ),
+      hoverlabel = list(
+        font = list(
+          family = "Montserrat",
+          size = 10,
+          color = "white",
+          style = "italic",
+          textcase = "word caps"
+        )
+      )
+    )
+  
+})
+
+output$bastones_trat <- renderPlotly({
+  df <- filtered_data_4()
+  
+  df <- df %>%
+    group_by(`Número de Tratamientos Previos`) %>%
+    summarise(count = n(), .groups = 'drop')  %>%
+    ungroup()
+  
+  g <- ggplot(df, aes(x = `Número de Tratamientos Previos`, y = count)) +
+    geom_bar(stat = "identity", fill = "#EC7E14", width = 0.01) +
+    
+    geom_point(aes(y = count,text = paste("Número de Tratamientos Previos:", `Número de Tratamientos Previos`,
+                                          "<br>Cantidad de Pacientes:", count)), size = 3, shape = 16, color = "#EC7E14") +
+    labs(title = "Cantidad de tratamientos previos",
+         y = "Cantidad de Pacientes",
+         x = "Número de Tratamientos Previos") +
+    theme(
+      legend.position = "right",
+      legend.title.position = "top",
+      legend.title = element_text(hjust = 0.5),      # Centrar el título de la leyenda
+      axis.text.y = element_text(size = 10),
+      axis.text.x = element_text(size = 10),
+      plot.title = element_text(hjust = 0.5)
+    ) +
+    theme_fivethirtyeight()
+  
+  ggplotly(g, tooltip = "text") %>%
+    layout(
+      title = list(
+        y = 0.93,
+        font = list(family = "Montserrat", size = 15, color = "grey1")
+      ),
+      xaxis = list(
+        title = list(
+          text = "Frecuencia",
+          font = list(family = "Montserrat", size = 12, color = "grey1")
+        ),
+        tickfont = list(family = "Montserrat", size = 10, color = "grey")
+      ),
+      yaxis = list(
+        title = list(
+          text = "",
+          font = list(family = "Montserrat", size = 12, color = "grey1")
+        ),
+        tickfont = list(family = "Montserrat", size = 12, color = "grey")
+      ),
+      legend = list(
+        title = list(
+          text = "Sustancia de Inicio", # Texto del título de la leyenda
+          font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+        ),
+        font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+      ),
+      hoverlabel = list(
+        font = list(
+          family = "Montserrat",
+          size = 10,
+          color = "white",
+          style = "italic",
+          textcase = "word caps"
+        )
+      )
+    )
+})
+
+output$tratamiento_asignado <- renderPlotly({
+  df <- filtered_data_4()
+  
+  df <- df %>%
+    group_by(`Tratamiento Elegido`) %>%
+    summarize(conteo = n(), .groups = 'drop') %>%
+    complete(`Tratamiento Elegido`, fill = list(conteo = 0)) %>%  
+    filter(!is.na(`Tratamiento Elegido`))  %>%
+    ungroup()
+  
+  total_conteo <- sum(df$conteo)
+  
+  df <- df %>%
+    mutate(porcentaje = (conteo / total_conteo) * 100)
+  
+  g <- ggplot(df, aes(x = porcentaje, y = reorder(`Tratamiento Elegido`, conteo))) +
+    geom_bar(stat = "identity", fill = "#ffb600",
+             aes(text = paste("Tratamiento:", `Tratamiento Elegido`,
+                              "<br>Conteo:", conteo,
+                              "<br>Porcentaje:", round(porcentaje, 2), "%"))) +  
+    labs(x = "Porcentaje", y = "Tratamiento Elegido", title = "Porcentaje por Tratamiento Elegido") +
+    scale_x_continuous(breaks = seq(0, 100, by = 10)) +  
+    theme_fivethirtyeight()
+    theme(legend.position = 'none')
+    
+    ggplotly(g, tooltip = 'text') %>%
+      layout(
+        title = list(
+          y = 0.93,
+          font = list(family = "Montserrat", size = 15, color = "grey1")
+        ),
+        xaxis = list(
+          title = list(
+            text = "Frecuencia",
+            font = list(family = "Montserrat", size = 12, color = "grey1")
+          ),
+          tickfont = list(family = "Montserrat", size = 10, color = "grey")
+        ),
+        yaxis = list(
+          title = list(
+            text = "",
+            font = list(family = "Montserrat", size = 12, color = "grey1")
+          ),
+          tickfont = list(family = "Montserrat", size = 12, color = "grey")
+        ),
+        legend = list(
+          title = list(
+            text = "Sustancia de Inicio", # Texto del título de la leyenda
+            font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+          ),
+          font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+        ),
+        hoverlabel = list(
+          font = list(
+            family = "Montserrat",
+            size = 10,
+            color = "white",
+            style = "italic",
+            textcase = "word caps"
+          )
+        )
+      )
+})
+
+output$consumo_tratamiento <- renderPlotly({
+  df <- filtered_data_4()
+  
+  df <- df %>%
+    pivot_longer(cols = starts_with("Consumo actual con"),
+                 names_to = "Sustancia",
+                 values_to = "Consumo") %>%
+    filter(Consumo == "Si", !is.na(`Tratamiento Elegido`)) %>%
+    group_by(Sustancia, `Tratamiento Elegido`) %>%
+    summarize(conteo = n(), .groups = 'drop') %>%
+    group_by(Sustancia) %>%
+    mutate(porcentaje = (conteo / sum(conteo)) * 100)%>%
+    ungroup()
+  
+  df <- df %>%
+    mutate(Sustancia = fct_reorder(Sustancia,
+                                   as.numeric(Sustancia != "Consumo actual con Otras")))
+  
+  g <- ggplot(df, aes(x = porcentaje, y = Sustancia, fill = `Tratamiento Elegido`)) +
+    geom_bar(stat = "identity", position = "stack",
+             aes(text = paste("Tratamiento:", `Tratamiento Elegido`,
+                              "<br>Porcentaje:", round(porcentaje, 2), "%",
+                              "<br>Conteo:", conteo))) +
+    scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100","#ffec51",
+                                 "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00", "#f28f3b" )) +
+    labs(x = "Porcentaje", y = "Sustancia de Consumo Actual",
+         title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
+    scale_x_continuous(breaks = seq(0, 100, by = 10)) +
+    
+    theme_fivethirtyeight() +
+    theme(legend.position = "right")
+  
+  ggplotly(g, tooltip = 'text') %>%
+    layout(
+      title = list(
+        y = 0.93,
+        font = list(family = "Montserrat", size = 15, color = "grey1")
+      ),
+      xaxis = list(
+        title = list(
+          text = "Frecuencia",
+          font = list(family = "Montserrat", size = 12, color = "grey1")
+        ),
+        tickfont = list(family = "Montserrat", size = 10, color = "grey")
+      ),
+      yaxis = list(
+        title = list(
+          text = "",
+          font = list(family = "Montserrat", size = 12, color = "grey1")
+        ),
+        tickfont = list(family = "Montserrat", size = 12, color = "grey")
+      ),
+      legend = list(
+        title = list(
+          text = "Sustancia de Inicio", # Texto del título de la leyenda
+          font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+        ),
+        font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+      ),
+      hoverlabel = list(
+        font = list(
+          family = "Montserrat",
+          size = 10,
+          color = "white",
+          style = "italic",
+          textcase = "word caps"
+        )
+      )
+    )
+})
 }
 
 shinyApp(ui, server)
