@@ -1093,12 +1093,23 @@ ui <- page_navbar(
               )
             )
           ),
-          tags$div(
+          fluidRow(
             style = "margin-top:10px; margin-bottom:10px;",
             actionButton(
+              style = "margin-left: 10px;",
+              width = 220,
               inputId = "guardar_registro",
               label = "Guardar registro",
               icon = icon("save"),
+              class = "btn-primary"
+            ),
+            
+            actionButton(
+              style = "margin-left: 10px;",
+              width = 220,
+              inputId = "limpar_campos",
+              label = "Vaciar campos",
+              icon = icon("broom"),
               class = "btn-primary"
             )
           )
@@ -2823,16 +2834,6 @@ observeEvent(input$guardar_registro, {
     footer = modalButton("Entendido")))
   }
   
-})
-
-
-
-  output$admin_button <- renderUI({
-    if (res_auth$admin) { # Verificar si el usuario es administrador
-      actionButton("descarga", 
-                   tags$span("Descargar base de datos",style = "font-size: 12px"),
-                   icon = icon("download"))
-    }
 })
   
   result <- reactive({
@@ -4882,7 +4883,7 @@ observeEvent(input$guardar_registro, {
           session,
           inputId = "localidad1",
           choices = localidades,
-          selected = iconv("Pérez", to = "ASCII//TRANSLIT")  # Mantiene el valor seleccionado por defecto
+          selected = iconv(registro$Localidad, to = "ASCII//TRANSLIT")  # Mantiene el valor seleccionado por defecto
         )
       })
       
@@ -5042,7 +5043,7 @@ observeEvent(input$save_button, {
     wb <- createWorkbook()
     addWorksheet(wb,"Registros")
     writeData(wb,"Registros",data)
-    saveWorkbook(wb, "Registros", "Base completa.xlsx", overwrite = TRUE)
+    saveWorkbook(wb, "Base completa.xlsx", overwrite = TRUE)
     
     showNotification("El registro ha sido actualizado con éxito.", 
                      type = "message", 
@@ -6513,6 +6514,88 @@ output$consumo_tratamiento <- renderPlotly({
       )
     )
 })
+
+output$admin_button <- renderUI({
+  if (res_auth$admin) { # Verificar si el usuario es administrador
+    downloadButton(
+      outputId = "descarga", 
+      label = tags$span("Descargar base de datos", style = "font-size: 12px"),
+      icon = icon("download"),
+      class = "btn-primary"
+    )
+  }
+})
+
+# BOTON DE LIMPIADO
+observeEvent(input$limpar_campos, {
+  
+  # Datos de la persona
+  updateSelectInput(session, "recuerda_dni", selected = "")
+  updateTextInput(session, "dni", value = "")
+  updateTextInput(session, "apellido_nombre", value = "")
+  updateDateInput(session, "fecha_nacimiento", value = NA)
+  updateTextInput(session, "edad", value = "")
+  updateSelectInput(session, "sexo_biologico", selected = "")
+  updateSelectInput(session, "genero", selected = "")
+  updateSelectInput(session, "provincia", selected = "")
+  updateSelectInput(session, "localidad", selected = "")
+  updateTextInput(session, "barrio", value = "")
+  
+  # Contactos
+  updateTextInput(session, "telefono_contacto_1", value = "")
+  updateSelectInput(session, "tipo_vinculo_contacto_1", selected = "")
+  updateTextInput(session, "nombre_contacto_1", value = "")
+  updateTextInput(session, "telefono_contacto_2", value = "")
+  updateSelectInput(session, "tipo_vinculo_contacto_2", selected = "")
+  updateTextInput(session, "nombre_contacto_2", value = "")
+  updateTextInput(session, "telefono_contacto_3", value = "")
+  updateSelectInput(session, "tipo_vinculo_contacto_3", selected = "")
+  updateTextInput(session, "nombre_contacto_3", value = "")
+  
+  # Entrevistas
+  updateSelectInput(session, "estado_psicologo", selected = "")
+  updateDateInput(session, "fecha_entrevista_psicologo", value = NULL)
+  updateSelectInput(session, "estado_psiquiatra", selected = "")
+  updateDateInput(session, "fecha_entrevista_psiquiatra", value = NULL)
+  updateSelectInput(session, "estado_ts", selected = "")
+  updateDateInput(session, "fecha_entrevista_ts", value = NULL)
+  
+  # Consumo
+  updateTextInput(session, "edad_inicio_consumo", value = "")
+  updateSelectInput(session, "sustancia_inicio_consumo", selected = "")
+  updateTextInput(session, "otra_sustancia", value = "")
+  updateSelectInput(session, "persona_consume", selected = "")
+  updateTextInput(session, "sustancias_consumo_actual", value = "")
+  updateTextInput(session, "otra_sustancia_actual", value = "")
+  updateSelectInput(session, "derivacion", selected = "")
+  updateTextInput(session, "derivado_de", value = "")
+  updateTextInput(session, "num_tratamientos_previos", value = "")
+  updateTextInput(session, "lugar_ultimo_tratamiento", value = "")
+  updateSelectInput(session, "tratamiento_elegido", selected = "")
+  
+  # Situación Socioeconómica, Jurídica y de Salud
+  updateSelectInput(session, "nivel_educativo_max", selected = "")
+  updateSelectInput(session, "cud", selected = "")
+  updateSelectInput(session, "situacion_habitacional_actual", selected = "")
+  updateTextInput(session, "otra_situacion_habitacional_actual", value = "")
+  updateSelectInput(session, "situacion_laboral_actual", selected = "")
+  updateTextInput(session, "otra_situacion_laboral_actual", value = "")
+  updateSelectInput(session, "ingreso_economico", selected = "")
+  updateTextInput(session, "otro_ingreso_economico", value = "")
+  updateSelectInput(session, "situacion_judicial", selected = "")
+  updateTextInput(session, "otra_situacion_judicial", value = "")
+  
+  # Red de Apoyo y Referencias
+  updateSelectInput(session, "redes_apoyo", selected = "")
+  updateSelectInput(session, "referencia_aps", selected = "")
+  updateTextInput(session, "equipo_referencia", value = "")
+  
+  # Información adicional
+  updateTextInput(session, "observaciones", value = "")
+  
+})
+
+
 }
 
 shinyApp(ui, server)
