@@ -1980,9 +1980,25 @@ server <- function(input, output, session) {
                     "Estable", 
                     "Esporádico", 
                     "No tiene",
+                    "Otra",
                     ""
                   ),
                   selected = registro$`Situación Laboral Actual`)
+              ),
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.situacion_laboral_actual1 == 'Otra'",  # Verifica si selecciona "Otra"
+                  textInput(
+                    inputId = "otra_situacion_laboral_actual1",
+                    label = tags$span("Especifique la situación habitacional", style = "font-size: 12px;"),
+                    value = ifelse(
+                      !is.null(registro$`Situación Laboral Actual - Otra`) && !is.na(registro$`Situación Laboral Actual - Otra`),
+                      registro$`Situación Laboral Actual - Otra`,  
+                      ""  
+                    )
+                  ) 
+                )
               )
             ),
             fluidRow(
