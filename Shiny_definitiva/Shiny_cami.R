@@ -1101,20 +1101,18 @@ ui <- page_navbar(
             )
           ),
           tags$div(
-            style = "margin-top:10px; margin-bottom:10px; display: flex; gap: 10px; align-items: center;", # Flexbox para alinear horizontalmente
+            style = "font-size: 12px;margin-top:10px; margin-bottom:10px; display: flex; gap: 10px; align-items: center;", # Flexbox para alinear horizontalmente
             actionButton(
               inputId = "guardar_registro",
               label = "Guardar",
               icon = icon("save"),
               class = "btn-primary",
-              style = "font-size: 12px; padding: 10px 30px;" # Botón más pequeño
             ),
             actionButton(
               inputId = "limpar_campos",
               label = "Vaciar",
               icon = icon("broom"),
               class = "btn-primary",
-              style = "font-size: 12px; padding: 10px 30px;" # Botón más pequeño
             )
           )
         )
