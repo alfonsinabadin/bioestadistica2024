@@ -1044,7 +1044,7 @@ ui <- page_navbar(
                 label = "Vaciar campos",
                 icon = icon("broom"),
                 class = "btn-primary"
-                )runApp('Shiny_definitiva/Shiny_vale_2.R')
+                )
 
           )
         )
