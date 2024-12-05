@@ -1,0 +1,13 @@
+name: Registros_PM
+title: Registros_PM
+username: badinalfonsina
+account: badinalfonsina
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13520864
+bundleId: 9461653
+url: https://badinalfonsina.shinyapps.io/Registros_PM/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: codigo_boton.R|Grafios Cami.R|PadreMisericordioso.R|Shiny_cami.R|Shiny_vale.R|Shiny_vale_2.R|tabla sustancias alfon.R

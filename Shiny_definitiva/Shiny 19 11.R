@@ -863,7 +863,6 @@ ui <- page_navbar(
                   tags$span("Situación Habitacional Actual", style = "font-size: 12px;"),
                   choices = list(
                     "No informada",
-                    "Casa/Departamento", 
                     "Casa/Departamento alquilado", 
                     "Casa/Departamento cedido", 
                     "Casa/Departamento propio", 
@@ -2835,6 +2834,16 @@ observeEvent(input$guardar_registro, {
   }
   
 })
+
+
+
+  output$admin_button <- renderUI({
+    if (res_auth$admin) { # Verificar si el usuario es administrador
+      actionButton("descarga", 
+                   tags$span("Descargar base de datos",style = "font-size: 12px"),
+                   icon = icon("download"))
+    }
+})
   
   result <- reactive({
     
@@ -4624,7 +4633,6 @@ observeEvent(input$guardar_registro, {
                   label = tags$span("Situación Habitacional Actual", style = "font-size: 12px;"),
                   choices = list(
                     "No informada",
-                    "Casa/Departamento", 
                     "Casa/Departamento alquilado", 
                     "Casa/Departamento cedido", 
                     "Casa/Departamento propio", 
@@ -6595,6 +6603,16 @@ observeEvent(input$limpar_campos, {
   
 })
 
+# BOTON DESCARGA SOLO ADMIN
+output$descarga <- downloadHandler(
+  filename = function() {
+    paste("Base al día ", Sys.Date(),".xlsx", sep = "")
+  },
+  content = function(file) {
+    library(openxlsx)
+    write.xlsx(base(), file)
+  }
+)
 
 }
 
