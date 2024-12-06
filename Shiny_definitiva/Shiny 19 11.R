@@ -849,6 +849,7 @@ ui <- page_navbar(
                   choices = list(
                     "No informado",
                     "Si", 
+                    "En trámite", 
                     "No", 
                     ""
                   ),
@@ -1227,7 +1228,7 @@ ui <- page_navbar(
                        value_box( 
                          title = tags$span(
                            uiOutput("na_edad"),
-                           style = "font-size: 15px; margin-top: 22px;"  # Ajusta el tamaño aquí
+                           style = "font-size: 15px; margin-top: 24px;"  # Ajusta el tamaño aquí
                          ), 
                          showcase = "", 
                          value = "",   
@@ -1256,24 +1257,24 @@ ui <- page_navbar(
                  ),
                  
                  fluidRow(
-                   style = "margin-top:15px;",
+                   style = "margin-top:10px;",
                    column(
-                     width = 6
-                     
+                     width = 5,
+                     uiOutput("tabla_edades", height = "200px")
                    ),
                    
                    column(
                      
-                     width = 6,
-                     h4(tags$span("Provincias de origen (excepto Santa Fe)", style = "font-size:15px;")),
+                     width = 7,
                      fluidRow(
+                       h4(tags$span("Provincias de origen registradas por fuera de Santa Fe", style = "font-size:15px;")),
                        column(
-                         width = 6,
+                         width = 8,
                          leafletOutput("map", height = "200px")
                        ),
                        
-                       column(width = 6,
-                              tableOutput("map.table")
+                       column(width = 4,
+                              uiOutput("map.table")
                        )
                      )
                    )
@@ -2432,7 +2433,7 @@ iv_lugar_ultimo_tratamiento$add_rule("lugar_ultimo_tratamiento", function(value)
     if (nchar(value) < 2) {
       return(tags$span("El campo debe tener al menos 2 caracteres.", style = "font-size:10px;"))
     }
-    if (grepl("[^a-zA-Z0-9 ]", value)) {
+    if (grepl("[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$-/", value)) {
       return(tags$span("No se admiten caracteres especiales.",style = "font-size:10px;"))
     }
   }
@@ -4635,6 +4636,7 @@ observeEvent(input$guardar_registro, {
                   choices = list(
                     "No informado",
                     "Si", 
+                    "En trámite",
                     "No", 
                     ""
                   ),
@@ -5242,6 +5244,7 @@ datagraf <- data %>%
     CUD = factor(CUD,
                  levels = c("No informado",
                             "Si", 
+                            "En trámite",
                             "No"),
                  ordered = TRUE),
     EdadInicioCategorica = factor(
@@ -5425,9 +5428,9 @@ output$na_edad <- renderText({
   conteo_na <- sum(is.na(df$`Edad del registro`))
   conteo_na <- ifelse(!is.na(conteo_na),conteo_na,0)
   mean <- mean(subset(df$`Edad del registro`,!is.na(df$`Edad del registro`)))
-  mean <- ifelse(!is.na(mean),mean,0)
+  mean <- round(ifelse(!is.na(mean),mean,0),2)
   sd <- sd(subset(df$`Edad del registro`,!is.na(df$`Edad del registro`)))
-  sd <- ifelse(!is.na(sd),sd,0)
+  sd <- round(ifelse(!is.na(sd),sd,0),2)
   
   HTML(paste("<br>Hay",conteo_na,"registros personales sin información (datos faltantes)",
              "<br><strong>Promedio:</strong>",mean,
@@ -5558,7 +5561,7 @@ output$map <- renderLeaflet({
     )
 })
 
-output$map.table <- renderTable({
+output$map.table <- renderText({
   # Calcular el conteo por provincia en el dataframe `filtered_data()`
   df <- filtered_data() %>%
     group_by(Provincia) %>%
@@ -5580,9 +5583,13 @@ output$map.table <- renderTable({
     )
   }
   
-  df  # Mostrar la tabla
-},
-colnames = TRUE)
+  kable(df, format = "html", table.attr = "style='width:100%;'") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                  font_size = 12) %>%
+    row_spec(0, background = "#ffb600", color = "white") %>%
+    add_header_above(if(ncol(df) == 6) c("Grupo de edad (SEDRONAR)" = 5) else NULL) %>%
+    column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;")
+})
 
 output$barras.nivel.educativo <- renderPlotly({
   
@@ -5647,7 +5654,8 @@ output$matriz.colores <- renderPlotly({
   df <- filtered_data_2() %>%
     group_by(EdadCategorica, `Nivel Máximo Educativo Alcanzado`, .add=TRUE) %>%
     summarise(conteo = ifelse(is.na(n()),0,n()), .groups = "drop") %>%
-    filter(!is.na(EdadCategorica),!is.na(`Nivel Máximo Educativo Alcanzado`))
+    filter(!is.na(EdadCategorica),!is.na(`Nivel Máximo Educativo Alcanzado`)) %>%
+    complete(EdadCategorica,`Nivel Máximo Educativo Alcanzado`)  
   
   g <- ggplot(df, aes(x = EdadCategorica, y = `Nivel Máximo Educativo Alcanzado`, fill = conteo)) +
     geom_tile(aes(text = paste(
@@ -5657,6 +5665,11 @@ output$matriz.colores <- renderPlotly({
     scale_fill_gradient(low = "#FFDC2E", high = "#ec7e14") + # probar min y max
     labs(title = "Máximo nivel educativo alcanzado según grupo de edad",
          fill = "Conteo") +
+    scale_x_discrete(labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60")) +
+    scale_y_discrete(labels = c("Sin instrucción formal", "Primario incompleto", 
+      "Primario en curso",  "Primario completo", "Secundario incompleto", "Secundario en curso", 
+      "Secundario completo",  "Nivel superior incompleto", "Nivel superior en curso", "Nivel superior completo"
+    )) +
     theme_fivethirtyeight() +
     theme(legend.text = element_text(size = 5),
           legend.title = element_text(size = 8))
@@ -6619,6 +6632,28 @@ output$descarga <- downloadHandler(
     write.xlsx(base(), file)
   }
 )
+
+output$tabla_edades <- renderText({
+  df <- filtered_data()
+  
+  tabla <- df %>%
+    filter(!is.na(EdadCategorica)) %>%  
+    group_by(EdadCategorica) %>%
+    summarize(Conteo = n(), .groups = 'drop') %>%
+    mutate(
+      Porcentaje = round((Conteo / sum(Conteo)) * 100, 2)
+    ) %>%
+    ungroup() %>%
+    complete(EdadCategorica, fill = list(Conteo = 0, Porcentaje = 0))
+    
+  colnames(tabla) <- c("Grupo de edad (SEDRONAR)", "Cantidad", "Porcentaje")
+  kable(tabla, format = "html", table.attr = "style='width:100%;'") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+                  font_size = 12) %>%
+    row_spec(0, background = "#ffb600", color = "white") %>%
+    add_header_above(if(ncol(tabla) == 6) c("Grupo de edad (SEDRONAR)" = 5) else NULL) %>%
+    column_spec(1, width = "25em", extra_css = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;")
+})
 
 }
 
