@@ -1218,23 +1218,39 @@ ui <- page_navbar(
                  fluidRow(
                    
                    column(
-                     width = 9,
-                     plotlyOutput("histbox.edad", height = "390px")
+                     width = 8,
+                     fluidRow(
+                     plotlyOutput("histbox.edad", height = "250px")
+                     ),
+                     fluidRow(
+                       style = "margin-top: 10px; margin-left: 5px; font-size: 12px;",
+                       value_box( 
+                         title = tags$span(
+                           uiOutput("na_edad"),
+                           style = "font-size: 15px; margin-top: 22px;"  # Ajusta el tamaño aquí
+                         ), 
+                         showcase = "", 
+                         value = "",   
+                         theme = "bg-gradient-grey-white" ,
+                         height = "50px", 
+                         showcase_layout = "bottom",
+                       )
+                     )
                    ),
                    
                    column(
-                     width = 3,
+                     width = 4,
                      
                      fluidRow(
-                       plotOutput("box_sexo_masc", height = "130px")  # Ajusta el alto según lo que necesites
+                       plotOutput("box_sexo_masc", height = "100px")  # Ajusta el alto según lo que necesites
                      ),
                      
                      fluidRow(
-                       plotOutput("box_sexo_fem", height = "130px")  # Ajusta el alto según lo que necesites
+                       plotOutput("box_sexo_fem", height = "100px")  # Ajusta el alto según lo que necesites
                      ),
                      
                      fluidRow(
-                       plotOutput("box_sexo_ni", height = "130px")  # Ajusta el alto según lo que necesites
+                       plotOutput("box_sexo_ni", height = "100px")  # Ajusta el alto según lo que necesites
                      )
                    )
                  ),
@@ -1243,6 +1259,7 @@ ui <- page_navbar(
                    style = "margin-top:15px;",
                    column(
                      width = 6
+                     
                    ),
                    
                    column(
@@ -5311,12 +5328,21 @@ output$histbox.edad <- renderPlotly({
   df <- filtered_data()
   
   # Conteo de registros sin información de edad
-  conteo_na <- sum(is.na(df$`Edad del registro`))
-  conteo_na <- paste("Hay",conteo_na,"de",nrow(df),"registros\npersonales sin información")
+  #conteo_na <- sum(is.na(df$`Edad del registro`))
+  #conteo_na <- paste("Hay",conteo_na,"de",nrow(datagraf),"registros\npersonales sin información")
   
   # Filtrar edades no nulas y preparar los datos para el histograma
   edad_data <- df %>%
     filter(!is.na(`Edad del registro`))
+  
+  # Defino minimo y máximo
+  min <- ifelse("0 a 12" %in% input$edad_filter,0,
+                ifelse("13 a 17" %in% input$edad_filter,13,
+                       ifelse("18 a 29" %in% input$edad_filter,18,
+                              ifelse("30 a 60" %in% input$edad_filter,30,61)
+                       )
+                )
+  )
   
   hist <- ggplot(edad_data) +
     geom_histogram(aes(x = `Edad del registro`, 
@@ -5325,42 +5351,44 @@ output$histbox.edad <- renderPlotly({
                          "Edad:", ..x.. -1, "a", ..x.. +1,
                          "\nFrecuencia:", ..count..)
     ),
-    position = "identity", binwidth = 2,
+    position = "identity", binwidth = 2, boundary = min,
     fill = "#ff8800", color = "grey1") +
     labs(x = "Edad de registro", 
          y = "Frecuencia", 
-         title = "Distribución de la edad al momento de la admisión",
-         subtitle = conteo_na) +
-    scale_x_continuous(limits = c(0, 60), breaks = seq(0, 60, 10)) +
+         title = "Distribución de la edad al momento de la admisión") +
+    scale_x_continuous(limits = c(min,max(edad_data$`Edad del registro`)), 
+                       breaks = seq(min,max(edad_data$`Edad del registro`), 10)) +
     theme_fivethirtyeight() + 
     theme(axis.title = element_text())
   
   hist_plotly <- ggplotly(hist, tooltip = "text") %>%
-    layout(title = list(y = 0.95,
+    layout(showlegend = FALSE,
+           title = list(y = 0.95,
                         text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
            xaxis = list(title = list(text = "Edad de registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
-                        tickvals = seq(0, 60, 10),
+                        tickvals = seq(min,max(edad_data$`Edad del registro`), 10),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey")),
            yaxis = list(title = list(text = "Frecuencia",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey")),
            hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
                                          style = "italic", textcase = "word caps"))
-    ) %>%
-    add_annotations(
-      text = conteo_na,
-      x = 0.05, y = 0.95,
-      xref = "paper", yref = "paper",
-      showarrow = FALSE,
-      font = list(family = "Montserrat", size = 12, color = "white"),
-      bgcolor = "grey",
-      bordercolor = "grey",
-      borderwidth = 2,
-      borderpad = 10,
-      align = "center"
     )
+  
+    # add_annotations(
+    #   text = conteo_na,
+    #   x = 0.05, y = 0.95,
+    #   xref = "paper", yref = "paper",
+    #   showarrow = FALSE,
+    #   font = list(family = "Montserrat", size = 12, color = "white"),
+    #   bgcolor = "grey",
+    #   bordercolor = "grey",
+    #   borderwidth = 2,
+    #   borderpad = 10,
+    #   align = "center"
+    # )
   
   # Generar boxplot
   
@@ -5370,64 +5398,42 @@ output$histbox.edad <- renderPlotly({
                         line = list(color = "grey10"),
                         fillcolor = "#ff8800") %>%
     add_boxplot(hoverinfo = "x") %>%
-    layout(title = list(y = 0.95,
+    layout(showlegend = FALSE,
+           title = list(y = 0.95,
                         text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
            xaxis = list(title = list(text = "Edad de registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
-                        tickvals = seq(0, 60, 10),
+                        tickvals = seq(min,max(edad_data$`Edad del registro`), 10),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey"),
                         hoverformat = ".2f"),
            yaxis = list(showticklabels = FALSE),
            hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
                                          style = "italic")))
   
-  # tabla
-  edades <- edad_data %>%
-    group_by(EdadCategorica) %>%
-    summarise(conteo = n()) %>%
-    complete(EdadCategorica)%>%
-    filter(!is.na(EdadCategorica),
-           EdadCategorica != "+ 60") %>%
-    mutate(conteo = ifelse(is.na(conteo),0,conteo),
-           pos = c(12/2,13+(17-13)/2,18+(29-18)/2,30+(60-30)/2),
-           cantmax = c(12,17,29,60),
-           cantmin = c(0,13,18,30))
-  
-  tabla_edades <- ggplot(edades, aes(text = paste("Categoría de SEDONAR:", EdadCategorica, "\nCantidad:", conteo))) +
-    geom_rect(aes(xmin = cantmin, xmax = cantmax, ymin = 0, ymax = 2, 
-                  fill = EdadCategorica, alpha = 0.2)) +
-    geom_text(aes(x = pos, y = 1, label = paste(EdadCategorica,paste("n:",conteo),sep = "\n")), color = "grey1", size = 3) +
-    scale_fill_manual(values = c("#FBC91C", "#EC7E14", "#4C443C","#F9EDCC")) +
-    scale_color_manual(values = c("#FBC91C", "#EC7E14", "#4C443C","#F9EDCC")) +
-    labs(title = "Distribución de la edad al momento de la admisión") +
-    scale_x_continuous(breaks = seq(0,60,10)) +
-    scale_y_continuous(breaks = c(0,2)) +
-    theme_fivethirtyeight() + 
-    theme(legend.position = "none",
-          axis.title = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          text = element_text(family = "Montserrat"),
-          panel.background = element_blank(),
-          panel.grid = element_blank())
-  
-  tabla_edades_plotly <- ggplotly(tabla_edades, tooltip = "text") %>%
-    layout(title = list(y = 0.95,
-                        text = "Distribución de la edad al momento de la admisión",
-                        font = list(family = "Montserrat", size = 15, color = "grey1")),
-           xaxis = list(title = list(text = "Edad de registro",
-                                     font = list(family = "Montserrat", size = 12, color = "grey1")),
-                        tickvals = seq(0, 60, 10),
-                        tickfont = list(family = "Montserrat", size = 10, color = "grey"),
-                        hoverformat = ".2f"),
-           yaxis = list(showticklabels = FALSE),
-           hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
-                                         style = "italic")))
-  
-  # Combinar histogram y boxplot
-  subplot(box_plotly, hist_plotly, tabla_edades_plotly, nrows = 3, heights = c(0.2, 0.65, 0.15), 
+  subplot(hist_plotly, box_plotly, nrows = 2, heights = c(0.65, 0.2), 
           shareX = TRUE, titleX = TRUE, titleY = TRUE, margin = 0)
+})
+
+output$na_edad <- renderText({
+  
+  # Cargar base reactiva
+  
+  df <- filtered_data()
+  
+  # Conteo de registros sin información de edad
+  conteo_na <- sum(is.na(df$`Edad del registro`))
+  conteo_na <- ifelse(!is.na(conteo_na),conteo_na,0)
+  mean <- mean(subset(df$`Edad del registro`,!is.na(df$`Edad del registro`)))
+  mean <- ifelse(!is.na(mean),mean,0)
+  sd <- sd(subset(df$`Edad del registro`,!is.na(df$`Edad del registro`)))
+  sd <- ifelse(!is.na(sd),sd,0)
+  
+  HTML(paste("<br>Hay",conteo_na,"registros personales sin información (datos faltantes)",
+             "<br><strong>Promedio:</strong>",mean,
+             "<strong>| Desvío estándar:</strong>",sd,
+             "<strong>| Total:</strong>",nrow(datagraf)))
+  
 })
 
 output$box_sexo_masc <- renderPlot({
