@@ -1729,7 +1729,6 @@ server <- function(input, output, session) {
     }
   })
   
-  ## 8 dígitos
   iv_edad$add_rule("edad", function(value) {
     if(!is.na(value)) {
       if (!grepl("^[0-9]+$", value)) {
@@ -1747,14 +1746,16 @@ server <- function(input, output, session) {
       
       # Calcular la edad en años usando fecha de registro como referencia
       edad <- trunc(as.numeric(difftime(as.Date(input$fecha_registro), as.Date(input$fecha_nacimiento), units = "days")) %/% 365)
+      updateNumericInput(session, "edad", value = edad)
+      shinyjs::disable("edad")
       
     } else {
       # Si falta alguna de las fechas, dejar el campo en NA
-      edad <- NA
+      shinyjs::enable("edad")
     }
     
     # Actualizar el campo de `edad` en el formulario
-    updateNumericInput(session, "edad", value = edad)
+    
   })
   
   # Sexo biológico -------------------------------------------------------------
@@ -2347,9 +2348,18 @@ server <- function(input, output, session) {
   
   iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
     if(input$persona_consume == "Si") {
+      shinyjs::enable("sustancias_consumo_actual")
       if(is.null(value) || length(value) == 0) {
         return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
       }
+    } else if (input$persona_consume %in% c("No","No informado")) {
+      updateCheckboxGroupInput(
+        session,
+        "sustancias_consumo_actual",
+        selected = NULL,
+        inline = TRUE
+      )
+      shinyjs::disable("sustancias_consumo_actual")
     }
   })
   
@@ -3071,17 +3081,20 @@ observeEvent(input$guardar_registro, {
   
   observe({
     # Verificar que ambas fechas estén registradas
-    if (isTruthy(input$fecha_nacimiento1) && isTruthy(input$fecha_registro1)) {
+    if (isTruthy(input$fecha_nacimiento) && isTruthy(input$fecha_registro)) {
       
       # Calcular la edad en años usando fecha de registro como referencia
-      edad1 <- trunc(as.numeric(difftime(as.Date(input$fecha_registro1), as.Date(input$fecha_nacimiento1), units = "days")) %/% 365)
+      edad1 <- trunc(as.numeric(difftime(as.Date(input$fecha_registro), as.Date(input$fecha_nacimiento), units = "days")) %/% 365)
+      updateNumericInput(session, "edad1", value = edad1)
+      shinyjs::disable("edad1")
       
     } else {
-      edad1 <- input$edad1
+      # Si falta alguna de las fechas, dejar el campo en NA
+      shinyjs::enable("edad1")
     }
     
     # Actualizar el campo de `edad` en el formulario
-    updateNumericInput(session, "edad1", value = edad1)
+    
   })
   
   # Sexo biológico -------------------------------------------------------------
@@ -3659,9 +3672,18 @@ observeEvent(input$guardar_registro, {
   
   iv_sustancias_actual1$add_rule("sustancias_consumo_actual1", function(value) {
     if(input$persona_consume1 == "Si") {
+      shinyjs::enable("sustancias_consumo_actual1")
       if(is.null(value) || length(value) == 0) {
         return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
       }
+    } else if (input$persona_consume1 %in% c("No","No informado")) {
+      updateCheckboxGroupInput(
+        session,
+        "sustancias_consumo_actual1",
+        selected = NULL,
+        inline = TRUE
+      )
+      shinyjs::disable("sustancias_consumo_actual1")
     }
   })
   
@@ -5369,29 +5391,16 @@ output$histbox.edad <- renderPlotly({
            title = list(y = 0.95,
                         text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
-           xaxis = list(title = list(text = "Edad de registro",
+           xaxis = list(title = list(text = "Edad al momento del registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
                         tickvals = seq(min,max(edad_data$`Edad del registro`), 10),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey")),
-           yaxis = list(title = list(text = "Frecuencia",
+           yaxis = list(title = list(text = "Cantidad de personas",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey")),
            hoverlabel = list(font = list(family = "Montserrat", size = 10, color = "white",
                                          style = "italic", textcase = "word caps"))
     )
-  
-    # add_annotations(
-    #   text = conteo_na,
-    #   x = 0.05, y = 0.95,
-    #   xref = "paper", yref = "paper",
-    #   showarrow = FALSE,
-    #   font = list(family = "Montserrat", size = 12, color = "white"),
-    #   bgcolor = "grey",
-    #   bordercolor = "grey",
-    #   borderwidth = 2,
-    #   borderpad = 10,
-    #   align = "center"
-    # )
   
   # Generar boxplot
   
@@ -5405,7 +5414,7 @@ output$histbox.edad <- renderPlotly({
            title = list(y = 0.95,
                         text = "Distribución de la edad al momento de la admisión",
                         font = list(family = "Montserrat", size = 15, color = "grey1")),
-           xaxis = list(title = list(text = "Edad de registro",
+           xaxis = list(title = list(text = "Edad al momento del registro",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
                         tickvals = seq(min,max(edad_data$`Edad del registro`), 10),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey"),
@@ -5435,7 +5444,7 @@ output$na_edad <- renderText({
   HTML(paste("<br>Hay",conteo_na,"registros personales sin información (datos faltantes)",
              "<br><strong>Promedio:</strong>",mean,
              "<strong>| Desvío estándar:</strong>",sd,
-             "<strong>| Total:</strong>",nrow(datagraf)))
+             "<strong>| Total:</strong>",nrow(df)))
   
 })
 
@@ -5565,7 +5574,7 @@ output$map.table <- renderText({
   # Calcular el conteo por provincia en el dataframe `filtered_data()`
   df <- filtered_data() %>%
     group_by(Provincia) %>%
-    summarise(Conteo = n()) %>%
+    summarise(Cantidad = n()) %>%
     filter(!is.na(Provincia))
   
   # Seleccionar las provincias de `provincias_df` que están en `df` y no son "Santa Fe"
@@ -5574,12 +5583,12 @@ output$map.table <- renderText({
   
   # Combinar los datos de `provincias_alerta` y `df` para la tabla final
   df <- merge(provincias_alerta, df, by = "Provincia") %>%
-    select(Provincia, Conteo)
+    select(Provincia, Cantidad)
   
   if(nrow(df) == 0) {
     df <- data.frame(
       Provincia = c(""),
-      Conteo = c("")
+      Cantidad = c("")
     )
   }
   
@@ -5611,9 +5620,9 @@ output$barras.nivel.educativo <- renderPlotly({
   g <- ggplot(df, aes(x = conteo, y = `Nivel Máximo Educativo Alcanzado`)) +
     geom_bar(stat = "identity", fill = "#ec7e14", 
              aes(text = paste("Nivel Máximo Educativo Alcanzado:", `Nivel Máximo Educativo Alcanzado`, "<br>Conteo:", conteo))) +
-    labs(x = "Conteo", 
+    labs(x = "Cantidad de personas", 
          y = "Nivel Máximo Educativo Alcanzado", 
-         title = "Conteo por nivel máximo educativo alcanzado") +
+         title = "Cantidad de personas por nivel máximo educativo alcanzado") +
     scale_x_continuous(breaks = seq(0,max(df$conteo)+100,by = 50),
                        limits = c(0,max(df$conteo) + 100)) +
     theme_fivethirtyeight() +
@@ -5625,7 +5634,7 @@ output$barras.nivel.educativo <- renderPlotly({
                         text = "Conteo por nivel máximo educativo alcanzado",
                         font = list(family = "Montserrat", size = 15, color = "grey1"),
                         pad = list(l=-80)),
-           xaxis = list(title = list(text = "Frecuencia",
+           xaxis = list(title = list(text = "Cantidad de personas",
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
                         #tickvals = seq(0, max(df$conteo)+50, 50),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey")),
@@ -5661,7 +5670,7 @@ output$matriz.colores <- renderPlotly({
     geom_tile(aes(text = paste(
       "Nivel Máximo Educativo Alcanzado:", `Nivel Máximo Educativo Alcanzado`,
       "<br>Edad (SEDRONAR):", EdadCategorica, 
-      "<br>Conteo:", conteo))) +
+      "<br>Conteo:", ifelse(!is.na(conteo),conteo,0)))) +
     scale_fill_gradient(low = "#FFDC2E", high = "#ec7e14") + # probar min y max
     labs(title = "Máximo nivel educativo alcanzado según grupo de edad",
          fill = "Conteo") +
@@ -5680,7 +5689,7 @@ output$matriz.colores <- renderPlotly({
                         text = paste("Máximo nivel educativo alcanzado según grupo de edad"),
                         font = list(family = "Montserrat", size = 15, color = "grey1"),
                         pad = list(l=-80)),
-           xaxis = list(title = list(text = paste0("Conteo por ingreso económico"),
+           xaxis = list(title = list(text = paste0("Grupo de edad (SEDRONAR"),
                                      font = list(family = "Montserrat", size = 12, color = "grey1")),
                         #tickvals = seq(0, max(df$conteo)+50, 50),
                         tickfont = list(family = "Montserrat", size = 10, color = "grey")),
