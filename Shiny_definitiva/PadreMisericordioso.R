@@ -1217,8 +1217,7 @@ server <- function(input, output, session) {
   
   # Fecha de nacimiento --------------------------------------------------------
   
-  # Edad -----------------------------------------------------------------------
-  
+  # Reglas para la edad
   iv_edad <- InputValidator$new()
   
   iv_edad$add_rule("edad", function(value) {
@@ -1253,20 +1252,23 @@ server <- function(input, output, session) {
   
   iv_edad$enable()
   
+  # Lógica para calcular la edad y habilitar/deshabilitar el campo de edad
   observe({
-    # Verificar que ambas fechas estén registradas
-    if (isTruthy(input$fecha_nacimiento) && isTruthy(input$fecha_registro)) {
+    # Si la fecha de nacimiento está completada, calculamos la edad
+    if (isTruthy(input$fecha_nacimiento)) {
+      # Calcular la edad en años utilizando la fecha actual
+      edad <- trunc(as.numeric(difftime(Sys.Date(), as.Date(input$fecha_nacimiento), units = "days")) %/% 365)
       
-      # Calcular la edad en años usando fecha de registro como referencia
-      edad <- trunc(as.numeric(difftime(as.Date(input$fecha_registro), as.Date(input$fecha_nacimiento), units = "days")) %/% 365)
+      # Actualizar la edad automáticamente
+      updateNumericInput(session, "edad", value = edad)
+      
+      # Deshabilitar el campo de edad
+      shinyjs::disable("edad")
       
     } else {
-      # Si falta alguna de las fechas, dejar el campo en NA
-      edad <- NA
+      # Si no hay fecha de nacimiento, permitir que el campo de edad sea editable
+      shinyjs::enable("edad")
     }
-    
-    # Actualizar el campo de `edad` en el formulario
-    updateNumericInput(session, "edad", value = edad)
   })
   
   # Sexo biológico -------------------------------------------------------------
@@ -1842,7 +1844,7 @@ server <- function(input, output, session) {
   })
   
   iv_sustancia_inicio$enable()
-  
+
   # Información consumo - Consumo actual ---------------------------------------
   
   iv_persona_consume <- InputValidator$new()
@@ -1850,39 +1852,47 @@ server <- function(input, output, session) {
   iv_persona_consume$add_rule("persona_consume", sv_required(tags$span("Campo obligatorio.", style = "font-size: 10px;")))
   
   iv_persona_consume$enable()
-  
-  # Información consumo - Sustancia de consumo actual --------------------------
+
+  ## Obligatorio
   
   iv_sustancias_actual <- InputValidator$new()
   
-  ## Obligatorio
-  
   iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
-    if(input$persona_consume == "Si") {
-      if(is.null(value) || length(value) == 0) {
-        return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
+    if (input$persona_consume == "Si") {
+      # Habilitar el campo nuevamente
+      shinyjs::enable("sustancias_consumo_actual")
+      
+      if (is.null(value) || length(value) == 0) {
+        return(tags$span("Debe seleccionar al menos una sustancia.", style = "font-size: 10px;"))
       }
+    } else if (input$persona_consume %in% c("No", "No informado")) {
+      # Deshabilitar el campo si no consume o no ha informado
+      updateCheckboxGroupInput(
+        session,
+        inputId = "sustancias_consumo_actual",
+        selected = NULL,
+        inline = TRUE
+      )
+      shinyjs::disable("sustancias_consumo_actual") # Deshabilitar el input
     }
+    return(NULL)  # Sin error
   })
   
   iv_sustancias_actual$add_rule("otra_sustancia_actual", function(value) {
-    # Verificar si 'Otra' está seleccionada en el selectInput
     if ("Otra" %in% input$sustancias_consumo_actual) {
-      
       # Validar si el campo está vacío o contiene caracteres especiales
       if (is.null(value) || value == "") {
         return(tags$span("Debe completar el campo si selecciona 'Otra'.", style = "font-size:10px;"))
       } else if (!grepl("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$", value)) {
         return(tags$span("No se admiten caracteres especiales.", style = "font-size:10px;"))
       }
-      
     } else {
-      # Si no está seleccionada la opción "Otra", no hacer ninguna validación
-      return(NULL)
+      return(NULL)  # Sin error
     }
   })
   
   iv_sustancias_actual$enable()
+  
   
   
   # Información tratamiento - Derivación ---------------------------------------
