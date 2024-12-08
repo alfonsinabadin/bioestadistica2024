@@ -249,18 +249,60 @@ df <- data %>%
   ungroup()
 
 g <- ggplot(df, aes(x = `Número de Tratamientos Previos`, y = count)) +
-  geom_bar(stat = "identity", fill = "#ffb600", width = 0.01) +
+  geom_bar(stat = "identity", fill = "#EC7E14", width = 0.01) +
   
   geom_point(aes(y = count,text = paste("Número de Tratamientos Previos:", `Número de Tratamientos Previos`,
-                                        "<br>Cantidad de Pacientes:", count)), size = 3, shape = 16, color = "#ffb600") +
-  
-  labs(title = "Cantidad de Tratamientos Previos por pacientes",
+                                        "<br>Cantidad de Pacientes:", count)), size = 3, shape = 16, color = "#EC7E14") +
+  labs(title = "Cantidad de tratamientos previos por pacientes",
        y = "Cantidad de Pacientes",
-       x = "Número de Tratamientos Previos")  +
-  
-  theme_minimal()
+       x = "Número de Tratamientos Previos") +
+  theme(
+    legend.position = "right",
+    legend.title.position = "top",
+    legend.title = element_text(hjust = 0.5),      # Centrar el título de la leyenda
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    plot.title = element_text(hjust = 0.5)
+  ) +
+  theme_fivethirtyeight()
 
-ggplotly(g, tooltip = "text")
+ggplotly(g, tooltip = "text") %>%
+  layout(
+    title = list(
+      y = 0.93,
+      font = list(family = "Montserrat", size = 15, color = "grey1")
+    ),
+    xaxis = list(
+      title = list(
+        text = "Frecuencia",
+        font = list(family = "Montserrat", size = 12, color = "grey1")
+      ),
+      tickfont = list(family = "Montserrat", size = 10, color = "grey")
+    ),
+    yaxis = list(
+      title = list(
+        text = "",
+        font = list(family = "Montserrat", size = 12, color = "grey1")
+      ),
+      tickfont = list(family = "Montserrat", size = 12, color = "grey")
+    ),
+    legend = list(
+      title = list(
+        text = "Sustancia de Inicio", # Texto del título de la leyenda
+        font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+      ),
+      font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+    ),
+    hoverlabel = list(
+      font = list(
+        family = "Montserrat",
+        size = 10,
+        color = "white",
+        style = "italic",
+        textcase = "word caps"
+      )
+    )
+  )
 
 # Tratamiento asignado (Gráfico de barras) ------------------------------------------------------
 data$`Tratamiento Elegido` <- as.factor(data$`Tratamiento Elegido`)
@@ -289,7 +331,43 @@ g <- ggplot(df, aes(x = porcentaje, y = reorder(`Tratamiento Elegido`, conteo)))
   theme_grey() +
   theme(legend.position = 'none')
 
-ggplotly(g, tooltip = 'text')
+ggplotly(g, tooltip = 'text') %>%
+  layout(
+    title = list(
+      y = 0.93,
+      font = list(family = "Montserrat", size = 15, color = "grey1")
+    ),
+    xaxis = list(
+      title = list(
+        text = "Frecuencia",
+        font = list(family = "Montserrat", size = 12, color = "grey1")
+      ),
+      tickfont = list(family = "Montserrat", size = 10, color = "grey")
+    ),
+    yaxis = list(
+      title = list(
+        text = "",
+        font = list(family = "Montserrat", size = 12, color = "grey1")
+      ),
+      tickfont = list(family = "Montserrat", size = 12, color = "grey")
+    ),
+    legend = list(
+      title = list(
+        text = "Sustancia de Inicio", # Texto del título de la leyenda
+        font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+      ),
+      font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+    ),
+    hoverlabel = list(
+      font = list(
+        family = "Montserrat",
+        size = 10,
+        color = "white",
+        style = "italic",
+        textcase = "word caps"
+      )
+    )
+  )
 
 # Consumo Actual vs Tratamiento elegido (Gráfico de barras subdivididas) -------------------------
 
@@ -325,4 +403,40 @@ g <- ggplot(df, aes(x = porcentaje, y = Sustancia, fill = `Tratamiento Elegido`)
   theme_grey() +
   theme(legend.position = "right")
 
-ggplotly(g, tooltip = 'text')
+ggplotly(g, tooltip = 'text') %>%
+  layout(
+    title = list(
+      y = 0.93,
+      font = list(family = "Montserrat", size = 15, color = "grey1")
+    ),
+    xaxis = list(
+      title = list(
+        text = "Frecuencia",
+        font = list(family = "Montserrat", size = 12, color = "grey1")
+      ),
+      tickfont = list(family = "Montserrat", size = 10, color = "grey")
+    ),
+    yaxis = list(
+      title = list(
+        text = "",
+        font = list(family = "Montserrat", size = 12, color = "grey1")
+      ),
+      tickfont = list(family = "Montserrat", size = 12, color = "grey")
+    ),
+    legend = list(
+      title = list(
+        text = "Sustancia de Inicio", # Texto del título de la leyenda
+        font = list(family = "Montserrat", size = 12, color = "grey1") # Estilo del título
+      ),
+      font = list(family = "Montserrat", size = 10, color = "grey") # Estilo del texto de la leyenda
+    ),
+    hoverlabel = list(
+      font = list(
+        family = "Montserrat",
+        size = 10,
+        color = "white",
+        style = "italic",
+        textcase = "word caps"
+      )
+    )
+  )
