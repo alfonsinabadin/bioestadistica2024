@@ -1125,7 +1125,7 @@ ui <- page_navbar(
         HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -1188,7 +1188,7 @@ ui <- page_navbar(
         HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -1325,7 +1325,7 @@ ui <- page_navbar(
                  HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -1465,7 +1465,7 @@ ui <- page_navbar(
                  HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -1552,7 +1552,7 @@ ui <- page_navbar(
                  HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -1619,7 +1619,7 @@ ui <- page_navbar(
                  HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -1644,7 +1644,7 @@ ui <- page_navbar(
         HTML("
         <strong>Desarrollado por</strong><br>
         - Alfonsina Badin (<i>badinalfonsina@gmail.com</i>)<br>
-        - Valentina Salvarezza<br>
+        - Valentina Salvarezza (<i>valesalvarezza13@gmail.com</i>)<br>
         - Camila Sebastiani (<i>camilasebastiani2000@gmail.com</i>)<br>
         <br>
         <em>Escuela de Estadística</em><br>
@@ -5363,6 +5363,7 @@ datagraf <- data %>%
                                   ordered = TRUE),
     `Situación Habitacional Actual` = factor(`Situación Habitacional Actual`,
                                              levels = c("No informada",
+                                                        "Casa/Departamento",
                                                         "Casa/Departamento alquilado", 
                                                         "Casa/Departamento cedido", 
                                                         "Casa/Departamento propio", 
@@ -5397,10 +5398,10 @@ datagraf <- data %>%
                                    ordered = TRUE)
   )
 
-# Extraer los años únicos de la base y actualizar el filtro de años
+# Extraer los años únicos de la base y actualizar el filtro de años, excluyendo el 2021
 observe({
   years <- unique(year(datagraf$`Fecha de registro`)) # Extraer años únicos
-  years <- sort(years[!is.na(years)]) # Ordenar y eliminar NAs
+  years <- sort(years[!is.na(years) & years != 2021]) # Ordenar, eliminar NAs y excluir 2021
   choices <- c("Seleccione el año" = "", years) # Agregar texto indicativo
   updateSelectInput(session, "year_filter", choices = choices)
 })
@@ -5412,10 +5413,10 @@ filtered_data <- reactive({
            is.null(input$edad_filter) | EdadCategorica %in% c(input$edad_filter,NA), # agrego NA para que funcione el conteo de vacíos
            is.null(input$sexo_filter) | `Sexo biológico` %in% c(input$sexo_filter,NA))
 })
-# Extraer los años únicos de la base y actualizar el filtro de años
+# Extraer los años únicos de la base y actualizar el filtro de años, excluyendo el 2021
 observe({
   years <- unique(year(datagraf$`Fecha de registro`)) # Extraer años únicos
-  years <- sort(years[!is.na(years)]) # Ordenar y eliminar NAs
+  years <- sort(years[!is.na(years) & years != 2021]) # Ordenar, eliminar NAs y excluir 2021
   choices <- c("Seleccione el año" = "", years) # Agregar texto indicativo
   updateSelectInput(session, "year_filter_2", choices = choices)
 })
@@ -5430,10 +5431,10 @@ filtered_data_2 <- reactive({
     )
 })
 
-# Extraer los años únicos de la base y actualizar el filtro de años
+# Extraer los años únicos de la base y actualizar el filtro de años, excluyendo el 2021
 observe({
   years <- unique(year(datagraf$`Fecha de registro`)) # Extraer años únicos
-  years <- sort(years[!is.na(years)]) # Ordenar y eliminar NAs
+  years <- sort(years[!is.na(years) & years != 2021]) # Ordenar, eliminar NAs y excluir 2021
   choices <- c("Seleccione el año" = "", years) # Agregar texto indicativo
   updateSelectInput(session, "year_filter_3", choices = choices)
 })
@@ -5444,10 +5445,10 @@ filtered_data_3 <- reactive({
     filter(is.null(input$year_filter_3) | year(`Fecha de registro`) %in% input$year_filter_3)
 })
 
-# Extraer los años únicos de la base y actualizar el filtro de años
+# Extraer los años únicos de la base y actualizar el filtro de años, excluyendo el 2021
 observe({
   years <- unique(year(datagraf$`Fecha de registro`)) # Extraer años únicos
-  years <- sort(years[!is.na(years)]) # Ordenar y eliminar NAs
+  years <- sort(years[!is.na(years) & years != 2021]) # Ordenar, eliminar NAs y excluir 2021
   choices <- c("Seleccione el año" = "", years) # Agregar texto indicativo
   updateSelectInput(session, "year_filter_4", choices = choices)
 })
@@ -5728,7 +5729,7 @@ output$barras.nivel.educativo <- renderPlotly({
              aes(text = paste("Nivel Máximo Educativo Alcanzado:", `Nivel Máximo Educativo Alcanzado`, "<br>Conteo:", conteo))) +
     labs(x = "Cantidad de personas", 
          y = "Nivel Máximo Educativo Alcanzado", 
-         title = "Cantidad de personas por nivel máximo educativo alcanzado") +
+         title = "Cantidad de personas según máximo nivel educativo alcanzado") +
     scale_x_continuous(breaks = seq(0,max(df$conteo)+100,by = 50),
                        limits = c(0,max(df$conteo) + 100)) +
     theme_fivethirtyeight() +
@@ -5737,7 +5738,7 @@ output$barras.nivel.educativo <- renderPlotly({
   
   ggplotly(g, tooltip = 'text')  %>%
     layout(title = list(y = 0.95, title_x=0.5,
-                        text = "Conteo por nivel máximo educativo alcanzado",
+                        text = "Cantidad de personas según máximo nivel educativo alcanzado",
                         font = list(family = "Montserrat", size = 15, color = "grey1"),
                         pad = list(l=-80)),
            xaxis = list(title = list(text = "Cantidad de personas",
@@ -5778,7 +5779,7 @@ output$matriz.colores <- renderPlotly({
       "<br>Edad (SEDRONAR):", EdadCategorica, 
       "<br>Conteo:", ifelse(!is.na(conteo),conteo,0)))) +
     scale_fill_gradient(low = "#FFDC2E", high = "#ec7e14") + # probar min y max
-    labs(title = "Máximo nivel educativo alcanzado según grupo de edad",
+    labs(title = "Cantidad de personas según máximo nivel educativo y grupo de edad",
          fill = "Conteo") +
     scale_x_discrete(labels = c("0 a 12", "13 a 17", "18 a 29", "30 a 60", "+ 60")) +
     scale_y_discrete(labels = c("Sin instrucción formal", "Primario incompleto", 
@@ -5792,7 +5793,7 @@ output$matriz.colores <- renderPlotly({
   ggplotly(g, tooltip = 'text')  %>%
     layout(title = list(y = 0.95, title_x=0.5,
                         automargin = list(yref='container'),
-                        text = paste("Máximo nivel educativo alcanzado según grupo de edad"),
+                        text = paste("Cantidad de personas según máximo nivel educativo y grupo de edad"),
                         font = list(family = "Montserrat", size = 15, color = "grey1"),
                         pad = list(l=-80)),
            xaxis = list(title = list(text = paste0("Grupo de edad (SEDRONAR"),
@@ -5879,7 +5880,7 @@ output$barras_ingreso <- renderPlotly({
   g <- ggplot(df, aes(x = conteo, y = `Ingreso Económico`)) +
     geom_bar(stat = "identity", fill = "#ec7e14", 
              aes(text = paste("Ingreso económico:", `Ingreso Económico`, "<br>Conteo:", conteo))) +
-    labs(x = "Conteo", y = "Ingreso económico", title = "Conteo por ingreso económico`",
+    labs(x = "Conteo", y = "Ingreso económico", title = "Cantidad de personas según ingreso económico",
          subtitle = conteo_na) +
     scale_x_continuous(limits = c(min(df$conteo),max(df$conteo))) +
     theme_fivethirtyeight() +
@@ -5887,7 +5888,7 @@ output$barras_ingreso <- renderPlotly({
   
   ggplotly(g, tooltip = 'text') %>%
     layout(title = list(y = 0.93, title_x=0.2,
-                        text = paste0("Conteo por ingreso económico",
+                        text = paste0("Cantidad de personas según ingreso económico",
                                       '<br>',
                                       '<sup>',
                                       conteo_na,
@@ -5923,7 +5924,7 @@ output$barras_judicial <- renderPlotly({
   g <- ggplot(df, aes(x = conteo, y = `Situación Judicial`)) +
     geom_bar(stat = "identity", fill = "#ec7e14", 
              aes(text = paste("Situación Judicial:", `Situación Judicial`, "<br>Conteo:", conteo))) +
-    labs(x = "Conteo", y = "Situación Judicial", title = "Conteo por ingreso económico`",
+    labs(x = "Conteo", y = "Situación Judicial", title = "Cantidad de personas según situación judicial",
          subtitle = conteo_na) +
     scale_x_continuous(limits = c(0,max(df$conteo))) +
     theme_fivethirtyeight() +
@@ -5931,7 +5932,7 @@ output$barras_judicial <- renderPlotly({
   
   ggplotly(g, tooltip = 'text') %>%
     layout(title = list(y = 0.93, title_x=0.2,
-                        text = paste0("Conteo por situación judicial",
+                        text = paste0("Cantidad de personas según situación judicial",
                                       '<br>',
                                       '<sup>',
                                       conteo_na,
@@ -5966,7 +5967,7 @@ output$barras_habitacional <- renderPlotly({
   g <- ggplot(df, aes(x = conteo, y = `Situación Habitacional Actual`)) +
     geom_bar(stat = "identity", fill = "#ec7e14", 
              aes(text = paste("Situación Habitacional Actual:", `Situación Habitacional Actual`, "<br>Conteo:", conteo))) +
-    labs(x = "Conteo", y = "Situación Habitacional Actual", title = "Conteo por ingreso económico`",
+    labs(x = "Conteo", y = "Situación Habitacional Actual", title = "Cantidad de personas según situación habitacional actual",
          subtitle = conteo_na) +
     scale_x_continuous(limits = c(0,max(df$conteo))) +
     theme_fivethirtyeight() +
@@ -5974,7 +5975,7 @@ output$barras_habitacional <- renderPlotly({
   
   ggplotly(g, tooltip = 'text') %>%
     layout(title = list(y = 0.93, title_x=0.2,
-                        text = paste0("Conteo por Situación Habitacional Actual",
+                        text = paste0("Cantidad de personas según situación habitacional actual",
                                       '<br>',
                                       '<sup>',
                                       conteo_na,
@@ -6252,7 +6253,7 @@ output$barras_sustancias <- renderPlotly({
       x = "Frecuencia",
       y = "Sustancia de consumo actual",
       fill = "Sustancia de Inicio",
-      title = "Sustancia de inicio en cada sustancia de consumo actual"
+      title = "Sustancia de inicio según sustancia de consumo actual"
     )+
     scale_fill_manual(values = c("#FBC91C", "#828a00", "#274001", "#EC7E14", "#4d8584", "#a62f03", "#400d01", "#4C443C")) +
     theme_fivethirtyeight() +
@@ -6326,7 +6327,7 @@ output$barras_edad_sustancias <- renderPlotly({
       x = "Frecuencia",
       y = "Grupo de Edad (SEDRONAR)",
       fill = "Sustancia de Inicio",
-      title = "Sustancia de inicio en cada grupo de edad (SEDRONAR)"
+      title = "Sustancia de inicio según grupo de edad (SEDRONAR)"
     )+
     scale_fill_manual(values = c("#FBC91C", "#828a00", "#274001", "#EC7E14", "#4d8584", "#a62f03", "#400d01", "#4C443C")) +
     theme_fivethirtyeight() +
@@ -6542,7 +6543,7 @@ output$tratamiento_asignado <- renderPlotly({
              aes(text = paste("Tratamiento:", `Tratamiento Elegido`,
                               "<br>Conteo:", conteo,
                               "<br>Porcentaje:", round(porcentaje, 2), "%"))) +  
-    labs(x = "Porcentaje", y = "Tratamiento Elegido", title = "Porcentaje por Tratamiento Elegido") +
+    labs(x = "Porcentaje", y = "Tratamiento Elegido", title = "Porcentaje por tratamiento elegido") +
     scale_x_continuous(breaks = seq(0, 100, by = 10)) +  
     theme_fivethirtyeight()
     theme(legend.position = 'none')
@@ -6612,7 +6613,7 @@ output$consumo_tratamiento <- renderPlotly({
     scale_fill_manual(values = c("#ff4800", "#ff5400", "#ff6d00", "#ff9100","#ffec51",
                                  "#ffaa00", "#ffaa00", "#ffb600","#ffd000","#ffea00", "#f28f3b" )) +
     labs(x = "Porcentaje", y = "Sustancia de Consumo Actual",
-         title = "Distribución de Tratamientos por Sustancia de Consumo Actual") +
+         title = "Distribución de tratamientos por sustancia de consumo actual") +
     scale_x_continuous(breaks = seq(0, 100, by = 10)) +
     
     theme_fivethirtyeight() +
