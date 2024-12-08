@@ -1044,7 +1044,7 @@ ui <- page_navbar(
                 label = "Vaciar campos",
                 icon = icon("broom"),
                 class = "btn-primary"
-                )runApp('Shiny_definitiva/Shiny_vale_2.R')
+                )
 
           )
         )
@@ -1861,6 +1861,17 @@ server <- function(input, output, session) {
   
   iv_persona_consume$add_rule("persona_consume", sv_required(tags$span("Campo obligatorio.", style = "font-size: 10px;")))
   
+  # Observador para anular selección de sustancias
+  observe({
+    if (input$persona_consume %in% c("No", "No informado")) {
+      updateCheckboxGroupInput(
+        session,
+        inputId = "sustancias_consumo_actual",
+        selected = NULL
+      )
+    }
+  })
+  
   iv_persona_consume$enable()
   
   # Información consumo - Sustancia de consumo actual --------------------------
@@ -1868,13 +1879,13 @@ server <- function(input, output, session) {
   iv_sustancias_actual <- InputValidator$new()
   
   ## Obligatorio
-  
   iv_sustancias_actual$add_rule("sustancias_consumo_actual", function(value) {
-    if(input$persona_consume == "Si") {
-      if(is.null(value) || length(value) == 0) {
+    if (input$persona_consume == "Si") {
+      if (is.null(value) || length(value) == 0) {
         return(tags$span("Campo obligatorio.", style = "font-size: 10px;"))
       }
     }
+    return(NULL)  # Ningún error
   })
   
   iv_sustancias_actual$add_rule("otra_sustancia_actual", function(value) {
@@ -1895,7 +1906,6 @@ server <- function(input, output, session) {
   })
   
   iv_sustancias_actual$enable()
-  
   
   # Información tratamiento - Derivación ---------------------------------------
   
