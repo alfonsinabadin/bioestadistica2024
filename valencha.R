@@ -279,3 +279,121 @@ server <- function(input, output) {
 
 # Ejecuta la app
 shinyApp(ui = ui, server = server)
+
+
+
+
+
+
+
+
+
+registros_actuales <- Base_completa
+registros_nuevos <- rbind(registros_actuales, nuevo_registro)
+registros(registros_nuevos)
+
+# Mostrar el nuevo registro en un modal
+showModal(modalDialog(
+  title = "Registro guardado",
+  "El registro se ha guardado exitosamente",
+  easyClose = TRUE
+))
+
+} else {
+  # Mostrar un mensaje de error
+  showModal(modalDialog(
+    title = "Error",
+    "Por favor, completa todos los campos obligatorios.",
+    easyClose = TRUE
+  ))
+}
+
+
+
+
+
+
+
+
+
+
+# Definir los campos obligatorios
+campos_obligatorios <- c(
+  input$id_registro,
+  input$fecha_registro,
+  input$id_persona,
+  input$apellido_nombre,
+  input$edad,
+  input$sexo_biologico,
+  input$genero,
+  input$provincia,
+  input$telefono_contacto_1,
+  input$tipo_vinculo_contacto_1,
+  input$sustancia_inicio_consumo,
+  input$persona_consume,
+  input$estado_psicologo,
+  input$estado_psiquiatra,
+  input$estado_ts,
+  input$derivacion,
+  input$num_tratamientos_previos,
+  input$nivel_educativo_max,
+  input$cud,
+  input$situacion_habitacional_actual,
+  input$situacion_laboral_actual,
+  input$ingreso_economico,
+  input$situacion_judicial,
+  input$redes_apoyo,
+  input$referencia_aps 
+)
+
+# Verificar si todos los campos obligatorios están completos
+if (all(sapply(campos_obligatorios, function(x) !is.null(x) && x != ""))) {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # Verifica si todos los campos obligatorios están completados
+  if (iv_fecha_primer_registro$is_valid() && 
+      !is.na(input$id_registro) && input$id_registro != "" &&
+      !is.na(input$fecha_registro) && input$fecha_registro != "" &&
+      !is.na(input$id_persona) && input$id_persona != "" &&
+      !is.na(input$apellido_nombre) && input$apellido_nombre != "" &&
+      !is.na(input$edad) && input$edad != "" &&
+      !is.na(input$sexo_biologico) && input$sexo_biologico != "" &&
+      !is.na(input$genero) && input$genero != "" &&
+      !is.na(input$provincia) && input$provincia != "" &&
+      !is.na(input$telefono_contacto_1) && input$telefono_contacto_1 != "" &&
+      !is.na(input$tipo_vinculo_contacto_1) && input$tipo_vinculo_contacto_1 != "" &&
+      !is.na(input$sustancia_inicio_consumo) && input$sustancia_inicio_consumo != "" &&
+      !is.na(input$persona_consume) && input$persona_consume != "" &&
+      !is.na(input$estado_psicologo) && input$estado_psicologo != "" &&
+      !is.na(input$estado_psiquiatra) && input$estado_psiquiatra != "" &&
+      !is.na(input$estado_ts) && input$estado_ts != "" &&
+      !is.na(input$derivacion) && input$derivacion != "" &&
+      !is.na(input$num_tratamientos_previos) && input$num_tratamientos_previos != "" &&
+      !is.na(input$nivel_educativo_max) && input$nivel_educativo_max != "" &&
+      !is.na(input$situacion_habitacional_actual) && input$situacion_habitacional_actual != "" &&
+      !is.na(input$situacion_laboral_actual) && input$situacion_laboral_actual != "" &&
+      !is.na(input$ingreso_economico) && input$ingreso_economico != "" &&
+      !is.na(input$situacion_judicial) && input$situacion_judicial != "" &&
+      !is.na(input$redes_apoyo) && input$redes_apoyo != "" &&
+      !is.na(input$referencia_aps) && input$referencia_aps != "") {
+  
