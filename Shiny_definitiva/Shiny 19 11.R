@@ -795,7 +795,7 @@ ui <- page_navbar(
                 inputId = "tratamiento_elegido",
                 label = "",
                 choices = c("Seguimiento",
-                            "Cdd Baigorria","Cdd Buen Pastor","Cdd Zeballos",
+                            "Cdd Baigorria","Cdd Buen Pastor","Cdd Zeballos", "Cdd Territoriales",
                             "Internación Buen Pastor","Internación Baigorria",
                             "Internación Critalería","No finalizó admisión",
                             "Derivado","Rechaza tratamiento", ""
@@ -4290,7 +4290,7 @@ observeEvent(input$guardar_registro, {
                   inputId = "tratamiento_elegido1",
                   label = tags$span("Tratamiento", style = "font-size: 12px;"),
                   choices = c(
-                    "Seguimiento", "Cdd Baigorria", "Cdd Buen Pastor", "Centro de día Zeballos", "Derivado",
+                    "Seguimiento", "Cdd Baigorria", "Cdd Buen Pastor", "Centro de día Zeballos","Cdd Territoriales", "Derivado",
                     "Internación B.P.", "Internación Baig.", "Internación Cristalería",
                     "No finalizó admisión", "Rechaza tratamiento", ""
                   ),
@@ -5394,7 +5394,11 @@ datagraf <- data %>%
                                              "Nafta aspirada", "Pegamento", "Psicofármacos", "Otra"),
                                   ordered = TRUE),
     `Tratamiento Elegido` = factor(`Tratamiento Elegido`,
-                                   levels=c("Cdd Baigorria","Cdd Buen Pastor","Cdd Zeballos","Internación Buen Pastor","Internación Baigorria","Internación Critalería","No finalizó admisión","Derivado","Rechaza tratamiento", "Seguimiento"),
+                                   levels=c("Cdd Baigorria","Cdd Buen Pastor",
+                                            "Cdd Zeballos","Cdd Territoriales", 
+                                            "Internación Buen Pastor","Internación Baigorria",
+                                            "Internación Critalería","No finalizó admisión","Derivado",
+                                            "Rechaza tratamiento", "Seguimiento"),
                                    ordered = TRUE)
   )
 
@@ -6530,7 +6534,8 @@ output$tratamiento_asignado <- renderPlotly({
     group_by(`Tratamiento Elegido`) %>%
     summarize(conteo = n(), .groups = 'drop') %>%
     complete(`Tratamiento Elegido`, fill = list(conteo = 0)) %>%  
-    filter(!is.na(`Tratamiento Elegido`))  %>%
+    filter(!is.na(`Tratamiento Elegido`),
+           `Tratamiento Elegido` != "Seguimiento")  %>%
     ungroup()
   
   total_conteo <- sum(df$conteo)
